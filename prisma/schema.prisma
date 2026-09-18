@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String    @id @default(cuid())
+  nome      String
+  empresas  Empresa[]
+}
+
+model Empresa {
+  id            String        @id @default(cuid())
+  nome          String
+  tenantId      String
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  clientes      Cliente[]
+  faturamentos  Faturamento[]
+  contasReceber ContaReceber[]
+  baixas        Baixa[]
+  usuarios      Usuario[]
+  syncLogs      SyncLog[]
+}
+
+// Usuário do SaaS (gestor que faz login). Necessário para ativar a
+// autenticação real (hoje desligada em src/lib/auth.ts) e para resolver
+// qual empresaId/tenantId aplicar em toda query multi-tenant.
+model Usuario {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  senhaHash String
+  nome      String
+  empresaId String
+  empresa   Empresa  @relation(fields: [empresaId], references: [id])
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+}
+
+model Cliente {
+  id             String         @id @default(cuid())
+  codigo         String
+  loja           String
+  nome           String
+  cidade         String
+  estado         String
+  ativo          Boolean        @default(true)
+  empresaId      String
+  empresa        Empresa        @relation(fields: [empresaId], references: [id])
+  faturamentos   Faturamento[]
+  contasReceber  ContaReceber[]
+  sincronizadoEm DateTime       @default(now()) // usado pelo Agente de Sincronização (CDC)
+
+  @@unique([codigo, loja, empresaId])
+}
+
+model Faturamento {
+  id          String   @id @default(cuid())
+  filial      String
+  numeroNota  String
+  dataEmissao DateTime
+  valorTotal  Decimal  @db.Decimal(15, 2)
+  clienteId   String
+  cliente     Cliente  @relation(fields: [clienteId], references: [id])
+  empresaId   String
+  empresa     Empresa  @relation(fields: [empresaId], references: [id])
+  sincronizadoEm DateTime @default(now())
+
+  @@unique([filial, numeroNota, empresaId])
+}
+
+model ContaReceber {
+  id          String    @id @default(cuid())
+  filial      String
+  prefixo     String
+  numero      String
+  parcela     String
+  tipo        String
+  dataEmissao DateTime
+  vencimento  DateTime
+  valor       Decimal   @db.Decimal(15, 2)
+  clienteId   String
+  cliente     Cliente   @relation(fields: [clienteId], references: [id])
+  empresaId   String
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
+  baixas      Baixa[]
+  sincronizadoEm DateTime @default(now())
+
+  @@unique([filial, prefixo, numero, parcela, empresaId])
+}
+
+model Baixa {
+  id              String   @id @default(cuid())
+  filial          String
+  filialBaixa     String
+  prefixo         String
+  numero          String
+  parcela         String
+  tipo            String
+  valorBaixa      Decimal  @db.Decimal(15, 2)
+  dataBaixa       DateTime
+  contaReceberId  String
+  contaReceber    ContaReceber @relation(fields: [contaReceberId], references: [id])
+  empresaId       String
+  empresa         Empresa  @relation(fields: [empresaId], references: [id])
+  sincronizadoEm  DateTime @default(now())
+}
+
+// Fila de exceções de sincronização (guia de integração §6)
+model SyncLog {
+  id             String   @id @default(cuid())
+  empresaId      String
+  empresa        Empresa  @relation(fields: [empresaId], references: [id])
+  entidade       String   // "Cliente", "Faturamento", "ContaReceber", "Baixa"
+  operacao       String   // "upsert", "delete", "skip", "error"
+  idempotencyKey String   // empresa+filial+tipo+numero+parcela (chave composta)
+  status         String   // "success", "error", "skipped"
+  categoriaErro  String?  // "duplicate", "invalid_data", "timeout", "not_found"
+  mensagem       String?  // detalhe do erro
+  payloadEnviado Json?    // dados recebidos (para auditoria)
+  tentativas     Int      @default(1)
+  criadoEm       DateTime @default(now())
+
+  @@index([empresaId, entidade, criadoEm])
+  @@index([status, categoriaErro])
+}

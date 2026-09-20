@@ -73,13 +73,13 @@ async function main() {
   const senhaDemo = process.env.SEED_DEMO_PASSWORD || "TrocarNoPrimeiroAcesso!123";
   await prisma.usuario.create({
     data: {
-      email: "gestor@empresademo.com.br",
+      email: "gestor@prot.com",
       senhaHash: await hash(senhaDemo, 10),
       nome: "Gestor Demo",
       empresaId: empresa.id,
     },
   });
-  console.log(`   -> login: gestor@empresademo.com.br / senha: ${senhaDemo}`);
+  console.log(`   -> login: gestor@prot.com / senha: ${senhaDemo}`);
 
   console.log("📥 Importando clientes (SA1)...");
   const sa1 = lerCSV("SA1.csv");

@@ -1,26 +1,55 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, RefreshCw } from "lucide-react";
 
 interface SyncResult {
+  entidade: string;
+  processados: number;
+  criados: number;
+  atualizados: number;
+  erros: number;
+}
+
+interface PullEntityResult {
   arquivo: string;
   entidade: string;
   registros: number;
-  sync: {
-    entidade: string;
-    processados: number;
-    criados: number;
-    atualizados: number;
-    erros: number;
-  };
+  sync: SyncResult;
+  erro?: string;
 }
 
 export default function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [results, setResults] = useState<SyncResult[] | null>(null);
+  const [results, setResults] = useState<PullEntityResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [pulling, setPulling] = useState(false);
+  const [pullResults, setPullResults] = useState<PullEntityResult[] | null>(null);
+  const [pullError, setPullError] = useState<string | null>(null);
+
+  const handlePullFromProtheus = async () => {
+    setPulling(true);
+    setPullError(null);
+    setPullResults(null);
+
+    try {
+      const res = await fetch("/api/protheus/pull", { method: "POST" });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPullError(data.error || "Erro ao atualizar do Protheus");
+        return;
+      }
+
+      setPullResults(data.resultados);
+    } catch {
+      setPullError("Falha ao conectar com o servidor");
+    } finally {
+      setPulling(false);
+    }
+  };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -80,6 +109,59 @@ export default function UploadPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 mb-6">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Atualizar do Protheus</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Busca os dados diretamente no Protheus (via API) e sincroniza agora, sem precisar exportar CSV.
+              </p>
+            </div>
+            <button
+              onClick={handlePullFromProtheus}
+              disabled={pulling}
+              className="shrink-0 py-2.5 px-5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2"
+            >
+              {pulling ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+              {pulling ? "Atualizando..." : "Atualizar do Protheus"}
+            </button>
+          </div>
+
+          {pullError && (
+            <div className="mt-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3">
+              <AlertCircle size={20} className="text-red-600 dark:text-red-400 shrink-0" />
+              <span className="text-sm text-red-700 dark:text-red-300">{pullError}</span>
+            </div>
+          )}
+
+          {pullResults && (
+            <div className="mt-4 space-y-2">
+              {pullResults.map((r, i) => (
+                <div key={i} className="flex items-start gap-3 py-3 px-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  {r.erro ? (
+                    <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-500" />
+                  ) : (
+                    <CheckCircle
+                      size={18}
+                      className={`mt-0.5 shrink-0 ${r.sync.erros > 0 ? "text-amber-500" : "text-emerald-500"}`}
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{r.entidade}</span>
+                    {r.erro ? (
+                      <p className="text-xs text-red-500 dark:text-red-400 mt-1">{r.erro}</p>
+                    ) : (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        {r.registros} registro(s) → {r.sync.criados} criado(s), {r.sync.atualizados} atualizado(s), {r.sync.erros} erro(s)
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}

@@ -21,7 +21,7 @@ import { authOptions } from "@/lib/auth";
 
 type AuthorizeFn = (
   credentials: Record<string, string> | undefined,
-  req?: unknown
+  req?: unknown,
 ) => Promise<unknown>;
 
 interface CredentialsProviderOptions {
@@ -31,12 +31,13 @@ interface CredentialsProviderOptions {
 }
 
 describe("Autenticação e Authorize (auth.ts)", () => {
-  const provider = authOptions.providers[0] as unknown as CredentialsProviderOptions;
+  const provider = authOptions
+    .providers[0] as unknown as CredentialsProviderOptions;
   const authorizeFn = provider.options.authorize;
 
   const usuarioMock = {
     id: "usr-1",
-    email: "gestor@empresademo.com.br",
+    email: "gestor@prot.com",
     senhaHash: "hash123",
     nome: "Gestor",
     empresaId: "emp-1",
@@ -61,19 +62,22 @@ describe("Autenticação e Authorize (auth.ts)", () => {
     mockCompare.mockResolvedValue(true);
 
     const user = await authorizeFn({
-      email: "gestor@empresademo.com.br",
+      email: "gestor@prot.com",
       password: "TrocarNoPrimeiroAcesso!123",
     });
 
     expect(mockFindUnique).toHaveBeenCalledWith({
-      where: { email: "gestor@empresademo.com.br" },
+      where: { email: "gestor@prot.com" },
       include: { empresa: true },
     });
-    expect(mockCompare).toHaveBeenCalledWith("TrocarNoPrimeiroAcesso!123", "hash123");
+    expect(mockCompare).toHaveBeenCalledWith(
+      "TrocarNoPrimeiroAcesso!123",
+      "hash123",
+    );
 
     expect(user).toEqual({
       id: "usr-1",
-      email: "gestor@empresademo.com.br",
+      email: "gestor@prot.com",
       name: "Gestor",
       empresaId: "emp-1",
       tenantId: "tenant-1",
@@ -85,19 +89,22 @@ describe("Autenticação e Authorize (auth.ts)", () => {
     mockCompare.mockResolvedValue(true);
 
     const user = await authorizeFn({
-      email: "gestor@empresademo.com.br",
+      email: "gestor@prot.com",
       senha: "TrocarNoPrimeiroAcesso!123",
     });
 
     expect(mockFindUnique).toHaveBeenCalledWith({
-      where: { email: "gestor@empresademo.com.br" },
+      where: { email: "gestor@prot.com" },
       include: { empresa: true },
     });
-    expect(mockCompare).toHaveBeenCalledWith("TrocarNoPrimeiroAcesso!123", "hash123");
+    expect(mockCompare).toHaveBeenCalledWith(
+      "TrocarNoPrimeiroAcesso!123",
+      "hash123",
+    );
 
     expect(user).toEqual({
       id: "usr-1",
-      email: "gestor@empresademo.com.br",
+      email: "gestor@prot.com",
       name: "Gestor",
       empresaId: "emp-1",
       tenantId: "tenant-1",
@@ -109,7 +116,7 @@ describe("Autenticação e Authorize (auth.ts)", () => {
     mockCompare.mockResolvedValue(false);
 
     const user = await authorizeFn({
-      email: "gestor@empresademo.com.br",
+      email: "gestor@prot.com",
       password: "senha-errada",
     });
 
@@ -133,7 +140,10 @@ describe("Autenticação e Authorize (auth.ts)", () => {
     expect(token).toEqual({ empresaId: "emp-1", tenantId: "tenant-1" });
 
     const session = await sessionCallback({
-      session: { user: { name: "Gestor", email: "gestor@empresademo.com.br" }, expires: "" },
+      session: {
+        user: { name: "Gestor", email: "gestor@prot.com" },
+        expires: "",
+      },
       token,
       user: { id: "usr-1" } as never,
       newSession: undefined,

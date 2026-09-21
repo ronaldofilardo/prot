@@ -69,7 +69,8 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        const customUser = user as unknown as { empresaId?: string; tenantId?: string };
+        const customUser = user as unknown as { id?: string; empresaId?: string; tenantId?: string };
+        token.usuarioId = customUser.id;
         token.empresaId = customUser.empresaId;
         token.tenantId = customUser.tenantId;
       }
@@ -77,7 +78,8 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        const sUser = session.user as typeof session.user & { empresaId?: string; tenantId?: string };
+        const sUser = session.user as typeof session.user & { usuarioId?: string; empresaId?: string; tenantId?: string };
+        sUser.usuarioId = token.usuarioId as string;
         sUser.empresaId = token.empresaId as string;
         sUser.tenantId = token.tenantId as string;
       }

@@ -28,7 +28,7 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <DashboardHeader />
-      <DashboardFilterBar clientes={data?.clientes || []} />
+      <DashboardFilterBar clientes={data?.clientes || []} grupos={data?.grupos || []} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <DashboardKpiCards
           data={{

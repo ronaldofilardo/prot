@@ -137,7 +137,7 @@ describe("Autenticação e Authorize (auth.ts)", () => {
       account: null,
     });
 
-    expect(token).toEqual({ empresaId: "emp-1", tenantId: "tenant-1" });
+    expect(token).toEqual({ usuarioId: "usr-1", empresaId: "emp-1", tenantId: "tenant-1" });
 
     const session = await sessionCallback({
       session: {
@@ -150,6 +150,7 @@ describe("Autenticação e Authorize (auth.ts)", () => {
       trigger: "update",
     });
 
+    expect((session.user as { usuarioId?: string }).usuarioId).toBe("usr-1");
     expect((session.user as { empresaId?: string }).empresaId).toBe("emp-1");
     expect((session.user as { tenantId?: string }).tenantId).toBe("tenant-1");
   });

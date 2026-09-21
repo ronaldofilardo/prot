@@ -22,6 +22,13 @@ export type FiltrosState = {
   // Compatibilidade com estrutura anterior
   clienteFilter: FiltroCliente;
   setClienteFilter: (filter: FiltroCliente) => void;
+
+  // Filtro de empresa: matriz selecionada + filiais marcadas dentro dela.
+  // Ver src/lib/utils/empresa-grupo.ts e filial-selection.ts.
+  matrizId: string | null;
+  empresaIds: string[];
+  setMatriz: (matrizId: string | null) => void;
+  setEmpresaIds: (empresaIds: string[]) => void;
 };
 
 export const useFilters = create<FiltrosState>((set) => ({
@@ -48,6 +55,8 @@ export const useFilters = create<FiltrosState>((set) => ({
       dataInicial: "",
       dataFinal: "",
       clienteFilter: { codigo: "", nome: "", selecao: "todos" },
+      matrizId: null,
+      empresaIds: [],
     }),
 
   clienteFilter: { codigo: "", nome: "", selecao: "todos" },
@@ -56,4 +65,11 @@ export const useFilters = create<FiltrosState>((set) => ({
       clienteFilter: filter,
       cliente: filter.nome || filter.codigo || "",
     }),
+
+  matrizId: null,
+  empresaIds: [],
+  // Trocar de matriz reseta as filiais marcadas: a seleção anterior
+  // pertence a outro grupo e não deve "vazar" para o novo.
+  setMatriz: (matrizId: string | null) => set({ matrizId, empresaIds: [] }),
+  setEmpresaIds: (empresaIds: string[]) => set({ empresaIds }),
 }));

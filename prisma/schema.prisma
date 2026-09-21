@@ -16,14 +16,26 @@ model Tenant {
 model Empresa {
   id            String        @id @default(cuid())
   nome          String
+  cnpj          String?
   tenantId      String
   tenant        Tenant        @relation(fields: [tenantId], references: [id])
+
+  // Estrutura matriz/filial: uma Empresa sem matrizId é a matriz do
+  // seu próprio subgrupo; suas filiais apontam para ela via matrizId.
+  // Ambas continuam pertencendo ao mesmo Tenant (grupo gerido pelo CFO).
+  matrizId      String?
+  matriz        Empresa?      @relation("MatrizFiliais", fields: [matrizId], references: [id])
+  filiais       Empresa[]     @relation("MatrizFiliais")
+
   clientes      Cliente[]
   faturamentos  Faturamento[]
   contasReceber ContaReceber[]
   baixas        Baixa[]
   usuarios      Usuario[]
   syncLogs      SyncLog[]
+  acessosExtras UsuarioEmpresaAcesso[]
+
+  @@index([matrizId])
 }
 
 // Usuário do SaaS (gestor que faz login). Necessário para ativar a
@@ -38,6 +50,27 @@ model Usuario {
   empresa   Empresa  @relation(fields: [empresaId], references: [id])
   ativo     Boolean  @default(true)
   criadoEm  DateTime @default(now())
+
+  // Acesso extra a empresas independentes (CNPJs distintos, sem relação
+  // de matriz/filial entre elas) — caso do CFO que gere várias empresas
+  // avulsas além da que está em `empresaId`. Ver
+  // src/lib/utils/empresa-grupo.ts (resolveIdsPermitidosTotal).
+  acessosExtras UsuarioEmpresaAcesso[]
+}
+
+// Concede a um Usuario acesso de leitura a uma Empresa além da sua
+// própria (`Usuario.empresaId`). Cada linha é uma empresa extra
+// liberada — não substitui a empresa "principal" do usuário, soma a ela.
+model UsuarioEmpresaAcesso {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  empresaId String
+  empresa   Empresa  @relation(fields: [empresaId], references: [id])
+  criadoEm  DateTime @default(now())
+
+  @@unique([usuarioId, empresaId])
+  @@index([usuarioId])
 }
 
 model Cliente {

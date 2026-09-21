@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useFilters } from "@/hooks/useFilters";
+import type { EmpresaGrupoDTO } from "@/lib/types/dashboard";
 
 export interface DashboardData {
   totalClientes: number;
@@ -29,6 +30,7 @@ export interface DashboardData {
     cidade: string;
     estado: string;
   }>;
+  grupos: EmpresaGrupoDTO[];
 }
 
 export interface UseDashboardResult {
@@ -44,7 +46,7 @@ export function useDashboard(): UseDashboardResult {
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  const { cliente, dataInicial, dataFinal, setCliente, setDataInicial, setDataFinal } =
+  const { cliente, dataInicial, dataFinal, matrizId, empresaIds, setCliente, setDataInicial, setDataFinal } =
     useFilters();
 
   const [data, setData] = useState<DashboardData | null>(null);
@@ -68,6 +70,8 @@ export function useDashboard(): UseDashboardResult {
       if (cliente) params.set("cliente", cliente);
       if (dataInicial) params.set("inicial", dataInicial);
       if (dataFinal) params.set("final", dataFinal);
+      if (matrizId) params.set("matriz", matrizId);
+      empresaIds.forEach((id) => params.append("empresaId", id));
 
       const queryStr = params.toString();
       const novaUrl = queryStr ? `/dashboard?${queryStr}` : `/dashboard`;
@@ -83,7 +87,7 @@ export function useDashboard(): UseDashboardResult {
     } finally {
       setLoading(false);
     }
-  }, [cliente, dataInicial, dataFinal, router]);
+  }, [cliente, dataInicial, dataFinal, matrizId, empresaIds, router]);
 
   useEffect(() => {
     const timer = setTimeout(carregarDados, 350);

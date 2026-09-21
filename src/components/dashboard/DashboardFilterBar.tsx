@@ -3,6 +3,7 @@
 import React from "react";
 import { Calendar, Search, RotateCcw } from "lucide-react";
 import { useFilters } from "@/hooks/useFilters";
+import type { EmpresaGrupoDTO } from "@/lib/types/dashboard";
 
 interface ClienteItem {
   id: string;
@@ -13,15 +14,28 @@ interface ClienteItem {
 }
 
 import { ActiveFiltersBadge } from "./ActiveFiltersBadge";
-export function DashboardFilterBar({ clientes }: { clientes: ClienteItem[] }) {
-  const { cliente, dataInicial, dataFinal, setCliente, setDataInicial, setDataFinal, limparFiltros } = useFilters();
-  const temFiltroAtivo = Boolean(cliente || dataInicial || dataFinal);
+import { EmpresaFilialFilter } from "./EmpresaFilialFilter";
+export function DashboardFilterBar({
+  clientes,
+  grupos = [],
+}: {
+  clientes: ClienteItem[];
+  /** Empresas matriz (com suas filiais) disponíveis para o filtro de grupo. */
+  grupos?: EmpresaGrupoDTO[];
+}) {
+  const { cliente, dataInicial, dataFinal, matrizId, empresaIds, setCliente, setDataInicial, setDataFinal, limparFiltros } = useFilters();
+  const temFiltroAtivo = Boolean(cliente || dataInicial || dataFinal || matrizId || empresaIds.length > 0);
 
   return (
     <section className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-xs">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 flex-1">
+            {grupos.length > 0 && (
+              <div>
+                <EmpresaFilialFilter grupos={grupos} />
+              </div>
+            )}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Cliente / Empresa</label>
               <div className="relative">

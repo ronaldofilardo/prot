@@ -10,6 +10,26 @@ export interface DashboardFilters {
   cliente: string;
   dataInicial: string;
   dataFinal: string;
+  /** id da empresa matriz selecionada no filtro (null = nenhuma). */
+  matrizId: string | null;
+  /** empresaId's (filiais) marcados dentro da matriz selecionada. */
+  empresaIds: string[];
+}
+
+/** Uma filial dentro do filtro de matriz/filiais da UI. */
+export interface FilialFiltroDTO {
+  id: string;
+  nome: string;
+  cidade: string;
+  uf: string;
+}
+
+/** Uma matriz e suas filiais, para popular o seletor de empresa/grupo. */
+export interface EmpresaGrupoDTO {
+  id: string;
+  nome: string;
+  cnpj: string | null;
+  filiais: FilialFiltroDTO[];
 }
 
 export interface FaturamentoMesDTO {
@@ -58,5 +78,7 @@ export interface DashboardResponseDTO {
   regiaoParticipacao: RegiaoParticipacaoDTO[];
   projecao: ProjecaoPontoDTO[];
   clientes: ClienteDB[];
+  /** Matrizes (com suas filiais) do tenant, para o filtro de empresa/grupo. */
+  grupos: EmpresaGrupoDTO[];
 }
 export type DashboardResponse = DashboardResponseDTO;

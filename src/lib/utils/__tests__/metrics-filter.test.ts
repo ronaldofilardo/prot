@@ -31,6 +31,8 @@ describe("Filtragem de Métricas (metrics-filter)", () => {
       cliente: "acme",
       dataInicial: "",
       dataFinal: "",
+      matrizId: null,
+      empresaIds: [],
     });
     expect(filtrados).toHaveLength(1);
     expect(filtrados[0].id).toBe("fat-1");
@@ -41,6 +43,8 @@ describe("Filtragem de Métricas (metrics-filter)", () => {
       cliente: "",
       dataInicial: "2026-06-01",
       dataFinal: "2026-08-01",
+      matrizId: null,
+      empresaIds: [],
     });
     expect(filtrados).toHaveLength(1);
     expect(filtrados[0].id).toBe("fat-2");
@@ -51,6 +55,8 @@ describe("Filtragem de Métricas (metrics-filter)", () => {
       cliente: "",
       dataInicial: "",
       dataFinal: "",
+      matrizId: null,
+      empresaIds: [],
     });
     expect(filtrados).toHaveLength(2);
   });
@@ -93,6 +99,8 @@ describe("Filtragem de Métricas (metrics-filter)", () => {
       cliente: "beta",
       dataInicial: "",
       dataFinal: "",
+      matrizId: null,
+      empresaIds: [],
     });
     expect(filtrados).toHaveLength(1);
     expect(filtrados[0].id).toBe("cr-2");

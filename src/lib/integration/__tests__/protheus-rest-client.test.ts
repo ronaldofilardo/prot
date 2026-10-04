@@ -108,6 +108,26 @@ describe("Protheus REST client", () => {
     expect(rows[0].A1_COD).toBe("000002");
   });
 
+  it("inclui as rotas oficiais TDN nos fallbacks automaticamente", async () => {
+    vi.stubEnv("PROTHEUS_REST_BASE_URL", "https://protheus.example.test");
+    vi.stubEnv("PROTHEUS_REST_CLIENTES_PATH", ""); // Vazio
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response("Not Found", { status: 404 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    
+    const client = buildProtheusRestClientFromEnv();
+    await client.fetchClientes();
+
+    const requestedUrls = fetchMock.mock.calls.map(call => call[0] as string);
+    
+    // Prova que as rotas oficiais da TDN inseridas na alteração anterior foram testadas
+    expect(requestedUrls).toEqual(expect.arrayContaining([
+      expect.stringContaining("/api/protheus/v1/comercial/clientes"),
+      expect.stringContaining("/api/protheus/v1/cadastros/clientes")
+    ]));
+  });
+
   it("itenta caminhos padrao se a variavel de ambiente estiver vazia", async () => {
     vi.stubEnv("PROTHEUS_REST_BASE_URL", "https://protheus.example.test");
     vi.stubEnv("PROTHEUS_REST_CLIENTES_PATH", ""); // Vazio

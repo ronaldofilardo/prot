@@ -253,6 +253,8 @@ export class ProtheusRestClient implements ProtheusClient {
           [
             this.config.paths.clientes,
             process.env.PROTHEUS_REST_CLIENTES_PATH,
+            "/api/protheus/v1/comercial/clientes",
+            "/api/protheus/v1/cadastros/clientes",
             "/rest/api/protheus/v1/clientes",
             "/api/protheus/v1/clientes",
             "/rest/api/v1/customers",
@@ -294,6 +296,8 @@ export class ProtheusRestClient implements ProtheusClient {
           [
             this.config.paths.faturamentos,
             process.env.PROTHEUS_REST_FATURAMENTOS_PATH,
+            "/api/protheus/v1/fiscal/notas",
+            "/api/protheus/v1/faturamento/notas",
             "/rest/api/protheus/v1/faturamentos",
             "/api/protheus/v1/faturamentos",
             "/rest/api/v1/invoices",
@@ -334,6 +338,7 @@ export class ProtheusRestClient implements ProtheusClient {
           [
             this.config.paths.contasReceber,
             process.env.PROTHEUS_REST_CONTAS_RECEBER_PATH,
+            "/api/protheus/v1/financeiro/contasareceber",
             "/rest/api/protheus/v1/contas-receber",
             "/api/protheus/v1/contas-receber",
             "/rest/api/v1/bills-to-receive",
@@ -374,6 +379,8 @@ export class ProtheusRestClient implements ProtheusClient {
           [
             this.config.paths.baixas,
             process.env.PROTHEUS_REST_BAIXAS_PATH,
+            "/api/protheus/v1/financeiro/baixas",
+            "/api/protheus/v1/financeiro/movimentos",
             "/rest/api/protheus/v1/baixas",
             "/api/protheus/v1/baixas",
             "/rest/api/v1/write-offs",

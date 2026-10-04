@@ -99,9 +99,9 @@ O threshold global de 80% em `vitest.config.mts` é **a meta**, não o gate diá
 | `src/lib/auth*.ts` (`auth.ts` + `auth-claims.ts`) | 89.19% | 80% | 80% |
 | `src/lib/integration/**` | 62.53% | 55% | 55% (atingido) |
 | `src/hooks/**` | 18.13% | 16% | 30% |
-| `src/components/**` | 8.23% | 6% | 30% |
+| `src/components/**` | 13.69% | 11% | 30% |
 | `src/app/api/**` | 83.08% | 60% | 60% |
-| **Global** | **54.19% linhas / 53.85% stmts / 53.72% funcs / 42.10% branches** | **51 / 41 / 51 / 52** | **não reduzir; meta 80%** |
+| **Global** | **54.64% linhas / 54.22% stmts / 54.43% funcs / 42.20% branches** | **52 / 41 / 52 / 52** | **não reduzir; meta 80%** |
 
 > **Como estes números foram medidos:** agregação recursiva sobre `coverage/lcov.info` (cobertura de todos os arquivos sob o diretório). Os valores anteriores desta tabela (ex.: `src/lib/utils/**` = 96.45%) vinham das linhas de diretório do relatório texto, que **não agrega subdiretórios** — por isso `src/lib/utils/charts/*` (0%) não contava. O threshold em `vitest.config.mts` usa o globo recursivo, então vale o número daqui.
 
@@ -495,8 +495,8 @@ Tipos em uso: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 ## 11. Fila de Refatoração (medida em Outubro/2026)
 
 **Medição:** `readFileSync(p,'utf8').split('\n').length` sobre `.ts`/`.tsx` em `src/`, `components/`, `lib/` (exclui `node_modules`, `.next`, `coverage`). Complexidade via ESLint `complexity` (§12.3).
-**Universo:** 107 arquivos-fonte + 24 arquivos de teste (Fase 4; era 105 + 24 na Fase 3, 87 + 18 na medição inicial).
-**Baseline do gate (Out/2026, pós Fase 4):** 24 arquivos de teste, **165 testes verdes**, **54.19% linhas** (`docs/reports/coverage-2026-10.txt`); `pnpm test` + `pnpm lint` (0 erros) + `npx tsc --noEmit` + `npx next build` verdes; `pnpm test:coverage` exit 0 com os thresholds da §3.4 (51/41/51/52 globais). (Fase 3: 165 testes / 53.81%; Fase 2: 165 testes / 53.04%; Fase 1: 165 testes / 50.97%; Fase 0: 115 testes / 38.99%.)
+**Universo:** 110 arquivos-fonte + 24 arquivos de teste (Fase 5; era 107 + 24 na Fase 4, 105 + 24 na Fase 3, 87 + 18 na medição inicial).
+**Baseline do gate (Out/2026, pós Fase 5):** 24 arquivos de teste, **166 testes verdes**, **54.64% linhas** (`docs/reports/coverage-2026-10.txt`); `pnpm test` + `pnpm lint` (0 erros) + `npx tsc --noEmit` + `npx next build` verdes; `pnpm test:coverage` exit 0 com os thresholds da §3.4 (52/41/52/52 globais). (Fase 4: 165 testes / 54.19%; Fase 3: 165 testes / 53.81%; Fase 2: 165 testes / 53.04%; Fase 1: 165 testes / 50.97%; Fase 0: 115 testes / 38.99%.)
 
 ### 11.1 🔴 CRÍTICA — Bloqueia merge
 
@@ -511,15 +511,15 @@ Tipos em uso: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 |---------|--------|----|-----------|------|
 | `src/app/api/protheus/empresa/route.ts` | **66** (era 200) | **≤10** (era 36) | 56.89% | ✅ Fase 3 — `handlers/empresa.ts` + `_internals/{empresa-query,token-info,filiais}.ts` |
 | `src/lib/integration/protheus-adapter.ts` | **72** (era 78) | **≤3** (era 23 / 18 / 11) | 100% ✅ (Fase 1) | ✅ Fase 4 — `?.trim()`/`\|\|` extraídos para `_internals/adapter-fields.ts` (`trimField`/`trimOr`/`parseProtheusDate`) |
-| `src/app/dashboard/page.tsx` | — | **22** | 85.71% | Extrair para `components/dashboard/` |
+| `src/app/dashboard/page.tsx` | **50** (era 110) | **≤6** (era 22) | 100% ✅ | ✅ Fase 5 — `DashboardErrorState` + `DashboardTabPanel` + puras `dashboard-tab-data.ts` (`buildChartsData`/`buildKpiData`) |
 | `src/lib/integration/protheus-rest-client.ts` (fn) | — | 20 / 19 / 14 | — | ✅ Fase 2 — CC máx. 9 (evincido com a §11.1) |
-| `src/components/dashboard/DashboardChartsGrid.tsx` | — | 18 | 100% | Extrair série de gráfico por hook |
+| `src/components/dashboard/DashboardChartsGrid.tsx` | **91** | **≤7** (era 18) | 100% ✅ | ✅ Fase 5 — seções `FaturamentoCharts`/`ProjecaoCharts` (DOM, testids e 4 skeletons idênticos) |
 | `src/app/api/dashboard/route.ts` | **37** (era 164) | **≤10** (era 15) | 100% ✅ (Fase 1) | ✅ Fase 3 — `handlers/dashboard.ts` + `_internals/dashboard-query.ts` |
 | `src/app/api/upload/route.ts` | **30** (era 136) | — | 100% ✅ (Fase 1) | ✅ Fase 3 — `handlers/upload.ts` + `_internals/{csv-detect,csv-parse,upload-sync}.ts` |
 | `src/lib/auth.ts` + `auth-claims.ts` | **52 + 68** (era 93) | **≤8** (era 12) | auth.ts 100% ✅ | ✅ Fase 4 — `authorize` (41 linhas, CC 12) → `src/lib/auth-claims.ts` (irmão; `lib/auth/` proibido por colisão de resolução); callbacks jwt/session permanecem em `auth.ts` |
 | `src/lib/integration/protheus-soap-client.ts` | **172** | — | **0%** | 🟡 gatilho §5 (150+): planejar divisão; limite de client (200) ainda ok |
 
-> **2 funções com CC > 10** agora (6 antes da Fase 4 — `protheus-adapter.ts` 23/18/11 e `auth.ts` 12 caíram para ≤ 10; 8 antes da Fase 3; 11 antes da Fase 2). Restam: `dashboard/page.tsx` (22) e `DashboardChartsGrid.tsx` (18) — alvos da Fase 5. Nenhuma com CC ≥ 16 fora dessas. Na Fase 4 também foram decompostas 5 funções > 30 linhas em `lib/` (`getProtheusClient` 40 → 13, `fetchNewToken` 43 → 10, `getValidToken` 33 → 16, `pullAndSyncFromProtheus` 58 → 13, `authorize` 41 → 13 (`authorizeCredentials`)).
+> **0 funções com CC > 10** — fila de complexidade **zerada na Fase 5** (era 2 após a Fase 4, 6 antes dela, 8 na Fase 3, 11 na medição inicial). Restam **33 funções > 30 linhas** em produção como dívida conhecida (UI, hooks, geradores de opções de gráfico e a rota `ingest` POST 57) — maioria é exibição pura (skeletons/labels), sem risco; endereçar na Fase 6 ou ao mexer no arquivo. Maior delas: `buildProjecaoAreaOption` (111), `EmpresaFilialFilter` (109), `DashboardFilterBar` (88).
 
 ### 11.3 🟡 Dívida Estrutural — pagar antes de ampliar a base
 
@@ -637,4 +637,5 @@ Revisar trimestralmente e atualizar conforme: padrões da indústria, mudanças 
 **Fase 2 aplicada (Out/2026):** extração dos dois arquivos 🔴 — `protheus-rest-client.ts` 440 → 177 linhas (CC máx. 20 → 9) em `rest-{types,paths,auth,retry,parse,mock}.ts`; `sync-engine.ts` 286 → 20 linhas (fachada) em `sync-{types,parsers,resolve,clientes,faturamento,contas-receber,baixas}.ts`, com as 4 funções > 30 linhas decompostas em upserts/helpers. API pública e comportamento preservados (165/165 testes); ratchet global para 51/50/48/41 (53.04% linhas). Commits `7d5ca36`, `d348b96`.
 **Fase 3 aplicada (Out/2026):** as 3 rotas acima de 120 linhas divididas no padrão §7.2/§8.3 (`route.ts` → `handlers/` + `_internals/`): `protheus/empresa` 199 → 66 (GET CC 36 → ≤10; `_internals/token-info.ts` deduplica o fallback de token), `dashboard` 163 → 37 (CC 15 → ≤10), `upload` 135 → 30 (POST 77 → ≤16). Mesmos payloads/msgs/logs/ordem de chamada (404 do Protheus ainda antes da chamada externa); 165/165 testes; ratchet global para 51/51/50/41 (53.81% linhas; `src/app/api/**` 83.08%). Commits `3e73314`, `d58e59c`, `37546b8`.
 **Fase 4 aplicada (Out/2026):** fila de CC > 10 em `lib/` eliminada + 5 funções > 30 linhas decompostas: `protheus-adapter.ts` CC 23/18/11 → ≤3 (helpers em `_internals/adapter-fields.ts`, sem testes alterados — `externalId` ainda propaga `"undefined"`), `authorize` → `lib/auth-claims.ts` (`extrairCredenciais` + `validarCredenciais`; irmão de `auth.ts` para não colidir na resolução), `getProtheusClient` 40 → 13 linhas (`opcoesRestOauth` + `clientFromCredencial`), `fetchNewToken` 43 → 10 + `getValidToken` 33 → 16 (`executeTokenRequest` + `interpretTokenResponse`), `pullAndSyncFromProtheus` 58 → 13 (`executarJob` + `registrarFalha`). 165/165 testes; ratchet global para 51/41/51/52 (54.19% linhas / 42.10% branches — branches caiu 1.8pp com os novos pontos de decisão, ainda acima do floor 41); globo de auth na §3.4 ampliado para `src/lib/auth*.ts` (89.19% combinado ≥ floor 80). Commits `59f1736`, `c4800ea`, `4b9c973`, `982df73`, `21290e2`.
+**Fase 5 aplicada (Out/2026):** os 2 últimos alvos de CC > 10, **zerando a fila de complexidade**: `dashboard/page.tsx` DashboardContent CC 22 → 6 (110 → 50 linhas) com `DashboardErrorState`, `DashboardTabPanel` (CC 7) e puras `buildChartsData`/`buildKpiData` em `components/dashboard/dashboard-tab-data.ts`; `DashboardChartsGrid.tsx` CC 18 → 7 (91 linhas) com seções `FaturamentoCharts`/`ProjecaoCharts`. DOM, props, testids e 4 skeletons idênticos; +1 teste de caracterização do estado de erro (166 testes; `page.tsx` 85.71% → 100%); ratchet global para 52/41/52/52 (54.64% linhas; glob `src/components/**` 6 → 11, real 8.23% → 13.69%). Commits `3d43a33`, `cba9c8f`.
 **Próxima revisão:** Janeiro 2027

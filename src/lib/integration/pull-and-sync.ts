@@ -68,59 +68,67 @@ const JOBS: EntityJob[] = [
   },
 ];
 
+async function executarJob(job: EntityJob, empresaId: string, client: ProtheusClient): Promise<PullEntityResult> {
+  const rows = await job.fetch(client);
+  const validRows = rows.filter((r) => r.D_E_L_E_T_ !== "*");
+  const canonical = validRows.map((r) => job.toCanonical(r, empresaId));
+
+  const syncResult = await prisma.$transaction(async (tx) => {
+    const res = await job.sync(tx as PrismaClient, empresaId, canonical);
+    await tx.syncLog.create({
+      data: {
+        empresaId,
+        entidade: job.entidade,
+        operacao: "manual_pull",
+        idempotencyKey: `pull-${job.entidade}-${Date.now()}`,
+        status: res.erros > 0 ? "error" : "success",
+        mensagem: `Atualizacao manual: ${res.processados} processados, ${res.criados} criados, ${res.atualizados} atualizados, ${res.erros} erros`,
+        tentativas: 1,
+      },
+    });
+    return res;
+  });
+
+  return { entidade: job.entidade, registros: validRows.length, sync: syncResult };
+}
+
+async function registrarFalha(job: EntityJob, empresaId: string, error: unknown): Promise<PullEntityResult> {
+  logApiError(`Erro ao puxar/sincronizar ${job.entidade} do Protheus`, error);
+  const mensagemErro = error instanceof Error ? error.message : String(error);
+
+  // Registra a falha no SyncLog mesmo sem ter chegado a sincronizar
+  // nada, para o erro ficar visível no histórico (mesmo padrão usado
+  // pelas outras entradas: upload de CSV e ingest via API key).
+  await prisma.syncLog.create({
+    data: {
+      empresaId,
+      entidade: job.entidade,
+      operacao: "manual_pull",
+      idempotencyKey: `pull-${job.entidade}-${Date.now()}`,
+      status: "error",
+      categoriaErro: "protheus_unreachable",
+      mensagem: mensagemErro,
+      tentativas: 1,
+    },
+  }).catch(() => undefined);
+
+  return {
+    entidade: job.entidade,
+    registros: 0,
+    sync: { entidade: job.entidade, processados: 0, criados: 0, atualizados: 0, erros: 1 },
+    erro: mensagemErro,
+  };
+}
+
 export async function pullAndSyncFromProtheus(empresaId: string): Promise<PullEntityResult[]> {
   const client = await getProtheusClient(empresaId);
   const resultados: PullEntityResult[] = [];
 
   for (const job of JOBS) {
     try {
-      const rows = await job.fetch(client);
-      const validRows = rows.filter((r) => r.D_E_L_E_T_ !== "*");
-      const canonical = validRows.map((r) => job.toCanonical(r, empresaId));
-
-      const syncResult = await prisma.$transaction(async (tx) => {
-        const res = await job.sync(tx as PrismaClient, empresaId, canonical);
-        await tx.syncLog.create({
-          data: {
-            empresaId,
-            entidade: job.entidade,
-            operacao: "manual_pull",
-            idempotencyKey: `pull-${job.entidade}-${Date.now()}`,
-            status: res.erros > 0 ? "error" : "success",
-            mensagem: `Atualizacao manual: ${res.processados} processados, ${res.criados} criados, ${res.atualizados} atualizados, ${res.erros} erros`,
-            tentativas: 1,
-          },
-        });
-        return res;
-      });
-
-      resultados.push({ entidade: job.entidade, registros: validRows.length, sync: syncResult });
+      resultados.push(await executarJob(job, empresaId, client));
     } catch (error) {
-      logApiError(`Erro ao puxar/sincronizar ${job.entidade} do Protheus`, error);
-      const mensagemErro = error instanceof Error ? error.message : String(error);
-
-      // Registra a falha no SyncLog mesmo sem ter chegado a sincronizar
-      // nada, para o erro ficar visível no histórico (mesmo padrão usado
-      // pelas outras entradas: upload de CSV e ingest via API key).
-      await prisma.syncLog.create({
-        data: {
-          empresaId,
-          entidade: job.entidade,
-          operacao: "manual_pull",
-          idempotencyKey: `pull-${job.entidade}-${Date.now()}`,
-          status: "error",
-          categoriaErro: "protheus_unreachable",
-          mensagem: mensagemErro,
-          tentativas: 1,
-        },
-      }).catch(() => undefined);
-
-      resultados.push({
-        entidade: job.entidade,
-        registros: 0,
-        sync: { entidade: job.entidade, processados: 0, criados: 0, atualizados: 0, erros: 1 },
-        erro: mensagemErro,
-      });
+      resultados.push(await registrarFalha(job, empresaId, error));
     }
   }
 

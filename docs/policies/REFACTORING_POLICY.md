@@ -96,12 +96,12 @@ O threshold global de 80% em `vitest.config.mts` é **a meta**, não o gate diá
 |-----------|--------------------------------|-------------------------------|--------------|
 | `src/lib/utils/**` | 72.73% | 70% | 90% |
 | `src/lib/security/**` | 95.83% | 90% | 90% |
-| `src/lib/auth.ts` | 88.24% | 80% | 80% |
-| `src/lib/integration/**` | 61.86% | 55% | 55% (atingido) |
+| `src/lib/auth*.ts` (`auth.ts` + `auth-claims.ts`) | 89.19% | 80% | 80% |
+| `src/lib/integration/**` | 62.53% | 55% | 55% (atingido) |
 | `src/hooks/**` | 18.13% | 16% | 30% |
 | `src/components/**` | 8.23% | 6% | 30% |
 | `src/app/api/**` | 83.08% | 60% | 60% |
-| **Global** | **53.81% linhas / 53.33% stmts / 52.50% funcs / 43.90% branches** | **51 / 51 / 50 / 41** | **não reduzir; meta 80%** |
+| **Global** | **54.19% linhas / 53.85% stmts / 53.72% funcs / 42.10% branches** | **51 / 41 / 51 / 52** | **não reduzir; meta 80%** |
 
 > **Como estes números foram medidos:** agregação recursiva sobre `coverage/lcov.info` (cobertura de todos os arquivos sob o diretório). Os valores anteriores desta tabela (ex.: `src/lib/utils/**` = 96.45%) vinham das linhas de diretório do relatório texto, que **não agrega subdiretórios** — por isso `src/lib/utils/charts/*` (0%) não contava. O threshold em `vitest.config.mts` usa o globo recursivo, então vale o número daqui.
 
@@ -495,31 +495,31 @@ Tipos em uso: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 ## 11. Fila de Refatoração (medida em Outubro/2026)
 
 **Medição:** `readFileSync(p,'utf8').split('\n').length` sobre `.ts`/`.tsx` em `src/`, `components/`, `lib/` (exclui `node_modules`, `.next`, `coverage`). Complexidade via ESLint `complexity` (§12.3).
-**Universo:** 105 arquivos-fonte + 24 arquivos de teste (Fase 3; era 87 + 18 na medição inicial).
-**Baseline do gate (Out/2026, pós Fase 3):** 24 arquivos de teste, **165 testes verdes**, **53.81% linhas** (`docs/reports/coverage-2026-10.txt`); `pnpm test` + `pnpm lint` (0 erros) + `npx tsc --noEmit` + `npx next build` verdes; `pnpm test:coverage` exit 0 com os thresholds da §3.4 (51/51/50/41 globais). (Fase 2: 165 testes / 53.04%; Fase 1: 165 testes / 50.97%; Fase 0: 115 testes / 38.99%.)
+**Universo:** 107 arquivos-fonte + 24 arquivos de teste (Fase 4; era 105 + 24 na Fase 3, 87 + 18 na medição inicial).
+**Baseline do gate (Out/2026, pós Fase 4):** 24 arquivos de teste, **165 testes verdes**, **54.19% linhas** (`docs/reports/coverage-2026-10.txt`); `pnpm test` + `pnpm lint` (0 erros) + `npx tsc --noEmit` + `npx next build` verdes; `pnpm test:coverage` exit 0 com os thresholds da §3.4 (51/41/51/52 globais). (Fase 3: 165 testes / 53.81%; Fase 2: 165 testes / 53.04%; Fase 1: 165 testes / 50.97%; Fase 0: 115 testes / 38.99%.)
 
 ### 11.1 🔴 CRÍTICA — Bloqueia merge
 
 | Arquivo | Linhas | CC máx. | Cobertura | Ação |
 |---------|--------|--------|-----------|------|
 | `src/lib/integration/protheus-rest-client.ts` | **177** (era 440) | **9** (era 20) | 69.23% | ✅ Fase 2 — extraído para `_internals/rest-{types,paths,auth,retry,parse,mock}.ts`; nenhuma função > 30 linhas |
-| `src/lib/integration/sync-engine.ts` | **20** (era 286) | — | dir 61.86% | ✅ Fase 2 — fachada; `_internals/sync-{types,parsers,resolve,clientes,faturamento,contas-receber,baixas}.ts` (maior função: 30 linhas) |
+| `src/lib/integration/sync-engine.ts` | **20** (era 286) | — | dir 62.53% | ✅ Fase 2 — fachada; `_internals/sync-{types,parsers,resolve,clientes,faturamento,contas-receber,baixas}.ts` (maior função: 30 linhas) |
 
 ### 11.2 🟠 ALTA — Decompor antes do merge
 
 | Arquivo | Linhas | CC | Cobertura | Ação |
 |---------|--------|----|-----------|------|
 | `src/app/api/protheus/empresa/route.ts` | **66** (era 200) | **≤10** (era 36) | 56.89% | ✅ Fase 3 — `handlers/empresa.ts` + `_internals/{empresa-query,token-info,filiais}.ts` |
-| `src/lib/integration/protheus-adapter.ts` | 78 | **23 / 18 / 11** | 100% ✅ (Fase 1) | 🔴 por CC; 1 função por entidade |
+| `src/lib/integration/protheus-adapter.ts` | **72** (era 78) | **≤3** (era 23 / 18 / 11) | 100% ✅ (Fase 1) | ✅ Fase 4 — `?.trim()`/`\|\|` extraídos para `_internals/adapter-fields.ts` (`trimField`/`trimOr`/`parseProtheusDate`) |
 | `src/app/dashboard/page.tsx` | — | **22** | 85.71% | Extrair para `components/dashboard/` |
 | `src/lib/integration/protheus-rest-client.ts` (fn) | — | 20 / 19 / 14 | — | ✅ Fase 2 — CC máx. 9 (evincido com a §11.1) |
 | `src/components/dashboard/DashboardChartsGrid.tsx` | — | 18 | 100% | Extrair série de gráfico por hook |
 | `src/app/api/dashboard/route.ts` | **37** (era 164) | **≤10** (era 15) | 100% ✅ (Fase 1) | ✅ Fase 3 — `handlers/dashboard.ts` + `_internals/dashboard-query.ts` |
 | `src/app/api/upload/route.ts` | **30** (era 136) | — | 100% ✅ (Fase 1) | ✅ Fase 3 — `handlers/upload.ts` + `_internals/{csv-detect,csv-parse,upload-sync}.ts` |
-| `src/lib/auth.ts` | 93 | 12 | 88.24% | Extrair callbacks de token para `auth/claims.ts` |
+| `src/lib/auth.ts` + `auth-claims.ts` | **52 + 68** (era 93) | **≤8** (era 12) | auth.ts 100% ✅ | ✅ Fase 4 — `authorize` (41 linhas, CC 12) → `src/lib/auth-claims.ts` (irmão; `lib/auth/` proibido por colisão de resolução); callbacks jwt/session permanecem em `auth.ts` |
 | `src/lib/integration/protheus-soap-client.ts` | **172** | — | **0%** | 🟡 gatilho §5 (150+): planejar divisão; limite de client (200) ainda ok |
 
-> **6 funções com CC > 10** agora (8 antes da Fase 3 — `empresa/route.ts` CC 36 e `dashboard/route.ts` CC 15 caíram para ≤ 10; 11 antes da Fase 2). Restam: `protheus-adapter.ts` (23/18/11), `dashboard/page.tsx` (22), `DashboardChartsGrid.tsx` (18) e `auth.ts` (12). Nenhuma com CC ≥ 16 fora dessas.
+> **2 funções com CC > 10** agora (6 antes da Fase 4 — `protheus-adapter.ts` 23/18/11 e `auth.ts` 12 caíram para ≤ 10; 8 antes da Fase 3; 11 antes da Fase 2). Restam: `dashboard/page.tsx` (22) e `DashboardChartsGrid.tsx` (18) — alvos da Fase 5. Nenhuma com CC ≥ 16 fora dessas. Na Fase 4 também foram decompostas 5 funções > 30 linhas em `lib/` (`getProtheusClient` 40 → 13, `fetchNewToken` 43 → 10, `getValidToken` 33 → 16, `pullAndSyncFromProtheus` 58 → 13, `authorize` 41 → 13 (`authorizeCredentials`)).
 
 ### 11.3 🟡 Dívida Estrutural — pagar antes de ampliar a base
 
@@ -636,4 +636,5 @@ Revisar trimestralmente e atualizar conforme: padrões da indústria, mudanças 
 **Fase 1 aplicada (Out/2026):** testes de caracterização dos alvos 0% — `protheus-adapter`, `api/dashboard`, `api/upload`, `api/protheus/pull`, `pull-and-sync`, `protheus-client-factory` (50 testes, todos a 100% de linhas); thresholds subidos (ratchet) para 48/48/46/39 globais. Baseline: 24 arquivos de teste, 165 testes, 50.97% linhas. Nenhuma linha de código de produção alterada.
 **Fase 2 aplicada (Out/2026):** extração dos dois arquivos 🔴 — `protheus-rest-client.ts` 440 → 177 linhas (CC máx. 20 → 9) em `rest-{types,paths,auth,retry,parse,mock}.ts`; `sync-engine.ts` 286 → 20 linhas (fachada) em `sync-{types,parsers,resolve,clientes,faturamento,contas-receber,baixas}.ts`, com as 4 funções > 30 linhas decompostas em upserts/helpers. API pública e comportamento preservados (165/165 testes); ratchet global para 51/50/48/41 (53.04% linhas). Commits `7d5ca36`, `d348b96`.
 **Fase 3 aplicada (Out/2026):** as 3 rotas acima de 120 linhas divididas no padrão §7.2/§8.3 (`route.ts` → `handlers/` + `_internals/`): `protheus/empresa` 199 → 66 (GET CC 36 → ≤10; `_internals/token-info.ts` deduplica o fallback de token), `dashboard` 163 → 37 (CC 15 → ≤10), `upload` 135 → 30 (POST 77 → ≤16). Mesmos payloads/msgs/logs/ordem de chamada (404 do Protheus ainda antes da chamada externa); 165/165 testes; ratchet global para 51/51/50/41 (53.81% linhas; `src/app/api/**` 83.08%). Commits `3e73314`, `d58e59c`, `37546b8`.
+**Fase 4 aplicada (Out/2026):** fila de CC > 10 em `lib/` eliminada + 5 funções > 30 linhas decompostas: `protheus-adapter.ts` CC 23/18/11 → ≤3 (helpers em `_internals/adapter-fields.ts`, sem testes alterados — `externalId` ainda propaga `"undefined"`), `authorize` → `lib/auth-claims.ts` (`extrairCredenciais` + `validarCredenciais`; irmão de `auth.ts` para não colidir na resolução), `getProtheusClient` 40 → 13 linhas (`opcoesRestOauth` + `clientFromCredencial`), `fetchNewToken` 43 → 10 + `getValidToken` 33 → 16 (`executeTokenRequest` + `interpretTokenResponse`), `pullAndSyncFromProtheus` 58 → 13 (`executarJob` + `registrarFalha`). 165/165 testes; ratchet global para 51/41/51/52 (54.19% linhas / 42.10% branches — branches caiu 1.8pp com os novos pontos de decisão, ainda acima do floor 41); globo de auth na §3.4 ampliado para `src/lib/auth*.ts` (89.19% combinado ≥ floor 80). Commits `59f1736`, `c4800ea`, `4b9c973`, `982df73`, `21290e2`.
 **Próxima revisão:** Janeiro 2027

@@ -2,6 +2,39 @@ import { prisma } from "@/lib/db/prisma-client";
 import { ProtheusClient, ProtheusClientError } from "./protheus-client";
 import { ProtheusRestClient, buildProtheusRestClientFromEnv } from "./protheus-rest-client";
 import { buildProtheusSoapClientFromEnv } from "./protheus-soap-client";
+import type { ProtheusRestConfig } from "./_internals/rest-types";
+
+function opcoesRestOauth(cred: { baseUrl: string }, empresaId: string): ProtheusRestConfig {
+  return {
+    baseUrl: cred.baseUrl,
+    authMode: "oauth2",
+    empresaSaaSId: empresaId,
+    empresaId: process.env.PROTHEUS_EMPRESA_ID || "01",
+    filial: process.env.PROTHEUS_FILIAL || "01",
+    paths: {
+      empresa: process.env.PROTHEUS_REST_EMPRESA_PATH,
+      clientes: process.env.PROTHEUS_REST_CLIENTES_PATH,
+      faturamentos: process.env.PROTHEUS_REST_FATURAMENTOS_PATH,
+      contasReceber: process.env.PROTHEUS_REST_CONTAS_RECEBER_PATH,
+      baixas: process.env.PROTHEUS_REST_BAIXAS_PATH,
+    },
+  };
+}
+
+async function clientFromCredencial(empresaId: string): Promise<ProtheusClient | null> {
+  try {
+    const credDelegate = (prisma as unknown as { protheusCredencial?: {
+      findUnique: (args: { where: { empresaId: string } }) => Promise<{ baseUrl: string } | null>;
+    }}).protheusCredencial;
+    if (!credDelegate) return null;
+    const cred = await credDelegate.findUnique({ where: { empresaId } });
+    if (!cred) return null;
+    return new ProtheusRestClient(opcoesRestOauth(cred, empresaId));
+  } catch {
+    // Fallback para variaveis de ambiente se a tabela ainda nao existir
+    return null;
+  }
+}
 
 /**
  * Ponto unico de escolha do transporte e credenciais de integracao.
@@ -13,33 +46,8 @@ import { buildProtheusSoapClientFromEnv } from "./protheus-soap-client";
  */
 export async function getProtheusClient(empresaId?: string): Promise<ProtheusClient> {
   if (empresaId) {
-    try {
-      const credDelegate = (prisma as unknown as { protheusCredencial?: {
-        findUnique: (args: { where: { empresaId: string } }) => Promise<{ baseUrl: string } | null>;
-      }}).protheusCredencial;
-
-      if (credDelegate) {
-        const cred = await credDelegate.findUnique({ where: { empresaId } });
-        if (cred) {
-          return new ProtheusRestClient({
-            baseUrl: cred.baseUrl,
-            authMode: "oauth2",
-            empresaSaaSId: empresaId,
-            empresaId: process.env.PROTHEUS_EMPRESA_ID || "01",
-            filial: process.env.PROTHEUS_FILIAL || "01",
-            paths: {
-              empresa: process.env.PROTHEUS_REST_EMPRESA_PATH,
-              clientes: process.env.PROTHEUS_REST_CLIENTES_PATH,
-              faturamentos: process.env.PROTHEUS_REST_FATURAMENTOS_PATH,
-              contasReceber: process.env.PROTHEUS_REST_CONTAS_RECEBER_PATH,
-              baixas: process.env.PROTHEUS_REST_BAIXAS_PATH,
-            },
-          });
-        }
-      }
-    } catch {
-      // Fallback para variaveis de ambiente se a tabela ainda nao existir
-    }
+    const client = await clientFromCredencial(empresaId);
+    if (client) return client;
   }
 
   const mode = (process.env.PROTHEUS_INTEGRATION_MODE || "rest").toLowerCase();

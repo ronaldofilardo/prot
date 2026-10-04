@@ -20,9 +20,9 @@ export default defineConfig({
       // (§3.4) já está abaixo do real, vale o floor. Subir a cada PR que ganhar
       // cobertura, até a meta de 80%.
       thresholds: {
-        statements: 50,
+        statements: 51,
         branches: 41,
-        functions: 48,
+        functions: 50,
         lines: 51,
         "src/lib/utils/**": { lines: 70 },
         "src/lib/security/**": { lines: 90 },

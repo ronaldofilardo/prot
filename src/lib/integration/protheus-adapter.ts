@@ -5,15 +5,16 @@
  */
 
 import type { CanonicalParty, CanonicalInvoice, CanonicalTitle, CanonicalPayment } from "./canonical";
+import { parseProtheusDate, trimField, trimOr } from "./_internals/adapter-fields";
 
 export function csvRowToCanonicalCliente(row: Record<string, string>, empresaId: string): CanonicalParty {
   return {
-    externalId: `${empresaId}-CLI-${row.A1_COD?.trim()}-${row.A1_LOJA?.trim()}`,
+    externalId: `${empresaId}-CLI-${trimField(row, "A1_COD")}-${trimField(row, "A1_LOJA")}`,
     company: empresaId,
-    branch: row.A1_LOJA?.trim() || "01",
-    name: row.A1_NOME?.trim() || "",
-    city: row.A1_MUN?.trim() || "",
-    state: row.A1_EST?.trim() || "",
+    branch: trimOr(row, "A1_LOJA", "01"),
+    name: trimOr(row, "A1_NOME", ""),
+    city: trimOr(row, "A1_MUN", ""),
+    state: trimOr(row, "A1_EST", ""),
     active: row.D_E_L_E_T_ !== "*",
     updatedAt: new Date().toISOString(),
   };
@@ -21,11 +22,11 @@ export function csvRowToCanonicalCliente(row: Record<string, string>, empresaId:
 
 export function csvRowToCanonicalFaturamento(row: Record<string, string>, empresaId: string): CanonicalInvoice {
   return {
-    externalId: `${empresaId}-NF-${row.F2_FILIAL?.trim()}-${row.F2_DOC?.trim()}`,
+    externalId: `${empresaId}-NF-${trimField(row, "F2_FILIAL")}-${trimField(row, "F2_DOC")}`,
     company: empresaId,
-    branch: row.F2_FILIAL?.trim() || "01",
-    documentNumber: row.F2_DOC?.trim() || "",
-    partyExternalId: `${empresaId}-CLI-${row.F2_CLIENTE?.trim()}-${row.F2_LOJA?.trim()}`,
+    branch: trimOr(row, "F2_FILIAL", "01"),
+    documentNumber: trimOr(row, "F2_DOC", ""),
+    partyExternalId: `${empresaId}-CLI-${trimField(row, "F2_CLIENTE")}-${trimField(row, "F2_LOJA")}`,
     issueDate: parseProtheusDate(row.F2_EMISSAO),
     amount: parseFloat(row.F2_VALOR) || 0,
     currency: "BRL",
@@ -35,14 +36,14 @@ export function csvRowToCanonicalFaturamento(row: Record<string, string>, empres
 
 export function csvRowToCanonicalContaReceber(row: Record<string, string>, empresaId: string): CanonicalTitle {
   return {
-    externalId: `${empresaId}-CR-${row.E1_FILIAL?.trim()}-${row.E1_PREFIXO?.trim()}-${row.E1_NUM?.trim()}-${row.E1_PARCELA?.trim()}`,
+    externalId: `${empresaId}-CR-${trimField(row, "E1_FILIAL")}-${trimField(row, "E1_PREFIXO")}-${trimField(row, "E1_NUM")}-${trimField(row, "E1_PARCELA")}`,
     company: empresaId,
-    branch: row.E1_FILIAL?.trim() || "01",
-    prefix: row.E1_PREFIXO?.trim() || "",
-    number: row.E1_NUM?.trim() || "",
-    installment: row.E1_PARCELA?.trim() || "",
-    type: row.E1_TIPO?.trim() || "DUP",
-    partyExternalId: `${empresaId}-CLI-${row.E1_CLIENTE?.trim()}-${row.E1_LOJA?.trim()}`,
+    branch: trimOr(row, "E1_FILIAL", "01"),
+    prefix: trimOr(row, "E1_PREFIXO", ""),
+    number: trimOr(row, "E1_NUM", ""),
+    installment: trimOr(row, "E1_PARCELA", ""),
+    type: trimOr(row, "E1_TIPO", "DUP"),
+    partyExternalId: `${empresaId}-CLI-${trimField(row, "E1_CLIENTE")}-${trimField(row, "E1_LOJA")}`,
     issueDate: parseProtheusDate(row.E1_EMISSAO),
     dueDate: parseProtheusDate(row.E1_VENCTO),
     amount: parseFloat(row.E1_VALOR) || 0,
@@ -54,25 +55,17 @@ export function csvRowToCanonicalContaReceber(row: Record<string, string>, empre
 
 export function csvRowToCanonicalBaixa(row: Record<string, string>, empresaId: string): CanonicalPayment {
   return {
-    externalId: `${empresaId}-BX-${row.E5_FILIAL?.trim()}-${row.E5_PREFIXO?.trim()}-${row.E5_NUM?.trim()}-${row.E5_PARCELA?.trim()}-${row.E5_BAIXA?.trim()}`,
+    externalId: `${empresaId}-BX-${trimField(row, "E5_FILIAL")}-${trimField(row, "E5_PREFIXO")}-${trimField(row, "E5_NUM")}-${trimField(row, "E5_PARCELA")}-${trimField(row, "E5_BAIXA")}`,
     company: empresaId,
-    branch: row.E5_FILIAL?.trim() || "01",
-    paymentBranch: row.E5_FILBAI?.trim() || "01",
-    prefix: row.E5_PREFIXO?.trim() || "",
-    number: row.E5_NUM?.trim() || "",
-    installment: row.E5_PARCELA?.trim() || "",
-    type: row.E5_TIPO?.trim() || "DUP",
+    branch: trimOr(row, "E5_FILIAL", "01"),
+    paymentBranch: trimOr(row, "E5_FILBAI", "01"),
+    prefix: trimOr(row, "E5_PREFIXO", ""),
+    number: trimOr(row, "E5_NUM", ""),
+    installment: trimOr(row, "E5_PARCELA", ""),
+    type: trimOr(row, "E5_TIPO", "DUP"),
     amount: parseFloat(row.E5_VALOR) || 0,
     paymentDate: parseProtheusDate(row.E5_BAIXA),
-    titleExternalId: `${empresaId}-CR-${row.E5_FILIAL?.trim()}-${row.E5_PREFIXO?.trim()}-${row.E5_NUM?.trim()}-${row.E5_PARCELA?.trim()}`,
+    titleExternalId: `${empresaId}-CR-${trimField(row, "E5_FILIAL")}-${trimField(row, "E5_PREFIXO")}-${trimField(row, "E5_NUM")}-${trimField(row, "E5_PARCELA")}`,
     updatedAt: new Date().toISOString(),
   };
-}
-
-function parseProtheusDate(dateStr: string): string {
-  if (!dateStr || dateStr.length !== 8) return new Date().toISOString();
-  const y = dateStr.substring(0, 4);
-  const m = dateStr.substring(4, 6);
-  const d = dateStr.substring(6, 8);
-  return `${y}-${m}-${d}T00:00:00.000Z`;
 }

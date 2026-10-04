@@ -55,6 +55,48 @@ Sem essas informações não é possível apontar para um Protheus real —
 mas toda a estrutura (endpoint, botão, orquestração, SyncLog) já está
 pronta para receber esses ajustes.
 
+### Configuração das rotas REST de dados
+
+O caminho `/rest/index/TOKEN` é para emissão de token e não substitui os
+endpoints de consulta. Os caminhos genéricos anteriormente usados pelo
+cliente não existem nesse ambiente (retornam HTTP 404), então agora são
+necessárias as rotas reais publicadas no Protheus:
+
+```env
+PROTHEUS_REST_BASE_URL="https://host:porta"
+PROTHEUS_REST_CLIENTES_PATH="/rest/caminho-real/clientes"
+PROTHEUS_REST_FATURAMENTOS_PATH="/rest/caminho-real/faturamentos"
+PROTHEUS_REST_CONTAS_RECEBER_PATH="/rest/caminho-real/contas-receber"
+PROTHEUS_REST_BAIXAS_PATH="/rest/caminho-real/baixas"
+```
+
+Substitua os caminhos de exemplo pelas rotas fornecidas pelo time
+Protheus. Cada serviço precisa retornar linhas com os campos usados pelo
+adapter (`A1_COD`, `F2_DOC`, `E1_NUM`, `E5_NUM` etc.). Sem os caminhos
+reais e exemplos de resposta, não é possível concluir a integração só
+com o endereço de autenticação e as credenciais.
+
+### Teste REST com token recebido manualmente
+
+No `.env.local` (ou no `.env` local já usado pelo projeto), configure:
+
+```env
+PROTHEUS_REST_BASE_URL="https://host:porta"
+PROTHEUS_REST_AUTH_MODE="bearer"
+PROTHEUS_REST_ACCESS_TOKEN="cole aqui o access_token"
+PROTHEUS_REST_REFRESH_TOKEN="cole aqui o refresh_token"
+```
+
+O `PROTHEUS_REST_BASE_URL` deve conter somente protocolo, host e porta;
+os caminhos REST são acrescentados pelo cliente. Cole o valor de
+`access_token` sem prefixo de autorização. O cliente usa esse token para
+as chamadas REST; o `refresh_token` fica documentado para configuração,
+mas ainda não é usado. Antes de implementar renovação automática,
+confirme com o responsável pelo Protheus o método HTTP, o formato do
+corpo/autenticação e a resposta esperada ao chamar `/rest/index/TOKEN`
+para renovar. Até lá, após a expiração do access token, substitua-o
+manualmente. Nunca coloque tokens reais em `.env.example` ou no Git.
+
 ## Arquivos adicionados/alterados
 
 - `src/lib/integration/protheus-client.ts` — contrato comum

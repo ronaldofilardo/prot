@@ -16,7 +16,7 @@ export interface PullEntityResult {
   erro?: string;
 }
 
-export function useUploadPanel() {
+export function useUploadPanel(onSuccess?: () => void) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState<PullEntityResult[] | null>(null);
@@ -41,6 +41,9 @@ export function useUploadPanel() {
       }
 
       setPullResults(data.resultados);
+      if (data.success && onSuccess) {
+        onSuccess();
+      }
     } catch {
       setPullError("Falha ao conectar com o servidor");
     } finally {
@@ -87,6 +90,9 @@ export function useUploadPanel() {
 
       setResults(data.resultados);
       setFiles([]);
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch {
       setError("Falha ao conectar com o servidor");
     } finally {

@@ -69,7 +69,7 @@ const JOBS: EntityJob[] = [
 ];
 
 export async function pullAndSyncFromProtheus(empresaId: string): Promise<PullEntityResult[]> {
-  const client = getProtheusClient();
+  const client = await getProtheusClient(empresaId);
   const resultados: PullEntityResult[] = [];
 
   for (const job of JOBS) {

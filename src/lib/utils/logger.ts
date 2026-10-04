@@ -18,6 +18,10 @@ export function logAuth(message: string, payload?: LogPayload) {
   console.info(formatLog("Auth", "info", message, payload));
 }
 
+export function logIntegration(message: string, payload?: LogPayload) {
+  console.info(formatLog("Integration", "info", message, payload));
+}
+
 export function logApiError(contextMessage: string, error: unknown) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorStack = error instanceof Error ? error.stack : undefined;

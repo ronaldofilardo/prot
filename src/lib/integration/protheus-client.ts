@@ -20,7 +20,28 @@
 
 export type ProtheusRow = Record<string, string>;
 
+export interface ProtheusEmpresaInfo {
+  nome: string;
+  cnpj: string;
+  codigoEmpresa?: string;
+  codigoFilial?: string;
+}
+
+export interface ProtheusFilialInfo {
+  id?: string;
+  codigoEmpresa: string;
+  codigoFilial: string;
+  nome: string;
+  cnpj?: string;
+  tipo: "Matriz" | "Filial";
+  cidade?: string;
+  uf?: string;
+  status?: "Ativa" | "Inativa";
+}
+
 export interface ProtheusClient {
+  fetchEmpresa(customPath?: string): Promise<ProtheusEmpresaInfo | null>;
+  fetchFiliais(customPath?: string): Promise<ProtheusFilialInfo[]>;
   fetchClientes(): Promise<ProtheusRow[]>;
   fetchFaturamentos(): Promise<ProtheusRow[]>;
   fetchContasReceber(): Promise<ProtheusRow[]>;

@@ -6,14 +6,12 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardFilterBar } from "@/components/dashboard/DashboardFilterBar";
 import { DashboardKpiCards } from "@/components/dashboard/DashboardKpiCards";
 import { DashboardChartsGrid } from "@/components/dashboard/DashboardChartsGrid";
-import { DashboardInvoicesTable } from "@/components/dashboard/DashboardInvoicesTable";
-import { UploadPanel } from "@/components/upload/UploadPanel";
-import { BarChart3, TrendingUp, RefreshCw } from "lucide-react";
-
-type TabType = "faturamento" | "projecao" | "atualizacao";
+import { DashboardAtualizacaoTab } from "@/components/dashboard/DashboardAtualizacaoTab";
+import { EmpresaProtheusPanel } from "@/components/empresa/EmpresaProtheusPanel";
+import { DashboardSidebarNav, type TabType } from "@/components/dashboard/DashboardSidebarNav";
 
 function DashboardContent() {
-  const { data, loading, error } = useDashboard();
+  const { data, loading, error, carregarDados } = useDashboard();
   const [activeTab, setActiveTab] = useState<TabType>("faturamento");
 
   if (error) {
@@ -30,37 +28,13 @@ function DashboardContent() {
     );
   }
 
-  const tabs = [
-    { id: "faturamento", label: "Faturamento", icon: <BarChart3 size={18} /> },
-    { id: "projecao", label: "Projeção financeira", icon: <TrendingUp size={18} /> },
-    { id: "atualizacao", label: "Atualização", icon: <RefreshCw size={18} /> },
-  ] as const;
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
       <DashboardHeader />
       <DashboardFilterBar clientes={data?.clientes || []} grupos={data?.grupos || []} />
       
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
-        {/* Sidebar */}
-        <aside className="w-full md:w-64 shrink-0">
-          <nav className="flex md:flex-col gap-2 overflow-x-auto pb-4 md:pb-0">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </aside>
+        <DashboardSidebarNav activeTab={activeTab} onSelectTab={setActiveTab} />
 
         {/* Main Content */}
         <main className="flex-1 min-w-0">
@@ -102,16 +76,15 @@ function DashboardContent() {
           )}
 
           {activeTab === "atualizacao" && (
-            <div className="space-y-8">
-              <UploadPanel />
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Últimas notas fiscais</h3>
-                <DashboardInvoicesTable
-                  faturamentos={data?.faturamentos || []}
-                  loading={loading}
-                />
-              </div>
-            </div>
+            <DashboardAtualizacaoTab
+              faturamentos={data?.faturamentos || []}
+              loading={loading}
+              onRefresh={carregarDados}
+            />
+          )}
+
+          {activeTab === "empresa" && (
+            <EmpresaProtheusPanel />
           )}
         </main>
       </div>

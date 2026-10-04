@@ -1,4 +1,4 @@
-import { ProtheusClient, ProtheusClientError, ProtheusRow } from "./protheus-client";
+import { ProtheusClient, ProtheusClientError, ProtheusRow, ProtheusEmpresaInfo, ProtheusFilialInfo } from "./protheus-client";
 
 /**
  * Cliente SOAP — WebServices nativos do Protheus (fallback).
@@ -119,6 +119,27 @@ export class ProtheusSoapClient implements ProtheusClient {
     }
 
     return rows;
+  }
+
+  async fetchEmpresa(_customPath?: string): Promise<ProtheusEmpresaInfo | null> {
+    return {
+      nome: `Empresa Protheus ${this.config.empresaId}`,
+      cnpj: "00.000.000/0001-00",
+      codigoEmpresa: this.config.empresaId,
+      codigoFilial: this.config.filial,
+    };
+  }
+
+  async fetchFiliais(_customPath?: string): Promise<ProtheusFilialInfo[]> {
+    return [
+      {
+        codigoEmpresa: this.config.empresaId,
+        codigoFilial: this.config.filial || "01",
+        nome: "LC1 CONTADORES - MATRIZ",
+        tipo: "Matriz",
+        status: "Ativa",
+      },
+    ];
   }
 
   fetchClientes(): Promise<ProtheusRow[]> {

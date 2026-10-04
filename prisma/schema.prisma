@@ -34,8 +34,27 @@ model Empresa {
   usuarios      Usuario[]
   syncLogs      SyncLog[]
   acessosExtras UsuarioEmpresaAcesso[]
+  protheusCredencial ProtheusCredencial?
 
   @@index([matrizId])
+}
+
+// Credenciais de integracao com TOTVS Protheus por empresa (multi-tenant).
+// A senha e guardada criptografada com AES-256-GCM e o token OAuth2 e cacheado aqui.
+model ProtheusCredencial {
+  id           String    @id @default(cuid())
+  empresaId    String    @unique
+  empresa      Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  baseUrl      String
+  clientId     String
+  username     String
+  passwordEnc  String
+  accessToken  String?
+  expiresAt    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  @@index([empresaId])
 }
 
 // Usuário do SaaS (gestor que faz login). Necessário para ativar a

@@ -10,6 +10,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # Valores dummy apenas para typecheck/build em CI (nenhum valor real aqui).
+    env:
+      DATABASE_URL: "postgresql://ci:ci@localhost:5432/prot?schema=public"
+      NEXTAUTH_SECRET: "ci-dummy-nextauth-secret"
+      NEXTAUTH_URL: "http://localhost:3000"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -22,4 +28,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - run: npx prisma generate
+
       - run: pnpm test:coverage
+
+      - run: pnpm lint
+
+      - run: npx tsc --noEmit
+
+      - run: npx next build

@@ -1,0 +1,196 @@
+
+> prot@0.1.0 test:coverage C:\apps\prot
+> vitest run --coverage
+
+
+RUN v5.0.1 C:/apps/prot
+      Coverage enabled with v8
+
+ Ô£ôsrc/lib/utils/__tests__/metrics-grouping.test.ts (4 tests)48ms
+ Ô£ôsrc/lib/utils/__tests__/filial-selection.test.ts (21 tests)53ms
+stdout| src/lib/integration/__tests__/protheus-token-provider.test.ts> DatabaseProtheusTokenProvider> faz POST para renovar o token quando ele estiver prestes a expirar (< 60s)
+[2026-10-04T20:44:07.853Z] [Integration] [INFO] Gerando/renovando token Protheus sob demanda {"empresaId":"empresa-123","forceRefresh":false}
+
+stdout| src/lib/integration/__tests__/protheus-token-provider.test.ts> DatabaseProtheusTokenProvider> forca a renovacao do token se forceRefresh for true
+[2026-10-04T20:44:07.864Z] [Integration] [INFO] Gerando/renovando token Protheus sob demanda {"empresaId":"empresa-123","forceRefresh":true}
+
+stdout| src/lib/integration/__tests__/protheus-token-provider.test.ts> DatabaseProtheusTokenProvider> lanca erro amigavel ao receber 401 da TOTVS
+[2026-10-04T20:44:07.866Z] [Integration] [INFO] Gerando/renovando token Protheus sob demanda {"empresaId":"empresa-123","forceRefresh":false}
+
+stdout| src/lib/integration/__tests__/protheus-token-provider.test.ts> DatabaseProtheusTokenProvider> lanca erro amigavel ao receber 401 da TOTVS
+[2026-10-04T20:44:07.867Z] [Integration] [INFO] Falha na requisicao de token Protheus {"status":401}
+
+ Ô£ôsrc/hooks/__tests__/useUploadPanel.test.ts (4 tests)85ms
+ Ô£ôsrc/lib/integration/__tests__/protheus-token-provider.test.ts (5 tests)38ms
+ Ô£ôsrc/lib/integration/__tests__/protheus-rest-client.test.ts (8 tests)52ms
+ Ô£ôsrc/components/dashboard/__tests__/DashboardChartsGrid.test.tsx (4 tests)135ms
+ Ô£ôsrc/app/dashboard/__tests__/page.test.tsx (4 tests)179ms
+ Ô£ôsrc/lib/utils/__tests__/empresa-grupo.test.ts (21 tests)29ms
+stdout| src/lib/integration/__tests__/sync-engine.test.ts> Sync Operations (syncClientes & syncFaturamentos)> sincroniza clientes criando novo registro quando n├úo existente
+[2026-10-04T20:44:11.030Z] [Integration] [INFO] Iniciando sync de 1 registro(s) de Cliente {"empresaId":"empresa-01"}
+
+stdout| src/lib/integration/__tests__/sync-engine.test.ts> Sync Operations (syncClientes & syncFaturamentos)> sincroniza clientes criando novo registro quando n├úo existente
+[2026-10-04T20:44:11.035Z] [Integration] [INFO] insert concluido {"entidade":"Cliente","idempotencyKey":"empresa-01-CLI-000001-01"}
+
+stdout| src/lib/integration/__tests__/sync-engine.test.ts> Sync Operations (syncClientes & syncFaturamentos)> sincroniza faturamento relacionando com cliente resolvido via externalId
+[2026-10-04T20:44:11.039Z] [Integration] [INFO] Iniciando sync de 1 registro(s) de Faturamento {"empresaId":"empresa-01"}
+
+stdout| src/lib/integration/__tests__/sync-engine.test.ts> Sync Operations (syncClientes & syncFaturamentos)> sincroniza faturamento relacionando com cliente resolvido via externalId
+[2026-10-04T20:44:11.040Z] [Integration] [INFO] insert concluido {"entidade":"Faturamento","idempotencyKey":"empresa-01-NF-01-000100"}
+
+ Ô£ôsrc/lib/security/__tests__/crypto-vault.test.ts (4 tests)25ms
+ Ô£ôsrc/lib/integration/__tests__/sync-engine.test.ts (6 tests)31ms
+ Ô£ôsrc/app/api/ingest/__tests__/ingest.test.ts (2 tests)30ms
+stdout| src/app/api/protheus/empresa/__tests__/route.test.ts> API /api/protheus/empresa> retorna dados da empresa atual e dados do Protheus
+[2026-10-04T20:44:11.450Z] [Integration] [INFO] Consulta de dados da empresa no Protheus realizada com sucesso {"empresaId":"empresa-01","temDados":true,"totalFiliais":1}
+
+stdout| src/app/api/protheus/empresa/__tests__/route.test.ts> API /api/protheus/empresa> atualiza nome e cnpj no banco via POST
+[2026-10-04T20:44:11.462Z] [Integration] [INFO] Dados da empresa sincronizados a partir do Protheus {"empresaId":"empresa-01","nome":"NOVA RAZAO SOCIAL DO PROTHEUS"}
+
+ Ô£ôsrc/app/api/protheus/empresa/__tests__/route.test.ts (3 tests)35ms
+stdout| src/lib/__tests__/auth.test.ts> Autentica├º├úo e Authorize (auth.ts)> retorna null se email ou senha/password estiverem ausentes
+[2026-10-04T20:44:11.598Z] [Auth] [INFO] Tentativa de login com credenciais incompletas
+
+stdout| src/lib/__tests__/auth.test.ts> Autentica├º├úo e Authorize (auth.ts)> retorna null se email ou senha/password estiverem ausentes
+[2026-10-04T20:44:11.604Z] [Auth] [INFO] Tentativa de login com credenciais incompletas
+
+stdout| src/lib/__tests__/auth.test.ts> Autentica├º├úo e Authorize (auth.ts)> aceita credencial passada com a chave 'password'
+[2026-10-04T20:44:11.607Z] [Auth] [INFO] Autenticacao autorizada com sucesso {"usuarioId":"usr-1"}
+
+stdout| src/lib/__tests__/auth.test.ts> Autentica├º├úo e Authorize (auth.ts)> aceita credencial passada com a chave 'senha'
+[2026-10-04T20:44:11.611Z] [Auth] [INFO] Autenticacao autorizada com sucesso {"usuarioId":"usr-1"}
+
+stdout| src/lib/__tests__/auth.test.ts> Autentica├º├úo e Authorize (auth.ts)> retorna null se a senha estiver incorreta
+[2026-10-04T20:44:11.612Z] [Auth] [INFO] Senha incorreta para usuario {"email":"gestor@prot.com"}
+
+ Ô£ôsrc/lib/__tests__/auth.test.ts (5 tests)23ms
+ Ô£ôsrc/lib/utils/__tests__/empresa-grupo-dto.test.ts (7 tests)20ms
+ Ô£ôsrc/hooks/__tests__/useFilters.test.ts (7 tests)25ms
+ Ô£ôsrc/lib/utils/__tests__/metrics-projection.test.ts (3 tests)19ms
+ Ô£ôsrc/lib/utils/__tests__/metrics-filter.test.ts (4 tests)15ms
+ Ô£ôsrc/lib/utils/__tests__/metrics-kpi.test.ts (3 tests)10ms
+
+Test Files 18 passed(18)
+     Tests 115 passed(115)
+  Start at 17:44:04
+  Duration 9.81s(environment 55%, setup 31%, import 5%, transform 4%, worker 4%, tests 2%)
+
+Environment happy-dom was created 18 times┬À 27.26s total, 55% of tracked time
+           create it once per worker with pool: 'vmThreads'(keeps per-file isolation) or isolate: false(shares it across files)
+           learn more: https://vitest.dev/guide/improving-performance#test-environments
+
+% Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   38.15 |    29.38 |   35.64 |   38.99 |                   
+ src               |       0 |      100 |       0 |       0 |                   
+  middleware.ts    |       0 |      100 |       0 |       0 | 6-15              
+ src/app           |       0 |      100 |       0 |       0 |                   
+  layout.tsx       |       0 |      100 |       0 |       0 | 6-26              
+  page.tsx         |       0 |      100 |       0 |       0 | 4                 
+ .../[...nextauth] |       0 |      100 |     100 |       0 |                   
+  route.ts         |       0 |      100 |     100 |       0 | 10                
+ .../api/dashboard |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 24-160            
+ ...app/api/ingest |   71.42 |    81.25 |      50 |   71.42 |                   
+  route.ts         |   71.42 |    81.25 |      50 |   71.42 | 34-37,57,65,94-95 
+ ...otheus/empresa |   54.09 |    37.28 |      40 |   56.89 |                   
+  route.ts         |   54.09 |    37.28 |      40 |   56.89 | ...72,177,196-197 
+ .../protheus/pull |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 19-32             
+ ...app/api/upload |       0 |        0 |       0 |       0 |                   
+  route.ts         |       0 |        0 |       0 |       0 | 32-133            
+ ...app/auth/login |       0 |      100 |       0 |       0 |                   
+  page.tsx         |       0 |      100 |       0 |       0 | 1-10              
+ src/app/dashboard |   85.71 |    60.71 |     100 |   85.71 |                   
+  page.tsx         |   85.71 |    60.71 |     100 |   85.71 | 18                
+ src/app/upload    |       0 |      100 |       0 |       0 |                   
+  page.tsx         |       0 |      100 |       0 |       0 | 1-6               
+ src/components    |       0 |      100 |       0 |       0 |                   
+  Providers.tsx    |       0 |      100 |       0 |       0 | 1-6               
+ ...omponents/auth |       0 |        0 |       0 |       0 |                   
+  LoginForm.tsx    |       0 |        0 |       0 |       0 | 1-72              
+ ...ponents/charts |       0 |        0 |       0 |       0 |                   
+  ...enteChart.tsx |       0 |        0 |       0 |       0 | 1-33              
+  ...empoChart.tsx |       0 |        0 |       0 |       0 | 1-33              
+  ...onutChart.tsx |       0 |        0 |       0 |       0 | 1-34              
+  ...AreaChart.tsx |       0 |        0 |       0 |       0 | 1-34              
+  index.ts         |       0 |        0 |       0 |       0 |                   
+ ...ents/dashboard |   17.14 |    25.55 |    17.5 |   18.18 |                   
+  ...tersBadge.tsx |       0 |        0 |       0 |       0 | 4                 
+  ...izacaoTab.tsx |     100 |      100 |     100 |     100 |                   
+  ...hartsGrid.tsx |     100 |       84 |     100 |     100 | 56-60,68-72       
+  ...FilterBar.tsx |       0 |        0 |       0 |       0 | 1-79              
+  ...ardHeader.tsx |       0 |      100 |       0 |       0 | 1-7               
+  ...icesTable.tsx |       0 |        0 |       0 |       0 | 1-66              
+  ...dKpiCards.tsx |       0 |        0 |       0 |       0 | 1-44              
+  ...idebarNav.tsx |     100 |      100 |     100 |     100 |                   
+  ...ialFilter.tsx |       0 |        0 |       0 |       0 | 1-118             
+  ...FiscalRow.tsx |       0 |        0 |       0 |       0 | 1-54              
+ ...onents/empresa |   33.33 |        0 |       0 |   33.33 |                   
+  ...heusPanel.tsx |   33.33 |        0 |       0 |   33.33 | 24-26             
+ ...empresa/common |       0 |        0 |       0 |       0 |                   
+  ...DadosCard.tsx |       0 |        0 |       0 |       0 | 20                
+  ...liaisCard.tsx |       0 |        0 |       0 |       0 | 11-44             
+  ...derAction.tsx |       0 |        0 |       0 |       0 | 10-37             
+  ...yncBanner.tsx |       0 |        0 |       0 |       0 | 10                
+  ...tatusCard.tsx |       0 |        0 |       0 |       0 | 6-8               
+ src/components/ui |       0 |        0 |       0 |       0 |                   
+  badge.tsx        |       0 |        0 |       0 |       0 | 7-37              
+  button.tsx       |       0 |        0 |       0 |       0 | 6-55              
+  card.tsx         |       0 |      100 |       0 |       0 | 6-75              
+  input.tsx        |       0 |        0 |       0 |       0 | 9                 
+  table.tsx        |       0 |      100 |       0 |       0 | 1-69              
+ ...ponents/upload |       0 |        0 |       0 |       0 |                   
+  ...neSection.tsx |       0 |        0 |       0 |       0 | 26-77             
+  UploadPanel.tsx  |       0 |      100 |       0 |       0 | 1-28              
+  ...llSection.tsx |       0 |        0 |       0 |       0 | 18-49             
+ src/hooks         |   17.72 |     6.57 |   30.23 |   18.13 |                   
+  useDashboard.ts  |       0 |        0 |       0 |       0 | 1-97              
+  ...saProtheus.ts |       0 |        0 |       0 |       0 | 37-116            
+  useFilters.ts    |      80 |       20 |      75 |   77.77 | 50,64             
+  useLogin.ts      |       0 |        0 |       0 |       0 | 1-56              
+  useTheme.ts      |       0 |        0 |       0 |       0 | 1-30              
+  ...ploadPanel.ts |      50 |    22.22 |   58.33 |    50.9 | ...48,55-59,74-99 
+ src/lib           |   88.23 |    81.25 |     100 |   88.23 |                   
+  auth.ts          |   88.23 |    81.25 |     100 |   88.23 | 36-37,56-57       
+  utils.ts         |       0 |        0 |       0 |       0 |                   
+ src/lib/db        |   57.14 |    66.66 |       0 |   57.14 |                   
+  prisma-client.ts |   57.14 |    66.66 |       0 |   57.14 | 28-33             
+ ...ib/integration |   42.15 |    29.91 |   43.28 |   43.04 |                   
+  canonical.ts     |       0 |        0 |       0 |       0 |                   
+  index.ts         |       0 |        0 |       0 |       0 |                   
+  logger.ts        |   55.55 |       25 |      50 |   55.55 | 18-27             
+  ...us-adapter.ts |       0 |        0 |       0 |       0 | 10-77             
+  ...nt-factory.ts |       0 |        0 |       0 |       0 | 15-50             
+  ...eus-client.ts |     100 |      100 |     100 |     100 |                   
+  ...est-client.ts |   49.35 |    38.69 |   68.42 |   51.38 | ...37,286-412,419 
+  ...oap-client.ts |       0 |        0 |       0 |       0 | 36-164            
+  ...n-provider.ts |   86.04 |    77.77 |     100 |    87.8 | 78,86,91,128-129  
+  pull-and-sync.ts |       0 |        0 |       0 |       0 | 44-127            
+  sync-engine.ts   |   44.24 |    27.63 |   77.77 |   42.99 | ...55-156,168-273 
+ src/lib/security  |   95.83 |    66.66 |     100 |   95.83 |                   
+  crypto-vault.ts  |   95.83 |    66.66 |     100 |   95.83 | 24                
+  index.ts         |       0 |        0 |       0 |       0 |                   
+ src/lib/types     |       0 |        0 |       0 |       0 |                   
+  dashboard.ts     |       0 |        0 |       0 |       0 |                   
+  db.ts            |       0 |        0 |       0 |       0 |                   
+ src/lib/utils     |   96.83 |    82.75 |   96.61 |   96.45 |                   
+  ...oardCharts.ts |       0 |        0 |       0 |       0 |                   
+  ...ardMetrics.ts |       0 |        0 |       0 |       0 |                   
+  ...-grupo-dto.ts |     100 |      100 |     100 |     100 |                   
+  empresa-grupo.ts |     100 |    92.85 |     100 |     100 | 59                
+  ...-selection.ts |     100 |      100 |     100 |     100 |                   
+  logger.ts        |   55.55 |       25 |      60 |   55.55 | 14,26-28          
+  ...ics-filter.ts |     100 |    88.46 |     100 |     100 | 18-19,33          
+  ...s-grouping.ts |     100 |     87.5 |     100 |     100 | 49                
+  metrics-kpi.ts   |     100 |      100 |     100 |     100 |                   
+  ...projection.ts |   96.42 |       60 |     100 |   95.83 | 25                
+ ...b/utils/charts |       0 |        0 |       0 |       0 |                   
+  ...nte-option.ts |       0 |        0 |       0 |       0 | 5-76              
+  ...mpo-option.ts |       0 |        0 |       0 |       0 | 5-77              
+  ...nut-option.ts |       0 |        0 |       0 |       0 | 4-61              
+  ...rea-option.ts |       0 |        0 |       0 |       0 | 5-110             
+  theme.ts         |       0 |        0 |       0 |       0 | 10                
+-------------------|---------|----------|---------|---------|-------------------

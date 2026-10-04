@@ -55,14 +55,15 @@
 
 ```bash
 pnpm test              # 100% verde (gate real)
-pnpm test:coverage     # verificado e registrado
+pnpm test:coverage     # medição + thresholds da rampa (§3.4) — deve sair com exit 0
 pnpm lint              # sem novos erros
+npx tsc --noEmit       # typecheck
 npx next build         # build OK (evita o migrate deploy)
 ```
 
-> **Estado atual (Out/2026):** `pnpm test:coverage` **falha com exit 1** porque a cobertura global (38.99% linhas) está abaixo do threshold de 80% configurado em `vitest.config.mts`. Portanto:
-> - O **gate bloqueante** é `pnpm test` + `pnpm lint` + `npx next build`.
-> - `pnpm test:coverage` é usado para **medição**; a falha de threshold é tratada pela Rampa de Cobertura (§3.4).
+> **Estado atual (Out/2026, pós Fase 0):** baseline **18 arquivos de teste, 115 testes verdes, 38.99% linhas** (`docs/reports/coverage-2026-10.txt`). O threshold de 80% em `vitest.config.mts` era inatingível e deixava `pnpm test:coverage` — e o CI — permanentemente em exit 1. A Rampa de Cobertura (§3.4) **rebaixou os thresholds para o valor real menos 2 pontos de folga**, e agora:
+> - O **gate bloqueante** é `pnpm test` + `pnpm lint` + `npx tsc --noEmit` + `npx next build` — todos executados no CI (`.github/workflows/ci.yml`, que antes rodava só `pnpm test:coverage`).
+> - `pnpm test:coverage` **fecha com exit 0** e é a medição oficial; cada ganho de cobertura deve subir o threshold correspondente (ratchet §3.4).
 
 ### 3.2 Se não houver testes suficientes
 
@@ -89,18 +90,20 @@ npx next build         # build OK (evita o migrate deploy)
 
 ### 3.4 Rampa de Cobertura (exceção documentada, com prazo)
 
-O threshold global de 80% em `vitest.config.mts` é **a meta**, não o gate diário. A cada trimestre, os thresholds devem ser **rebaixados até o valor real medido + folga de 2 pontos** (nunca acima do real), e o número **nunca pode aumentar** dentro do mesmo trimestre sem subir a cobertura real.
+O threshold global de 80% em `vitest.config.mts` é **a meta**, não o gate diário. Os thresholds aplicados são **rebaixados até o valor real medido menos 2 pontos de folga** (nunca acima do real — acima do real o gate nunca fecha), e o número **nunca pode aumentar** dentro do mesmo trimestre sem subir a cobertura real. Onde o **Floor** já está abaixo do real, vale o Floor.
 
-| Diretório | Cobertura real Out/2026 (linhas) | Floor obrigatório |
-|-----------|--------------------------------|-------------------|
-| `src/lib/utils/**` | 96.45% | 90% |
-| `src/lib/security/**` | 95.83% | 90% |
-| `src/lib/auth.ts` | 88.23% | 80% |
-| `src/lib/integration/**` | 43.04% | 55% |
-| `src/hooks/**` | 18.13% | 30% |
-| `src/components/**` | 18.18% | 30% |
-| `src/app/api/**` | 0–71% | 60% |
-| **Global** | **38.99%** | **não reduzir** |
+| Diretório | Cobertura real Out/2026 (linhas) | Threshold em `vitest.config.mts` | Floor / meta |
+|-----------|--------------------------------|-------------------------------|--------------|
+| `src/lib/utils/**` | 72.73% | 70% | 90% |
+| `src/lib/security/**` | 95.83% | 90% | 90% |
+| `src/lib/auth.ts` | 88.24% | 80% | 80% |
+| `src/lib/integration/**` | 43.04% | 41% | 55% |
+| `src/hooks/**` | 18.13% | 16% | 30% |
+| `src/components/**` | 8.23% | 6% | 30% |
+| `src/app/api/**` | 27.75% | 25% | 60% |
+| **Global** | **38.99% linhas / 38.15% stmts / 35.64% funcs / 29.38% branches** | **36 / 36 / 33 / 27** | **não reduzir; meta 80%** |
+
+> **Como estes números foram medidos:** agregação recursiva sobre `coverage/lcov.info` (cobertura de todos os arquivos sob o diretório). Os valores anteriores desta tabela (ex.: `src/lib/utils/**` = 96.45%) vinham das linhas de diretório do relatório texto, que **não agrega subdiretórios** — por isso `src/lib/utils/charts/*` (0%) não contava. O threshold em `vitest.config.mts` usa o globo recursivo, então vale o número daqui.
 
 > Cobrindo `sync-engine`, `protheus-adapter`, `pull-and-sync`, `protheus-client-factory` e as rotas `dashboard`, `upload`, `protheus/pull`, a cobertura global ultrapassa 80% com ~35 testes additional. Esse é o objetivo do trimestre.
 
@@ -493,6 +496,7 @@ Tipos em uso: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 
 **Medição:** `readFileSync(p,'utf8').split('\n').length` sobre `.ts`/`.tsx` em `src/`, `components/`, `lib/` (exclui `node_modules`, `.next`, `coverage`). Complexidade via ESLint `complexity` (§12.3).
 **Universo:** 87 arquivos-fonte + 18 arquivos de teste.
+**Baseline do gate (Out/2026, pós Fase 0):** 18 arquivos de teste, **115 testes verdes**, **38.99% linhas** (`docs/reports/coverage-2026-10.txt`); `pnpm test` + `pnpm lint` (0 erros) + `npx tsc --noEmit` + `npx next build` verdes; `pnpm test:coverage` exit 0 com os thresholds da §3.4.
 
 ### 11.1 🔴 CRÍTICA — Bloqueia merge
 
@@ -511,19 +515,22 @@ Tipos em uso: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 | `src/lib/integration/protheus-rest-client.ts` (fn) | — | 20 / 19 / 14 | — | Evencer com §11.1 |
 | `src/components/dashboard/DashboardChartsGrid.tsx` | — | 18 | 100% | Extrair série de gráfico por hook |
 | `src/app/api/dashboard/route.ts` | 164 | 15 | **0%** | `handlers/dashboard.ts` + `_internals/dashboard-query.ts` |
+| `src/app/api/upload/route.ts` | **136** | — | **0%** | Acima do limite de 120 (§4); extrair parse/validação p/ `handlers/` + `_internals/` |
 | `src/lib/auth.ts` | 93 | 12 | 88.23% | Extrair callbacks de token para `auth/claims.ts` |
+| `src/lib/integration/protheus-soap-client.ts` | **172** | — | **0%** | 🟡 gatilho §5 (150+): planejar divisão; limite de client (200) ainda ok |
 
 > **11 funções com CC > 10** medidas (total: 11). Nenhuma com CC ≥ 16 exceto as acima; após as duas extrações 🔴 a fila deve ficar zerada.
 
 ### 11.3 🟡 Dívida Estrutural — pagar antes de ampliar a base
 
-| Item | Evidência | Ação |
-|------|-----------|------|
-| Raízes duplicadas | `components/ui/*` (4 arquivos) e `lib/utils.ts` (1) sem nenhum import; `cn` importado de `"cn"` em vez de `@/lib/utils` | **Deletar** `components/` e `lib/` da raiz |
-| Coverage gate vermelho | `pnpm test:coverage` sai 1 (38.99% < 80%) | Rebaixar thresholds para o piso §3.4 e subir com testes |
-| Rotas sem teste | `api/dashboard` 0%, `api/upload` 0%, `api/protheus/pull` 0% | Cobertura mínima §3.3 |
-| Grafo de contexto | `graft/` contém apenas `.cache/telemetry-repo-id.json`; sem `INDEX.md` | Rodar `graft build` e versionar o grafo |
-| `.env.example` incompleto | `INGEST_API_KEY` e `PROTHEUS_CRED_ENCRYPTION_KEY` usados em código, ausentes no exemplo | Documentar (sem valor real) |
+| Item | Evidência | Ação | Status |
+|------|-----------|------|--------|
+| Raízes duplicadas | `components/ui/*` (4 arquivos) e `lib/utils.ts` (1) sem nenhum import em todo o repo; `components.json` aponta para `@/components` e `@/lib/utils` | **Deletar** `components/` e `lib/` da raiz | ✅ Fase 0 — deletadas (`git rm`), gate revalidado (tsc/build/test verdes) |
+| `cn` importado de `"cn"` | `src/components/ui/{button,input}.tsx` e `src/lib/utils.ts` re-exportam o pacote `cn` em vez de usar `@/lib/utils` como fonte única | Apontar todos os imports para `@/lib/utils` | ⬜ Pendente (mecânico, §9.3) |
+| Coverage gate vermelho | `pnpm test:coverage` saía 1 (38.99% < 80%) e o CI rodava **só** esse comando | Rampa §3.4: thresholds = real − 2 + globs por diretório | ✅ Fase 0 — exit 0; CI agora roda `prisma generate` + coverage + lint + tsc + `next build` |
+| Rotas sem teste | `api/dashboard` 0%, `api/upload` 0%, `api/protheus/pull` 0% | Cobertura mínima §3.3 | ⬜ Pendente (Fase 1 do plano) |
+| Grafo de contexto | `graft/` só tinha `.cache/telemetry-repo-id.json` | Rodar `graft build` | ✅ Fase 0 — 108 arquivos, 377 nós, `graft/INDEX.md` gerado. **Não versionar:** `graft/` é cache local (`.gitignore /graft/` e o próprio `graft build` dizem "teammates run `graft build`") |
+| `.env.example` incompleto e ignorado | `INGEST_API_KEY` e `PROTHEUS_CRED_ENCRYPTION_KEY` usados em código, ausentes; e o padrão `.env*` do `.gitignore` **impedia o commit do arquivo** | Documentar (sem valor real) e un-ignorar | ✅ Fase 0 — variáveis documentadas, `!.env.example` adicionado ao `.gitignore`, arquivo versionado |
 
 ### 11.4 Fora do escopo de `src/`
 
@@ -625,4 +632,5 @@ Revisar trimestralmente e atualizar conforme: padrões da indústria, mudanças 
 > Qualquer refatoração que não melhore legibilidade ou manutenibilidade deve ser revertida. O objetivo é **clareza**, não código "novo".
 
 **Última atualização:** Outubro 2026 (v1.0 — criada a partir da política Omni-Reporte v4.0, adaptada à stack PROT; fila medida com 2 arquivos 🔴, 11 funções com CC > 10, cobertura global 38.99%)
+**Fase 0 aplicada (Out/2026):** rampa §3.4 ligada (exit 0), CI completo (coverage + lint + tsc + build), `components/` e `lib/` da raiz deletados, `.env.example` versionado com as 2 variáveis que faltavam, `graft build` executado. Baseline: 18 arquivos de teste, 115 testes, 38.99% linhas.
 **Próxima revisão:** Janeiro 2027

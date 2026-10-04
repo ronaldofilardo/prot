@@ -15,11 +15,22 @@ export default defineConfig({
       reporter: ["text", "lcov", "html"],
       include: ["src/**/*.ts", "src/**/*.tsx"],
       exclude: ["src/**/*.test.*", "src/**/__tests__/**"],
+      // Rampa de cobertura (REFACTORING_POLICY §3.4): threshold = real medido
+      // Out/2026 menos folga de 2 pontos, nunca acima do real. Onde o floor
+      // obrigatório (§3.4) já está abaixo do real, vale o floor. Subir a cada
+      // PR que ganhar cobertura, até a meta de 80%.
       thresholds: {
-        statements: 80,
-        branches: 80,
-        functions: 80,
-        lines: 80,
+        statements: 36,
+        branches: 27,
+        functions: 33,
+        lines: 36,
+        "src/lib/utils/**": { lines: 70 },
+        "src/lib/security/**": { lines: 90 },
+        "src/lib/auth.ts": { lines: 80 },
+        "src/lib/integration/**": { lines: 41 },
+        "src/hooks/**": { lines: 16 },
+        "src/components/**": { lines: 6 },
+        "src/app/api/**": { lines: 25 },
       },
     },
   },

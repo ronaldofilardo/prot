@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import DashboardPage from "../page";
+import { useDashboard } from "@/hooks/useDashboard";
 
 // Mock the child components and hooks to isolate the dashboard layout test
 vi.mock("@/hooks/useDashboard", () => ({
@@ -92,5 +93,19 @@ describe("DashboardPage Layout", () => {
     // Others hidden
     expect(screen.queryByTestId("dashboard-charts-faturamento")).toBeNull();
     expect(screen.queryByTestId("dashboard-charts-projecao")).toBeNull();
+  });
+
+  it("should render the error state when useDashboard fails", () => {
+    vi.mocked(useDashboard).mockReturnValueOnce({
+      data: null,
+      loading: false,
+      error: "Falha de rede",
+      temFiltroAtivo: false,
+      carregarDados: vi.fn(),
+    });
+
+    render(<DashboardPage />);
+    expect(screen.getByText("Erro ao carregar dados")).toBeDefined();
+    expect(screen.getByText("Falha de rede")).toBeDefined();
   });
 });

@@ -1,5 +1,41 @@
-import { ProtheusClient, ProtheusClientError, ProtheusRow, ProtheusEmpresaInfo, ProtheusFilialInfo } from "./protheus-client";
-import { type IProtheusTokenProvider, protheusTokenProvider } from "./protheus-token-provider";
+import {
+  ProtheusClientError,
+  type ProtheusClient,
+  type ProtheusEmpresaInfo,
+  type ProtheusFilialInfo,
+  type ProtheusRow,
+} from "./protheus-client";
+import { buildAuthHeader } from "./_internals/rest-auth";
+import {
+  buildFallbackClientesRows,
+  buildFallbackContasReceberRows,
+  buildFallbackFaturamentosRows,
+  buildFallbackFilial,
+} from "./_internals/rest-mock";
+import {
+  buildRequestUrl,
+  mapEmpresaInfo,
+  mapRowToFilial,
+  readRows,
+} from "./_internals/rest-parse";
+import {
+  BAIXAS_FALLBACK_PATHS,
+  CLIENTES_FALLBACK_PATHS,
+  CONTAS_RECEBER_FALLBACK_PATHS,
+  EMPRESA_FALLBACK_PATHS,
+  FATURAMENTOS_FALLBACK_PATHS,
+  FILIAIS_FALLBACK_PATHS,
+  buildCandidatePaths,
+} from "./_internals/rest-paths";
+import {
+  executeFetch,
+  fetchFirstNonEmptyOrThrow,
+  fetchFirstNonEmptySwallowingErrors,
+  fetchRowsFromFirstPath,
+} from "./_internals/rest-retry";
+import type { ProtheusRestConfig } from "./_internals/rest-types";
+
+export type { ProtheusRestConfig } from "./_internals/rest-types";
 
 /**
  * Cliente REST nativo do Protheus (modo primário de integração).
@@ -12,404 +48,106 @@ import { type IProtheusTokenProvider, protheusTokenProvider } from "./protheus-t
  * Somente leitura: esta classe não expõe nenhum método de escrita.
  */
 
-export interface ProtheusRestConfig {
-  baseUrl: string;
-  authMode: "bearer" | "basic" | "oauth2";
-  username?: string;
-  password?: string;
-  token?: string;
-  tokenProvider?: IProtheusTokenProvider;
-  empresaSaaSId?: string;
-  empresaId: string; // empresa Protheus (código da empresa no ERP, não o id do tenant SaaS)
-  filial: string;
-  paths: {
-    empresa?: string;
-    clientes?: string;
-    faturamentos?: string;
-    contasReceber?: string;
-    baixas?: string;
-  };
-}
-
 export class ProtheusRestClient implements ProtheusClient {
   constructor(private readonly config: ProtheusRestConfig) { }
-
-  private async getAuthHeader(forceRefresh = false): Promise<string> {
-    if (this.config.authMode === "oauth2") {
-      const provider = this.config.tokenProvider ?? protheusTokenProvider;
-      const targetEmpresaId = this.config.empresaSaaSId || this.config.empresaId;
-      const token = await provider.getValidToken(targetEmpresaId, forceRefresh);
-      return `Bearer ${token}`;
-    }
-    if (this.config.authMode === "bearer") {
-      if (!this.config.token) {
-        throw new ProtheusClientError(
-          "PROTHEUS_REST_ACCESS_TOKEN nao configurado (authMode=bearer)"
-        );
-      }
-      return `Bearer ${this.config.token}`;
-    }
-    if (!this.config.username || !this.config.password) {
-      throw new ProtheusClientError("PROTHEUS_REST_USER/PROTHEUS_REST_PASSWORD nao configurados (authMode=basic)");
-    }
-    const raw = `${this.config.username}:${this.config.password}`;
-    return `Basic ${Buffer.from(raw).toString("base64")}`;
-  }
-
-  private async executeFetch(fullUrl: string, authHeader: string, path: string): Promise<Response> {
-    try {
-      const response = await fetch(fullUrl, {
-        method: "GET",
-        headers: {
-          Authorization: authHeader,
-          Accept: "application/json",
-        },
-        cache: "no-store",
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!response) {
-        throw new Error("Resposta de rede indefinida");
-      }
-      return response;
-    } catch (err) {
-      throw new ProtheusClientError(`Falha de rede ao consultar Protheus REST (${path})`, err);
-    }
-  }
 
   private async get(path: string | undefined, settingName: string): Promise<ProtheusRow[]> {
     if (!path) {
       throw new ProtheusClientError(`${settingName} nao configurado`);
     }
-
-    let url: URL;
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-      url = new URL(path);
-    } else if (path.startsWith("/") && !path.startsWith("//")) {
-      url = new URL(path, this.config.baseUrl);
-    } else {
-      throw new ProtheusClientError(`${settingName} deve ser um caminho iniciado por "/" ou URL completa (https://...)`);
-    }
-
-    url.searchParams.set("empresa", this.config.empresaId);
-    url.searchParams.set("filial", this.config.filial);
-
-    let auth = await this.getAuthHeader();
-    let response = await this.executeFetch(url.toString(), auth, path);
-
+    const url = buildRequestUrl(path, this.config, settingName);
+    let auth = await buildAuthHeader(this.config);
+    let response = await executeFetch(url.toString(), auth, path);
     // Se retornar 401 e for oauth2, tenta renovar o token e repetir uma vez
     if (response.status === 401 && this.config.authMode === "oauth2") {
-      auth = await this.getAuthHeader(true);
-      response = await this.executeFetch(url.toString(), auth, path);
+      auth = await buildAuthHeader(this.config, true);
+      response = await executeFetch(url.toString(), auth, path);
     }
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new ProtheusClientError(
-          `Endpoint REST nao encontrado (404) em ${path}; confirme a rota publicada no Protheus`
-        );
-      }
-      throw new ProtheusClientError(
-        `Protheus REST retornou ${response.status} em ${path}`
-      );
-    }
-
-    let json: unknown;
-    try {
-      json = await response.json();
-    } catch (err) {
-      throw new ProtheusClientError(`Resposta invalida (nao-JSON) de ${path}`, err);
-    }
-
-    if (Array.isArray(json)) return json as ProtheusRow[];
-    const obj = json as { items?: ProtheusRow[]; data?: ProtheusRow[] };
-    return obj.items ?? obj.data ?? [];
+    return readRows(response, path);
   }
 
   // TODO: confirmar os paths reais dos endpoints REST habilitados no
   // Protheus de destino. Os paths abaixo são placeholders com o nome
   // convencional das tabelas usadas hoje via CSV (SA1/SF2/SE1/SE5).
   async fetchEmpresa(customPath?: string): Promise<ProtheusEmpresaInfo | null> {
-    const candidatePaths: string[] = customPath
-      ? [customPath]
-      : Array.from(
-        new Set(
-          [
-            this.config.paths.empresa,
-            process.env.PROTHEUS_REST_EMPRESA_PATH,
-            "/rest/api/protheus/v1/companies",
-            "/api/protheus/v1/companies",
-            "/rest/api/protheus/v1/company",
-            "/api/protheus/v1/company",
-            "/rest/api/protheus/v1/customers",
-            "/api/protheus/v1/customers",
-            "/rest/api/framework/v1/companies",
-          ].filter((p): p is string => Boolean(p))
-        )
-      );
-
-    let lastError: Error | null = null;
-    for (const path of candidatePaths) {
-      try {
-        const rows = await this.get(path, "PROTHEUS_REST_EMPRESA_PATH");
-        if (!rows || rows.length === 0) continue;
-
-        const target =
-          rows.find((r) => {
-            const matchEmp = !r.companyId || r.companyId === this.config.empresaId;
-            const matchFil = !r.branchId || r.branchId === this.config.filial;
-            return matchEmp && matchFil;
-          }) || rows[0];
-
-        const nome =
-          target.name ||
-          target.nome ||
-          target.razaoSocial ||
-          target.A1_NOME ||
-          target.M0_NOME ||
-          target.M0_NOMECOM ||
-          "Empresa Protheus";
-        const cnpj = target.cgc || target.cnpj || target.A1_CGC || target.M0_CGC || "";
-
-        return {
-          nome,
-          cnpj,
-          codigoEmpresa: this.config.empresaId,
-          codigoFilial: this.config.filial,
-        };
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
-        if (lastError.message.includes("404")) {
-          continue;
-        }
-        throw lastError;
-      }
-    }
-
-    if (lastError) throw lastError;
-    return null;
+    const candidatePaths = buildCandidatePaths(customPath, [
+      this.config.paths.empresa,
+      process.env.PROTHEUS_REST_EMPRESA_PATH,
+      ...EMPRESA_FALLBACK_PATHS,
+    ]);
+    const rows = await fetchFirstNonEmptyOrThrow(
+      candidatePaths,
+      (path) => this.get(path, "PROTHEUS_REST_EMPRESA_PATH")
+    );
+    if (!rows) return null;
+    return mapEmpresaInfo(rows, this.config);
   }
 
   async fetchFiliais(customPath?: string): Promise<ProtheusFilialInfo[]> {
-    const candidatePaths: string[] = customPath
-      ? [customPath]
-      : Array.from(
-        new Set(
-          [
-            process.env.PROTHEUS_REST_FILIAIS_PATH,
-            "/rest/api/framework/v1/branches",
-            "/api/framework/v1/branches",
-            "/rest/api/protheus/v1/filiais",
-            "/api/protheus/v1/filiais",
-            "/rest/api/v1/branches",
-            "/api/v1/branches",
-            "/rest/api/framework/v1/companies",
-          ].filter((p): p is string => Boolean(p))
-        )
-      );
-
-    for (const path of candidatePaths) {
-      try {
-        const rows = await this.get(path, "PROTHEUS_REST_FILIAIS_PATH");
-        if (rows && rows.length > 0) {
-          return rows.map((r, idx) => {
-            const codFil = r.branchId || r.codigoFilial || r.filial || r.codigo || String(idx + 1).padStart(2, "0");
-            const nome = r.name || r.nome || r.razaoSocial || `Filial ${codFil}`;
-            const cnpj = r.cgc || r.cnpj || "";
-            const isMatriz = codFil === "01" || codFil === "0001" || nome.toUpperCase().includes("MATRIZ");
-            return {
-              codigoEmpresa: r.companyId || r.codigoEmpresa || this.config.empresaId,
-              codigoFilial: codFil,
-              nome,
-              cnpj,
-              tipo: isMatriz ? "Matriz" : "Filial",
-              cidade: r.city || r.cidade || "",
-              uf: r.state || r.uf || "",
-              status: "Ativa",
-            };
-          });
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("404")) continue;
-      }
+    const candidatePaths = buildCandidatePaths(customPath, [
+      process.env.PROTHEUS_REST_FILIAIS_PATH,
+      ...FILIAIS_FALLBACK_PATHS,
+    ]);
+    const rows = await fetchFirstNonEmptySwallowingErrors(
+      candidatePaths,
+      (path) => this.get(path, "PROTHEUS_REST_FILIAIS_PATH")
+    );
+    if (!rows) {
+      return [buildFallbackFilial(this.config.empresaId, this.config.filial)];
     }
-
-    return [
-      {
-        codigoEmpresa: this.config.empresaId,
-        codigoFilial: this.config.filial || "01",
-        nome: "LC1 CONTADORES - MATRIZ",
-        tipo: "Matriz",
-        status: "Ativa",
-      },
-    ];
+    return rows.map((row, idx) => mapRowToFilial(row, idx, this.config.empresaId));
   }
 
   async fetchClientes(customPath?: string): Promise<ProtheusRow[]> {
-    const candidatePaths = customPath
-      ? [customPath]
-      : Array.from(
-        new Set(
-          [
-            this.config.paths.clientes,
-            process.env.PROTHEUS_REST_CLIENTES_PATH,
-            "/api/protheus/v1/comercial/clientes",
-            "/api/protheus/v1/cadastros/clientes",
-            "/rest/api/protheus/v1/clientes",
-            "/api/protheus/v1/clientes",
-            "/rest/api/v1/customers",
-            "/api/v1/customers",
-            "/rest/api/framework/v1/customers",
-            "/rest/clientes",
-            "/rest/customers",
-          ].filter((p): p is string => Boolean(p))
-        )
-      );
-
-    let lastError: Error | null = null;
-    for (const path of candidatePaths) {
-      try {
-        const rows = await this.get(path, "PROTHEUS_REST_CLIENTES_PATH");
-        if (rows) return rows;
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
-        if (lastError.message.includes("404")) continue;
-        throw lastError;
-      }
-    }
-
-    if (lastError) {
-      if (lastError.message.includes("404")) {
-        // Mock fallback to unblock the UI since endpoints are not published
-        return [{ A1_COD: "000001", A1_LOJA: "01", A1_NOME: "CLIENTE TESTE LC1", A1_MUN: "SAO PAULO", A1_EST: "SP", D_E_L_E_T_: "" }];
-      }
-      throw lastError;
-    }
-    return [];
+    const candidatePaths = buildCandidatePaths(customPath, [
+      this.config.paths.clientes,
+      process.env.PROTHEUS_REST_CLIENTES_PATH,
+      ...CLIENTES_FALLBACK_PATHS,
+    ]);
+    return fetchRowsFromFirstPath(
+      candidatePaths,
+      (path) => this.get(path, "PROTHEUS_REST_CLIENTES_PATH"),
+      buildFallbackClientesRows
+    );
   }
 
   async fetchFaturamentos(customPath?: string): Promise<ProtheusRow[]> {
-    const candidatePaths = customPath
-      ? [customPath]
-      : Array.from(
-        new Set(
-          [
-            this.config.paths.faturamentos,
-            process.env.PROTHEUS_REST_FATURAMENTOS_PATH,
-            "/api/protheus/v1/fiscal/notas",
-            "/api/protheus/v1/faturamento/notas",
-            "/rest/api/protheus/v1/faturamentos",
-            "/api/protheus/v1/faturamentos",
-            "/rest/api/v1/invoices",
-            "/api/v1/invoices",
-            "/rest/api/framework/v1/invoices",
-            "/rest/faturamentos",
-            "/rest/invoices",
-          ].filter((p): p is string => Boolean(p))
-        )
-      );
-
-    let lastError: Error | null = null;
-    for (const path of candidatePaths) {
-      try {
-        const rows = await this.get(path, "PROTHEUS_REST_FATURAMENTOS_PATH");
-        if (rows) return rows;
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
-        if (lastError.message.includes("404")) continue;
-        throw lastError;
-      }
-    }
-
-    if (lastError) {
-      if (lastError.message.includes("404")) {
-        return [{ F2_DOC: "000000001", F2_SERIE: "1", F2_CLIENTE: "000001", F2_LOJA: "01", F2_EMISSAO: new Date().toISOString().split("T")[0].replace(/-/g, ""), F2_VALOR: "5000.00", D_E_L_E_T_: "" }];
-      }
-      throw lastError;
-    }
-    return [];
+    const candidatePaths = buildCandidatePaths(customPath, [
+      this.config.paths.faturamentos,
+      process.env.PROTHEUS_REST_FATURAMENTOS_PATH,
+      ...FATURAMENTOS_FALLBACK_PATHS,
+    ]);
+    return fetchRowsFromFirstPath(
+      candidatePaths,
+      (path) => this.get(path, "PROTHEUS_REST_FATURAMENTOS_PATH"),
+      buildFallbackFaturamentosRows
+    );
   }
 
   async fetchContasReceber(customPath?: string): Promise<ProtheusRow[]> {
-    const candidatePaths = customPath
-      ? [customPath]
-      : Array.from(
-        new Set(
-          [
-            this.config.paths.contasReceber,
-            process.env.PROTHEUS_REST_CONTAS_RECEBER_PATH,
-            "/api/protheus/v1/financeiro/contasareceber",
-            "/rest/api/protheus/v1/contas-receber",
-            "/api/protheus/v1/contas-receber",
-            "/rest/api/v1/bills-to-receive",
-            "/api/v1/bills-to-receive",
-            "/rest/api/framework/v1/billsToReceive",
-            "/rest/contas-receber",
-            "/rest/titulos",
-          ].filter((p): p is string => Boolean(p))
-        )
-      );
-
-    let lastError: Error | null = null;
-    for (const path of candidatePaths) {
-      try {
-        const rows = await this.get(path, "PROTHEUS_REST_CONTAS_RECEBER_PATH");
-        if (rows) return rows;
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
-        if (lastError.message.includes("404")) continue;
-        throw lastError;
-      }
-    }
-
-    if (lastError) {
-      if (lastError.message.includes("404")) {
-        return [{ E1_PREFIXO: "1", E1_NUM: "000000001", E1_PARCELA: "1", E1_CLIENTE: "000001", E1_LOJA: "01", E1_EMISSAO: new Date().toISOString().split("T")[0].replace(/-/g, ""), E1_VENCTO: new Date().toISOString().split("T")[0].replace(/-/g, ""), E1_VALOR: "5000.00", E1_SALDO: "5000.00", D_E_L_E_T_: "" }];
-      }
-      throw lastError;
-    }
-    return [];
+    const candidatePaths = buildCandidatePaths(customPath, [
+      this.config.paths.contasReceber,
+      process.env.PROTHEUS_REST_CONTAS_RECEBER_PATH,
+      ...CONTAS_RECEBER_FALLBACK_PATHS,
+    ]);
+    return fetchRowsFromFirstPath(
+      candidatePaths,
+      (path) => this.get(path, "PROTHEUS_REST_CONTAS_RECEBER_PATH"),
+      buildFallbackContasReceberRows
+    );
   }
 
   async fetchBaixas(customPath?: string): Promise<ProtheusRow[]> {
-    const candidatePaths = customPath
-      ? [customPath]
-      : Array.from(
-        new Set(
-          [
-            this.config.paths.baixas,
-            process.env.PROTHEUS_REST_BAIXAS_PATH,
-            "/api/protheus/v1/financeiro/baixas",
-            "/api/protheus/v1/financeiro/movimentos",
-            "/rest/api/protheus/v1/baixas",
-            "/api/protheus/v1/baixas",
-            "/rest/api/v1/write-offs",
-            "/api/v1/write-offs",
-            "/rest/api/framework/v1/writeOffs",
-            "/rest/baixas",
-          ].filter((p): p is string => Boolean(p))
-        )
-      );
-
-    let lastError: Error | null = null;
-    for (const path of candidatePaths) {
-      try {
-        const rows = await this.get(path, "PROTHEUS_REST_BAIXAS_PATH");
-        if (rows) return rows;
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
-        if (lastError.message.includes("404")) continue;
-        throw lastError;
-      }
-    }
-
-    if (lastError) {
-      if (lastError.message.includes("404")) {
-        return [];
-      }
-      throw lastError;
-    }
-    return [];
+    const candidatePaths = buildCandidatePaths(customPath, [
+      this.config.paths.baixas,
+      process.env.PROTHEUS_REST_BAIXAS_PATH,
+      ...BAIXAS_FALLBACK_PATHS,
+    ]);
+    return fetchRowsFromFirstPath(
+      candidatePaths,
+      (path) => this.get(path, "PROTHEUS_REST_BAIXAS_PATH"),
+      () => []
+    );
   }
 }
 

@@ -34,6 +34,41 @@ export interface ProtheusCredencialStore {
   protheusCredencial?: ProtheusCredencialDelegate;
 }
 
+async function executeTokenRequest(tokenUrl: string, basicAuth: string, body: URLSearchParams): Promise<Response> {
+  try {
+    return await fetch(tokenUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+      cache: "no-store",
+    });
+  } catch (err) {
+    throw new ProtheusClientError("Falha de rede ao conectar com servico de autenticacao do Protheus", err);
+  }
+}
+
+async function interpretTokenResponse(res: Response): Promise<{ token: string; expiresAt: Date }> {
+  if (!res.ok) {
+    logIntegration("Falha na requisicao de token Protheus", { status: res.status });
+    if (res.status === 400 || res.status === 401) {
+      throw new ProtheusClientError("Credenciais Protheus invalidas ou nao autorizadas");
+    }
+    throw new ProtheusClientError(`Servico de autenticacao do Protheus retornou status ${res.status}`);
+  }
+
+  const data = (await res.json()) as OAuthTokenResponse;
+  if (!data.access_token) {
+    throw new ProtheusClientError("Resposta de token invalida do Protheus (access_token ausente)");
+  }
+
+  const durationSec = Number(data.expires_in) || 3600;
+  const expiresAt = new Date(Date.now() + durationSec * 1000);
+  return { token: data.access_token, expiresAt };
+}
+
 export class DatabaseProtheusTokenProvider implements IProtheusTokenProvider {
   private readonly store: ProtheusCredencialStore;
 
@@ -56,72 +91,27 @@ export class DatabaseProtheusTokenProvider implements IProtheusTokenProvider {
     const tokenUrl = this.resolveTokenUrl(cred.baseUrl);
     const password = decryptText(cred.passwordEnc);
     const basicAuth = Buffer.from(`${cred.clientId}:${cred.clientId}`).toString("base64");
-
     const body = new URLSearchParams({
       grant_type: "password",
       username: cred.username,
       password,
     });
-
-    let res: Response;
-    try {
-      res = await fetch(tokenUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${basicAuth}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: body.toString(),
-        cache: "no-store",
-      });
-    } catch (err) {
-      throw new ProtheusClientError("Falha de rede ao conectar com servico de autenticacao do Protheus", err);
-    }
-
-    if (!res.ok) {
-      logIntegration("Falha na requisicao de token Protheus", { status: res.status });
-      if (res.status === 400 || res.status === 401) {
-        throw new ProtheusClientError("Credenciais Protheus invalidas ou nao autorizadas");
-      }
-      throw new ProtheusClientError(`Servico de autenticacao do Protheus retornou status ${res.status}`);
-    }
-
-    const data = (await res.json()) as OAuthTokenResponse;
-    if (!data.access_token) {
-      throw new ProtheusClientError("Resposta de token invalida do Protheus (access_token ausente)");
-    }
-
-    const durationSec = Number(data.expires_in) || 3600;
-    const expiresAt = new Date(Date.now() + durationSec * 1000);
-    return { token: data.access_token, expiresAt };
+    const res = await executeTokenRequest(tokenUrl, basicAuth, body);
+    return interpretTokenResponse(res);
   }
 
   async getValidToken(empresaId: string, forceRefresh = false): Promise<string> {
     try {
       // Delegate acessivel via Prisma Client
       const credDelegate = this.store.protheusCredencial;
-
-      if (!credDelegate) {
-        throw new ProtheusClientError("Modelo ProtheusCredencial ainda nao carregado no Prisma Client");
-      }
-
+      if (!credDelegate) throw new ProtheusClientError("Modelo ProtheusCredencial ainda nao carregado no Prisma Client");
       const cred = await credDelegate.findUnique({ where: { empresaId } });
-      if (!cred) {
-        throw new ProtheusClientError("Credenciais Protheus nao configuradas para esta empresa");
-      }
-
-      if (!forceRefresh && cred.accessToken && this.isTokenFresh(cred.expiresAt)) {
-        return cred.accessToken;
-      }
+      if (!cred) throw new ProtheusClientError("Credenciais Protheus nao configuradas para esta empresa");
+      if (!forceRefresh && cred.accessToken && this.isTokenFresh(cred.expiresAt)) return cred.accessToken;
 
       logIntegration("Gerando/renovando token Protheus sob demanda", { empresaId, forceRefresh });
       const { token, expiresAt } = await this.fetchNewToken(cred);
-
-      await credDelegate.update({
-        where: { empresaId },
-        data: { accessToken: token, expiresAt },
-      });
-
+      await credDelegate.update({ where: { empresaId }, data: { accessToken: token, expiresAt } });
       return token;
     } catch (error) {
       if (error instanceof ProtheusClientError) throw error;

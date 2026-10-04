@@ -97,15 +97,15 @@ O threshold global de 80% em `vitest.config.mts` é **a meta**, não o gate diá
 | `src/lib/utils/**` | 72.73% | 70% | 90% |
 | `src/lib/security/**` | 95.83% | 90% | 90% |
 | `src/lib/auth.ts` | 88.24% | 80% | 80% |
-| `src/lib/integration/**` | 43.04% | 41% | 55% |
+| `src/lib/integration/**` | 55.64% | 55% | 55% (atingido) |
 | `src/hooks/**` | 18.13% | 16% | 30% |
 | `src/components/**` | 8.23% | 6% | 30% |
-| `src/app/api/**` | 27.75% | 25% | 60% |
-| **Global** | **38.99% linhas / 38.15% stmts / 35.64% funcs / 29.38% branches** | **36 / 36 / 33 / 27** | **não reduzir; meta 80%** |
+| `src/app/api/**` | 81.50% | 60% | 60% |
+| **Global** | **50.97% linhas / 50.50% stmts / 48.33% funcs / 41.32% branches** | **48 / 48 / 46 / 39** | **não reduzir; meta 80%** |
 
 > **Como estes números foram medidos:** agregação recursiva sobre `coverage/lcov.info` (cobertura de todos os arquivos sob o diretório). Os valores anteriores desta tabela (ex.: `src/lib/utils/**` = 96.45%) vinham das linhas de diretório do relatório texto, que **não agrega subdiretórios** — por isso `src/lib/utils/charts/*` (0%) não contava. O threshold em `vitest.config.mts` usa o globo recursivo, então vale o número daqui.
 
-> Cobrindo `sync-engine`, `protheus-adapter`, `pull-and-sync`, `protheus-client-factory` e as rotas `dashboard`, `upload`, `protheus/pull`, a cobertura global ultrapassa 80% com ~35 testes additional. Esse é o objetivo do trimestre.
+> **Previsão da v1.0 corrigida pela medição (Fase 1):** a nota original dizia que cobrindo `sync-engine`, `protheus-adapter`, `pull-and-sync`, `protheus-client-factory` e as rotas `dashboard`/`upload`/`protheus/pull` a global passaria de 80% com ~35 testes. **Falso:** Fase 1 cobriu 5 desses 6 alvos (50 testes) e a global foi de 38.99% → **50.97%**. O restante até 80% exige `sync-engine`, `protheus-rest-client` e sobretudo os `hooks/**` (18.13%) e `components/**` (8.23%).
 
 ### 3.5 Documentar a baseline
 
@@ -496,13 +496,13 @@ Tipos em uso: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 
 **Medição:** `readFileSync(p,'utf8').split('\n').length` sobre `.ts`/`.tsx` em `src/`, `components/`, `lib/` (exclui `node_modules`, `.next`, `coverage`). Complexidade via ESLint `complexity` (§12.3).
 **Universo:** 87 arquivos-fonte + 18 arquivos de teste.
-**Baseline do gate (Out/2026, pós Fase 0):** 18 arquivos de teste, **115 testes verdes**, **38.99% linhas** (`docs/reports/coverage-2026-10.txt`); `pnpm test` + `pnpm lint` (0 erros) + `npx tsc --noEmit` + `npx next build` verdes; `pnpm test:coverage` exit 0 com os thresholds da §3.4.
+**Baseline do gate (Out/2026, pós Fase 1):** 24 arquivos de teste, **165 testes verdes**, **50.97% linhas** (`docs/reports/coverage-2026-10.txt`); `pnpm test` + `pnpm lint` (0 erros) + `npx tsc --noEmit` + `npx next build` verdes; `pnpm test:coverage` exit 0 com os thresholds da §3.4. (Fase 0 registrava 115 testes / 38.99%.)
 
 ### 11.1 🔴 CRÍTICA — Bloqueia merge
 
 | Arquivo | Linhas | CC máx. | Cobertura | Ação |
 |---------|--------|--------|-----------|------|
-| `src/lib/integration/protheus-rest-client.ts` | **440** | 20 | 51.38% | Extrair: `rest-auth.ts`, `rest-retry.ts`, `rest-parse.ts`, `rest-mock.ts` em `_internals/` |
+| `src/lib/integration/protheus-rest-client.ts` | **440** | 20 | 52.08% | Extrair: `rest-auth.ts`, `rest-retry.ts`, `rest-parse.ts`, `rest-mock.ts` em `_internals/` |
 | `src/lib/integration/sync-engine.ts` | **286** | — | 42.99% | Extrair por agregado: `sync-clientes.ts`, `sync-faturamento.ts`, `sync-contas-receber.ts`, `sync-baixas.ts` |
 
 ### 11.2 🟠 ALTA — Decompor antes do merge
@@ -510,13 +510,13 @@ Tipos em uso: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 | Arquivo | Linhas | CC | Cobertura | Ação |
 |---------|--------|----|-----------|------|
 | `src/app/api/protheus/empresa/route.ts` | 200 | **36** | 56.89% | 🔴 por CC; `handlers/` + `_internals/` |
-| `src/lib/integration/protheus-adapter.ts` | 78 | **23 / 18 / 11** | **0%** | 🔴 por CC; 1 função por entidade; testes primeiro |
+| `src/lib/integration/protheus-adapter.ts` | 78 | **23 / 18 / 11** | 100% ✅ (Fase 1) | 🔴 por CC; 1 função por entidade |
 | `src/app/dashboard/page.tsx` | — | **22** | 85.71% | Extrair para `components/dashboard/` |
-| `src/lib/integration/protheus-rest-client.ts` (fn) | — | 20 / 19 / 14 | — | Evencer com §11.1 |
+| `src/lib/integration/protheus-rest-client.ts` (fn) | — | 20 / 19 / 14 | — | Evincer com §11.1 |
 | `src/components/dashboard/DashboardChartsGrid.tsx` | — | 18 | 100% | Extrair série de gráfico por hook |
-| `src/app/api/dashboard/route.ts` | 164 | 15 | **0%** | `handlers/dashboard.ts` + `_internals/dashboard-query.ts` |
-| `src/app/api/upload/route.ts` | **136** | — | **0%** | Acima do limite de 120 (§4); extrair parse/validação p/ `handlers/` + `_internals/` |
-| `src/lib/auth.ts` | 93 | 12 | 88.23% | Extrair callbacks de token para `auth/claims.ts` |
+| `src/app/api/dashboard/route.ts` | 164 | 15 | 100% ✅ (Fase 1) | `handlers/dashboard.ts` + `_internals/dashboard-query.ts` |
+| `src/app/api/upload/route.ts` | **136** | — | 100% ✅ (Fase 1) | Acima do limite de 120 (§4); extrair parse/validação p/ `handlers/` + `_internals/` |
+| `src/lib/auth.ts` | 93 | 12 | 88.24% | Extrair callbacks de token para `auth/claims.ts` |
 | `src/lib/integration/protheus-soap-client.ts` | **172** | — | **0%** | 🟡 gatilho §5 (150+): planejar divisão; limite de client (200) ainda ok |
 
 > **11 funções com CC > 10** medidas (total: 11). Nenhuma com CC ≥ 16 exceto as acima; após as duas extrações 🔴 a fila deve ficar zerada.
@@ -528,7 +528,7 @@ Tipos em uso: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 | Raízes duplicadas | `components/ui/*` (4 arquivos) e `lib/utils.ts` (1) sem nenhum import em todo o repo; `components.json` aponta para `@/components` e `@/lib/utils` | **Deletar** `components/` e `lib/` da raiz | ✅ Fase 0 — deletadas (`git rm`), gate revalidado (tsc/build/test verdes) |
 | `cn` importado de `"cn"` | `src/components/ui/{button,input}.tsx` e `src/lib/utils.ts` re-exportam o pacote `cn` em vez de usar `@/lib/utils` como fonte única | Apontar todos os imports para `@/lib/utils` | ⬜ Pendente (mecânico, §9.3) |
 | Coverage gate vermelho | `pnpm test:coverage` saía 1 (38.99% < 80%) e o CI rodava **só** esse comando; pior: o workflow disparava em `main` e o branch do repo é `master`, **nunca rodava** | Rampa §3.4: thresholds = real − 2 + globs por diretório | ✅ Fase 0 — exit 0; CI agora roda `prisma generate` + coverage + lint + tsc + `next build`, e dispara em `master` |
-| Rotas sem teste | `api/dashboard` 0%, `api/upload` 0%, `api/protheus/pull` 0% | Cobertura mínima §3.3 | ⬜ Pendente (Fase 1 do plano) |
+| Rotas sem teste | `api/dashboard` 0%, `api/upload` 0%, `api/protheus/pull` 0% | Cobertura mínima §3.3 | ✅ Fase 1 — as 3 rotas (e `protheus-adapter`, `pull-and-sync`, `protheus-client-factory`) agora com **100% de linhas** e testes de caracterização; global 38.99% → 50.97% |
 | Grafo de contexto | `graft/` só tinha `.cache/telemetry-repo-id.json` | Rodar `graft build` | ✅ Fase 0 — 108 arquivos, 377 nós, `graft/INDEX.md` gerado. **Não versionar:** `graft/` é cache local (`.gitignore /graft/` e o próprio `graft build` dizem "teammates run `graft build`") |
 | `.env.example` incompleto e ignorado | `INGEST_API_KEY` e `PROTHEUS_CRED_ENCRYPTION_KEY` usados em código, ausentes; e o padrão `.env*` do `.gitignore` **impedia o commit do arquivo** | Documentar (sem valor real) e un-ignorar | ✅ Fase 0 — variáveis documentadas, `!.env.example` adicionado ao `.gitignore`, arquivo versionado |
 
@@ -633,4 +633,5 @@ Revisar trimestralmente e atualizar conforme: padrões da indústria, mudanças 
 
 **Última atualização:** Outubro 2026 (v1.0 — criada a partir da política Omni-Reporte v4.0, adaptada à stack PROT; fila medida com 2 arquivos 🔴, 11 funções com CC > 10, cobertura global 38.99%)
 **Fase 0 aplicada (Out/2026):** rampa §3.4 ligada (exit 0), CI completo (coverage + lint + tsc + build), `components/` e `lib/` da raiz deletados, `.env.example` versionado com as 2 variáveis que faltavam, `graft build` executado. Baseline: 18 arquivos de teste, 115 testes, 38.99% linhas.
+**Fase 1 aplicada (Out/2026):** testes de caracterização dos alvos 0% — `protheus-adapter`, `api/dashboard`, `api/upload`, `api/protheus/pull`, `pull-and-sync`, `protheus-client-factory` (50 testes, todos a 100% de linhas); thresholds subidos (ratchet) para 48/48/46/39 globais. Baseline: 24 arquivos de teste, 165 testes, 50.97% linhas. Nenhuma linha de código de produção alterada.
 **Próxima revisão:** Janeiro 2027

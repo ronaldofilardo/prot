@@ -94,14 +94,14 @@ O threshold global de 80% em `vitest.config.mts` é **a meta**, não o gate diá
 
 | Diretório | Cobertura real Out/2026 (linhas) | Threshold em `vitest.config.mts` | Floor / meta |
 |-----------|--------------------------------|-------------------------------|--------------|
-| `src/lib/utils/**` | 72.73% | 70% | 90% |
+| `src/lib/utils/**` | 97.33% | 90% | 90% |
 | `src/lib/security/**` | 95.83% | 90% | 90% |
 | `src/lib/auth*.ts` (`auth.ts` + `auth-claims.ts`) | 89.19% | 80% | 80% |
-| `src/lib/integration/**` | 62.53% | 55% | 55% (atingido) |
-| `src/hooks/**` | 18.13% | 16% | 30% |
-| `src/components/**` | 13.69% | 11% | 30% |
-| `src/app/api/**` | 83.08% | 60% | 60% |
-| **Global** | **54.64% linhas / 54.22% stmts / 54.43% funcs / 42.20% branches** | **52 / 41 / 52 / 52** | **não reduzir; meta 80%** |
+| `src/lib/integration/**` | 83.54% | 55% | 55% (atingido) |
+| `src/hooks/**` | 99.48% | 30% | 30% |
+| `src/components/**` | 97.02% | 30% | 30% |
+| `src/app/api/**` | 91.28% | 60% | 60% |
+| **Global** | **90.70% linhas / 90.50% stmts / 92.40% funcs / 81.30% branches** | **80 / 79 / 80 / 80** | **meta 80% atingida (Fase 6); nunca reduzir** |
 
 > **Como estes números foram medidos:** agregação recursiva sobre `coverage/lcov.info` (cobertura de todos os arquivos sob o diretório). Os valores anteriores desta tabela (ex.: `src/lib/utils/**` = 96.45%) vinham das linhas de diretório do relatório texto, que **não agrega subdiretórios** — por isso `src/lib/utils/charts/*` (0%) não contava. O threshold em `vitest.config.mts` usa o globo recursivo, então vale o número daqui.
 
@@ -638,4 +638,5 @@ Revisar trimestralmente e atualizar conforme: padrões da indústria, mudanças 
 **Fase 3 aplicada (Out/2026):** as 3 rotas acima de 120 linhas divididas no padrão §7.2/§8.3 (`route.ts` → `handlers/` + `_internals/`): `protheus/empresa` 199 → 66 (GET CC 36 → ≤10; `_internals/token-info.ts` deduplica o fallback de token), `dashboard` 163 → 37 (CC 15 → ≤10), `upload` 135 → 30 (POST 77 → ≤16). Mesmos payloads/msgs/logs/ordem de chamada (404 do Protheus ainda antes da chamada externa); 165/165 testes; ratchet global para 51/51/50/41 (53.81% linhas; `src/app/api/**` 83.08%). Commits `3e73314`, `d58e59c`, `37546b8`.
 **Fase 4 aplicada (Out/2026):** fila de CC > 10 em `lib/` eliminada + 5 funções > 30 linhas decompostas: `protheus-adapter.ts` CC 23/18/11 → ≤3 (helpers em `_internals/adapter-fields.ts`, sem testes alterados — `externalId` ainda propaga `"undefined"`), `authorize` → `lib/auth-claims.ts` (`extrairCredenciais` + `validarCredenciais`; irmão de `auth.ts` para não colidir na resolução), `getProtheusClient` 40 → 13 linhas (`opcoesRestOauth` + `clientFromCredencial`), `fetchNewToken` 43 → 10 + `getValidToken` 33 → 16 (`executeTokenRequest` + `interpretTokenResponse`), `pullAndSyncFromProtheus` 58 → 13 (`executarJob` + `registrarFalha`). 165/165 testes; ratchet global para 51/41/51/52 (54.19% linhas / 42.10% branches — branches caiu 1.8pp com os novos pontos de decisão, ainda acima do floor 41); globo de auth na §3.4 ampliado para `src/lib/auth*.ts` (89.19% combinado ≥ floor 80). Commits `59f1736`, `c4800ea`, `4b9c973`, `982df73`, `21290e2`.
 **Fase 5 aplicada (Out/2026):** os 2 últimos alvos de CC > 10, **zerando a fila de complexidade**: `dashboard/page.tsx` DashboardContent CC 22 → 6 (110 → 50 linhas) com `DashboardErrorState`, `DashboardTabPanel` (CC 7) e puras `buildChartsData`/`buildKpiData` em `components/dashboard/dashboard-tab-data.ts`; `DashboardChartsGrid.tsx` CC 18 → 7 (91 linhas) com seções `FaturamentoCharts`/`ProjecaoCharts`. DOM, props, testids e 4 skeletons idênticos; +1 teste de caracterização do estado de erro (166 testes; `page.tsx` 85.71% → 100%); ratchet global para 52/41/52/52 (54.64% linhas; glob `src/components/**` 6 → 11, real 8.23% → 13.69%). Commits `3d43a33`, `cba9c8f`.
+**Fase 6 aplicada (Out/2026):** rampa de cobertura até a meta de 80% — **6 batches, +143 testes (166 → 309)**: 6a `lib/utils/charts` (fachada `dashboardCharts`: temas, formatters, donut, projeção); 6b `components/charts` (echarts mockado + `useTheme` mockado) e `components/ui` (Table/Card/Badge/Button/Input); 6c hooks `useLogin` (6), `useTheme` (3, `matchMedia` stubado) e `useDashboard` (7, `useFilters` real + debounce 350ms com timers fake); 6d `useEmpresaProtheus` (11, carga/sincronização com timers fake) e `useUploadPanel` (+10: drop, upload, falhas); 6e componentes — `dashboard-widgets` (12), `dashboard-filters` (10), `empresa-cards` (14), `empresa-protheus-panel` (4, integração com fetch), `upload-sections` (8) e `login-form` (5), com `vitest-setup.ts` migrado para `@testing-library/jest-dom/vitest` (matchers tipados); 6f `sync-baixas` (5), `sync-contas-receber` (5), `protheus-soap-client` (7: envelope, auth, SOAP Fault, factory) e `token-info` (12: JWT, fallbacks, `empresaFromTokenInfo`). Global: **54.64% → 90.70% linhas / 81.30% branches**; ratchet para **80/79/80/80** + globs (hooks 16 → 30, components 11 → 30, utils 70 → 90). Descobertas cobertas: `hooks` 156/156, `components` 147/147, `charts`/`utils` 81/81, integration 96/96. Commits `984ad7b`, `da21908`, `8f0dc55`, `4fb9649`, `f7e98ac`, `7b6c219`.
 **Próxima revisão:** Janeiro 2027

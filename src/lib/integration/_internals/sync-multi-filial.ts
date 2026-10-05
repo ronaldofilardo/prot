@@ -43,8 +43,8 @@ export async function fetchFiliasDaMatriz(
     const filias = await client.fetchFiliais();
     if (filias && filias.length > 0) {
       return filias.map((f) => ({
-        codigo: f.codigo || filialPadrao,
-        nome: f.nome || `Filial ${f.codigo}`,
+        codigo: f.codigoFilial || filialPadrao,
+        nome: f.nome || `Filial ${f.codigoFilial}`,
         uf: f.uf || "",
       }));
     }

@@ -30,7 +30,6 @@ function InvoicesTitleBlock() {
     </div>
   );
 }
-
 function InvoicesActions({ totalNotas, loading, onRefresh }: { totalNotas: number; loading: boolean; onRefresh?: () => void }) {
   return (
     <div className="flex items-center gap-3">
@@ -48,7 +47,6 @@ function InvoicesActions({ totalNotas, loading, onRefresh }: { totalNotas: numbe
     </div>
   );
 }
-
 function InvoicesThead() {
   return (
     <thead className="bg-slate-50 dark:bg-slate-800/60">
@@ -62,7 +60,6 @@ function InvoicesThead() {
     </thead>
   );
 }
-
 function InvoicesBody({ faturamentos, loading, totalNotas }: { faturamentos: DashboardNotaFiscal[]; loading: boolean; totalNotas: number }) {
   return (
     <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">

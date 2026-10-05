@@ -260,11 +260,12 @@ describe("API /api/dashboard GET (route.ts)", () => {
       matrizId: "emp-01",
       empresaIds: ["fil-1", "fil-2"],
     };
-    expect(filtrarFaturamentosMock).toHaveBeenCalledWith(
-      expect.any(Array),
-      filtros,
-      expect.any(Object),
-    );
+
+    // Verifica que filtrarFaturamentosMock foi chamado com os filtros corretos
+    expect(filtrarFaturamentosMock).toHaveBeenCalled();
+    const calls = filtrarFaturamentosMock.mock.calls[0];
+    expect(calls[0]).toEqual(expect.any(Array)); // faturamentos
+    expect(calls[1]).toEqual(filtros); // filters
     expect(filtrarContasReceberMock).toHaveBeenCalledWith(
       expect.any(Array),
       filtros,

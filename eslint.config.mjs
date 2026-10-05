@@ -22,9 +22,18 @@ const eslintConfig = defineConfig([
     rules: { complexity: ["error", 10] },
   },
   {
+    // REFACTORING_POLICY §11.4: funções com no máximo 30 linhas.
+    rules: { "max-lines-per-function": ["error", 30] },
+  },
+  {
+    // Testes são isentos de max-lines-per-function (callbacks de describe/it são longos por natureza).
+    files: ["**/__tests__/**", "**/*.test.*"],
+    rules: { "max-lines-per-function": "off" },
+  },
+  {
     // §4.1: prisma/ (ex.: seed.ts) fica fora do escopo de src/ — limite próprio de 300 linhas.
     files: ["prisma/**"],
-    rules: { complexity: "off" },
+    rules: { complexity: "off", "max-lines-per-function": "off" },
   },
 ]);
 

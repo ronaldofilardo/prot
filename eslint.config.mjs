@@ -12,7 +12,20 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Worktrees e artefatos gerados (não são fonte do projeto):
+    ".kilo/**",
+    "coverage/**",
+    "graft/**",
   ]),
+  {
+    // REFACTORING_POLICY §4: complexidade ciclomática máxima por função = 10.
+    rules: { complexity: ["error", 10] },
+  },
+  {
+    // §4.1: prisma/ (ex.: seed.ts) fica fora do escopo de src/ — limite próprio de 300 linhas.
+    files: ["prisma/**"],
+    rules: { complexity: "off" },
+  },
 ]);
 
 export default eslintConfig;

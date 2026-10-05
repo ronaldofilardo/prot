@@ -7,6 +7,8 @@
     "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "check-quality": "node scripts/check-quality.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "postinstall": "exit 0"

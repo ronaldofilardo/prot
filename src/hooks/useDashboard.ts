@@ -3,56 +3,50 @@
 import { useEffect, useState, useTransition, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useFilters } from "@/hooks/useFilters";
-import type { EmpresaGrupoDTO } from "@/lib/types/dashboard";
+import type { DashboardData, UseDashboardResult } from "./dashboard-types";
 
-export interface DashboardData {
-  totalClientes: number;
-  clientesAtivosFiltrados: number;
-  faturamentoTotal: number;
-  valorVencido: number;
-  ticketMedio: number;
-  faturamentos: Array<{
-    id: string;
-    numeroNota: string;
-    clienteNome: string;
-    clienteCodigo: string;
-    dataEmissao: string;
-    valorTotal: number;
-  }>;
-  faturamentoMes: Array<{ mes: string; valor: number }>;
-  faturamentoCliente: Array<{ nome: string; valor: number }>;
-  regiaoParticipacao: Array<{ nome: string; valor: number }>;
-  projecao: Array<{ mes: string; real: number | null; projetado: number | null }>;
-  clientes: Array<{
-    id: string;
-    codigo: string;
-    nome: string;
-    cidade: string;
-    estado: string;
-  }>;
-  grupos: EmpresaGrupoDTO[];
+export type { DashboardData, UseDashboardResult } from "./dashboard-types";
+
+type CargaContexto = {
+  cliente: string;
+  dataInicial: string;
+  dataFinal: string;
+  matrizId: string | null;
+  empresaIds: string[];
+  setLoading: (v: boolean) => void;
+  setError: (v: string | null) => void;
+  setData: (v: DashboardData) => void;
+  irParaUrl: (url: string) => void;
+};
+
+async function carregarDashboardApi(ctx: CargaContexto): Promise<void> {
+  ctx.setLoading(true);
+  ctx.setError(null);
+  try {
+    const params = new URLSearchParams();
+    if (ctx.cliente) params.set("cliente", ctx.cliente);
+    if (ctx.dataInicial) params.set("inicial", ctx.dataInicial);
+    if (ctx.dataFinal) params.set("final", ctx.dataFinal);
+    if (ctx.matrizId) params.set("matriz", ctx.matrizId);
+    ctx.empresaIds.forEach((id) => params.append("empresaId", id));
+
+    const queryStr = params.toString();
+    ctx.irParaUrl(queryStr ? `/dashboard?${queryStr}` : `/dashboard`);
+
+    const res = await fetch(`/api/dashboard?${params.toString()}`);
+    if (!res.ok) throw new Error(`Erro na requisição: ${res.statusText}`);
+    const json: DashboardData = await res.json();
+    ctx.setData(json);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Erro ao conectar com a API";
+    ctx.setError(message);
+  } finally {
+    ctx.setLoading(false);
+  }
 }
 
-export interface UseDashboardResult {
-  data: DashboardData | null;
-  loading: boolean;
-  error: string | null;
-  temFiltroAtivo: boolean;
-  carregarDados: () => Promise<void>;
-}
-
-export function useDashboard(): UseDashboardResult {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
-
-  const { cliente, dataInicial, dataFinal, matrizId, empresaIds, setCliente, setDataInicial, setDataFinal } =
-    useFilters();
-
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+function useFiltrosDaUrl(searchParams: URLSearchParams): void {
+  const { setCliente, setDataInicial, setDataFinal } = useFilters();
   useEffect(() => {
     const urlCliente = searchParams.get("cliente");
     const urlInicial = searchParams.get("inicial");
@@ -61,33 +55,27 @@ export function useDashboard(): UseDashboardResult {
     if (urlInicial) setDataInicial(urlInicial);
     if (urlFinal) setDataFinal(urlFinal);
   }, [searchParams, setCliente, setDataInicial, setDataFinal]);
+}
 
-  const carregarDados = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (cliente) params.set("cliente", cliente);
-      if (dataInicial) params.set("inicial", dataInicial);
-      if (dataFinal) params.set("final", dataFinal);
-      if (matrizId) params.set("matriz", matrizId);
-      empresaIds.forEach((id) => params.append("empresaId", id));
+export function useDashboard(): UseDashboardResult {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
+  useFiltrosDaUrl(searchParams);
+  const { cliente, dataInicial, dataFinal, matrizId, empresaIds } = useFilters();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-      const queryStr = params.toString();
-      const novaUrl = queryStr ? `/dashboard?${queryStr}` : `/dashboard`;
-      startTransition(() => router.replace(novaUrl));
-
-      const res = await fetch(`/api/dashboard?${params.toString()}`);
-      if (!res.ok) throw new Error(`Erro na requisição: ${res.statusText}`);
-      const json: DashboardData = await res.json();
-      setData(json);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao conectar com a API";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [cliente, dataInicial, dataFinal, matrizId, empresaIds, router]);
+  const carregarDados = useCallback(
+    () =>
+      carregarDashboardApi({
+        cliente, dataInicial, dataFinal, matrizId, empresaIds,
+        setLoading, setError, setData,
+        irParaUrl: (url) => startTransition(() => router.replace(url)),
+      }),
+    [cliente, dataInicial, dataFinal, matrizId, empresaIds, router, startTransition]
+  );
 
   useEffect(() => {
     const timer = setTimeout(carregarDados, 350);

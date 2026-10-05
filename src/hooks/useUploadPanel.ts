@@ -1,55 +1,19 @@
 import { useState, useCallback } from "react";
+import { enviarUpload, puxarDoProtheus } from "./upload-panel-actions";
+import type { PullEntityResult } from "./upload-panel-actions";
 
-export interface SyncResult {
-  entidade: string;
-  processados: number;
-  criados: number;
-  atualizados: number;
-  erros: number;
-}
-
-export interface PullEntityResult {
-  arquivo: string;
-  entidade: string;
-  registros: number;
-  sync: SyncResult;
-  erro?: string;
-}
+export type { PullEntityResult, SyncResult } from "./upload-panel-actions";
 
 export function useUploadPanel(onSuccess?: () => void) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState<PullEntityResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-
   const [pulling, setPulling] = useState(false);
   const [pullResults, setPullResults] = useState<PullEntityResult[] | null>(null);
   const [pullError, setPullError] = useState<string | null>(null);
 
-  const handlePullFromProtheus = async () => {
-    setPulling(true);
-    setPullError(null);
-    setPullResults(null);
-
-    try {
-      const res = await fetch("/api/protheus/pull", { method: "POST" });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setPullError(data.error || "Erro ao atualizar do Protheus");
-        return;
-      }
-
-      setPullResults(data.resultados);
-      if (data.success && onSuccess) {
-        onSuccess();
-      }
-    } catch {
-      setPullError("Falha ao conectar com o servidor");
-    } finally {
-      setPulling(false);
-    }
-  };
+  const handlePullFromProtheus = () => puxarDoProtheus({ setPulling, setPullError, setPullResults }, onSuccess);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -65,53 +29,8 @@ export function useUploadPanel(onSuccess?: () => void) {
     setResults(null);
     setError(null);
   };
+  const removeFile = (index: number) => setFiles((prev) => prev.filter((_, i) => i !== index));
+  const handleUpload = () => enviarUpload({ setUploading, setError, setResults, setFiles }, files, onSuccess);
 
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleUpload = async () => {
-    if (files.length === 0) return;
-    setUploading(true);
-    setError(null);
-    setResults(null);
-
-    try {
-      const formData = new FormData();
-      files.forEach((f) => formData.append("files", f));
-
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Erro no upload");
-        return;
-      }
-
-      setResults(data.resultados);
-      setFiles([]);
-      if (onSuccess) {
-        onSuccess();
-      }
-    } catch {
-      setError("Falha ao conectar com o servidor");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return {
-    files,
-    uploading,
-    results,
-    error,
-    pulling,
-    pullResults,
-    pullError,
-    handlePullFromProtheus,
-    handleDrop,
-    handleFileInput,
-    removeFile,
-    handleUpload
-  };
+  return { files, uploading, results, error, pulling, pullResults, pullError, handlePullFromProtheus, handleDrop, handleFileInput, removeFile, handleUpload };
 }

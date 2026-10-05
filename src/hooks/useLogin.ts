@@ -5,6 +5,38 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { logAuth } from "@/lib/utils/logger";
 
+type SubmissaoDeps = {
+  setLoading: (v: boolean) => void;
+  setError: (v: string | null) => void;
+  irParaDashboard: () => void;
+};
+
+async function submeterLogin(
+  e: React.FormEvent,
+  campos: { email: string; cpf: string; password: string },
+  d: SubmissaoDeps
+): Promise<void> {
+  e.preventDefault();
+  d.setLoading(true);
+  d.setError(null);
+  try {
+    logAuth("Iniciando processo de autenticacao");
+    const identifier = (campos.email.trim() || campos.cpf.trim()).toLowerCase();
+    const result = await signIn("credentials", { email: identifier, password: campos.password, redirect: false });
+    if (result?.error) {
+      logAuth("Falha na autenticacao");
+      d.setError("Credenciais invalidas. Verifique seu e-mail e senha.");
+      return;
+    }
+    logAuth("Autenticacao bem-sucedida, redirecionando");
+    d.irParaDashboard();
+  } catch {
+    d.setError("Nao foi possivel autenticar. Verifique suas credenciais.");
+  } finally {
+    d.setLoading(false);
+  }
+}
+
 export function useLogin() {
   const [cpf, setCpf] = useState("");
   const [email, setEmail] = useState("");
@@ -20,44 +52,10 @@ export function useLogin() {
   }, [error]);
 
   const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      setLoading(true);
-      setError(null);
-
-      try {
-        logAuth("Iniciando processo de autenticacao");
-
-        const identifier = (email.trim() || cpf.trim()).toLowerCase();
-
-        const result = await signIn("credentials", {
-          email: identifier,
-          password,
-          redirect: false,
-        });
-
-        if (result?.error) {
-          logAuth("Falha na autenticacao");
-          setError("Credenciais invalidas. Verifique seu e-mail e senha.");
-          return;
-        }
-
-        logAuth("Autenticacao bem-sucedida, redirecionando");
-        router.replace("/dashboard");
-      } catch {
-        setError("Nao foi possivel autenticar. Verifique suas credenciais.");
-      } finally {
-        setLoading(false);
-      }
-    },
+    (e: React.FormEvent) =>
+      submeterLogin(e, { email, cpf, password }, { setLoading, setError, irParaDashboard: () => router.replace("/dashboard") }),
     [email, cpf, password, router]
   );
 
-  return {
-    cpf, setCpf,
-    email, setEmail,
-    password, setPassword,
-    loading, error,
-    handleSubmit,
-  };
+  return { cpf, setCpf, email, setEmail, password, setPassword, loading, error, handleSubmit };
 }

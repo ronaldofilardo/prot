@@ -31,10 +31,22 @@ export type FiltrosState = {
   setEmpresaIds: (empresaIds: string[]) => void;
 };
 
-export const useFilters = create<FiltrosState>((set) => ({
+type EstadoInicial = Pick<
+  FiltrosState,
+  "cliente" | "dataInicial" | "dataFinal" | "clienteFilter" | "matrizId" | "empresaIds"
+>;
+
+const ESTADO_INICIAL: EstadoInicial = {
   cliente: "",
   dataInicial: "",
   dataFinal: "",
+  clienteFilter: { codigo: "", nome: "", selecao: "todos" },
+  matrizId: null,
+  empresaIds: [],
+};
+
+export const useFilters = create<FiltrosState>((set) => ({
+  ...ESTADO_INICIAL,
 
   setCliente: (cliente: string) =>
     set({
@@ -49,25 +61,14 @@ export const useFilters = create<FiltrosState>((set) => ({
   setDataInicial: (dataInicial: string) => set({ dataInicial }),
   setDataFinal: (dataFinal: string) => set({ dataFinal }),
 
-  limparFiltros: () =>
-    set({
-      cliente: "",
-      dataInicial: "",
-      dataFinal: "",
-      clienteFilter: { codigo: "", nome: "", selecao: "todos" },
-      matrizId: null,
-      empresaIds: [],
-    }),
+  limparFiltros: () => set({ ...ESTADO_INICIAL }),
 
-  clienteFilter: { codigo: "", nome: "", selecao: "todos" },
   setClienteFilter: (filter: FiltroCliente) =>
     set({
       clienteFilter: filter,
       cliente: filter.nome || filter.codigo || "",
     }),
 
-  matrizId: null,
-  empresaIds: [],
   // Trocar de matriz reseta as filiais marcadas: a seleção anterior
   // pertence a outro grupo e não deve "vazar" para o novo.
   setMatriz: (matrizId: string | null) => set({ matrizId, empresaIds: [] }),

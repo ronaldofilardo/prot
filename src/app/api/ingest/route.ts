@@ -38,58 +38,60 @@ const SYNC_MAP: Record<EntidadeCanonica, SyncFunction> = {
   Baixa: syncBaixas as unknown as SyncFunction,
 };
 
+function validarApiKey(request: Request): NextResponse | null {
+  const apiKey = request.headers.get("x-api-key");
+  const expectedApiKey =
+    process.env.INGEST_API_KEY || process.env.SYNC_API_KEY || "ingest-secret-key-change-me";
+  if (!apiKey || apiKey !== expectedApiKey) {
+    return NextResponse.json({ error: "API Key invalida ou ausente" }, { status: 401 });
+  }
+  return null;
+}
+
+function validarPayload(payload: IngestPayload): NextResponse | null {
+  if (!payload.empresaId || !payload.entidade || !Array.isArray(payload.registros)) {
+    return NextResponse.json(
+      { error: "Payload invalido: empresaId, entidade e registros[] sao obrigatorios" },
+      { status: 400 }
+    );
+  }
+  if (!SYNC_MAP[payload.entidade]) {
+    return NextResponse.json(
+      { error: `Entidade '${payload.entidade}' nao suportada` },
+      { status: 400 }
+    );
+  }
+  return null;
+}
+
+async function executarSync(payload: IngestPayload) {
+  const syncFn = SYNC_MAP[payload.entidade];
+  return prisma.$transaction(async (tx) => {
+    const res = await syncFn(tx as PrismaClient, payload.empresaId, payload.registros);
+    await tx.syncLog.create({
+      data: {
+        empresaId: payload.empresaId,
+        entidade: payload.entidade,
+        operacao: "batch_upsert",
+        idempotencyKey: `batch-${payload.entidade}-${Date.now()}`,
+        status: res.erros > 0 ? "error" : "success",
+        mensagem: `${res.processados} processados, ${res.criados} criados, ${res.atualizados} atualizados, ${res.erros} erros`,
+        tentativas: 1,
+      },
+    });
+    return res;
+  });
+}
+
 export async function POST(request: Request) {
   try {
-    const apiKey = request.headers.get("x-api-key");
-    const expectedApiKey =
-      process.env.INGEST_API_KEY || process.env.SYNC_API_KEY || "ingest-secret-key-change-me";
-
-    if (!apiKey || apiKey !== expectedApiKey) {
-      return NextResponse.json(
-        { error: "API Key invalida ou ausente" },
-        { status: 401 }
-      );
-    }
-
+    const negado = validarApiKey(request);
+    if (negado) return negado;
     const payload: IngestPayload = await request.json();
-
-    if (!payload.empresaId || !payload.entidade || !Array.isArray(payload.registros)) {
-      return NextResponse.json(
-        { error: "Payload invalido: empresaId, entidade e registros[] sao obrigatorios" },
-        { status: 400 }
-      );
-    }
-
-    const syncFn = SYNC_MAP[payload.entidade];
-    if (!syncFn) {
-      return NextResponse.json(
-        { error: `Entidade '${payload.entidade}' nao suportada` },
-        { status: 400 }
-      );
-    }
-
-    const resultado = await prisma.$transaction(async (tx) => {
-      const res = await syncFn(tx as PrismaClient, payload.empresaId, payload.registros);
-
-      await tx.syncLog.create({
-        data: {
-          empresaId: payload.empresaId,
-          entidade: payload.entidade,
-          operacao: "batch_upsert",
-          idempotencyKey: `batch-${payload.entidade}-${Date.now()}`,
-          status: res.erros > 0 ? "error" : "success",
-          mensagem: `${res.processados} processados, ${res.criados} criados, ${res.atualizados} atualizados, ${res.erros} erros`,
-          tentativas: 1,
-        },
-      });
-
-      return res;
-    });
-
-    return NextResponse.json({
-      success: true,
-      resultado,
-    });
+    const invalido = validarPayload(payload);
+    if (invalido) return invalido;
+    const resultado = await executarSync(payload);
+    return NextResponse.json({ success: true, resultado });
   } catch (error) {
     logApiError("Erro no endpoint de ingestao", error);
     return NextResponse.json({ error: "Erro interno na ingestao" }, { status: 500 });

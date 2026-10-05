@@ -18,32 +18,28 @@ export const metadata: Metadata = {
   description: "Sistema de gestão financeira",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function DarkModeScript() {
   return (
-    <html
-      lang="pt-BR"
-      suppressHydrationWarning
-      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                  document.documentElement.classList.add('dark');
-                } else {
-                  document.documentElement.classList.remove('dark');
-                }
-              } catch (_) {}
-            `,
-          }}
-        />
-      </head>
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `
+          try {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+          } catch (_) {}
+        `,
+      }}
+    />
+  );
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="pt-BR" suppressHydrationWarning className={`${inter.variable} ${geistMono.variable} h-full antialiased`}>
+      <head><DarkModeScript /></head>
       <body className="min-h-full flex flex-col bg-background text-foreground transition-colors">
         <Providers>{children}</Providers>
       </body>

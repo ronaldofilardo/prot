@@ -1,37 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
+import type { EmpresaDados, TokenStatusInfo, ProtheusFilialInfo } from "./empresa-protheus-types";
 
-export interface EmpresaDados {
-  id?: string;
-  nome: string;
-  cnpj: string | null;
-  codigoEmpresa?: string;
-  codigoFilial?: string;
-  clienteId?: string;
-  usuarioLogado?: string;
-  ambiente?: string;
-}
-
-export interface TokenStatusInfo {
-  ativo: boolean;
-  clienteProtheus?: string;
-  clienteId?: string;
-  ambiente: string;
-  usuario: string;
-  expiraEm: string;
-  tokenPreview: string;
-}
-
-export interface ProtheusFilialInfo {
-  id?: string;
-  codigoEmpresa: string;
-  codigoFilial: string;
-  nome: string;
-  cnpj?: string;
-  tipo: "Matriz" | "Filial";
-  cidade?: string;
-  uf?: string;
-  status?: "Ativa" | "Inativa";
-}
+export type { EmpresaDados, TokenStatusInfo, ProtheusFilialInfo } from "./empresa-protheus-types";
 
 export function useEmpresaProtheus() {
   const [empresaAtual, setEmpresaAtual] = useState<EmpresaDados | null>(null);

@@ -88,12 +88,9 @@ function matrizIndependente(id = "emp-01", filiais: unknown[] = []) {
   return { id, nome: "Matriz Norte", cnpj: "11.111.111/0001-11", matrizId: null, filiais, matriz: null };
 }
 
-describe("API /api/dashboard GET (route.ts)", () => {
-  let txs: Array<{ id: string; tx: TxMock }>;
-
+describe("API /api/dashboard GET (route.ts) — escopo de empresas e grupos", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    txs = [];
 
     getServerSessionMock.mockResolvedValue(sessaoCom("emp-01", "usr-1"));
     empresaFindUniqueMock.mockResolvedValue(matrizIndependente());
@@ -101,9 +98,7 @@ describe("API /api/dashboard GET (route.ts)", () => {
     resolveIdsPermitidosTotalMock.mockReturnValue(["emp-01"]);
     resolveEmpresaIdsConsultaMock.mockReturnValue(["emp-01"]);
     withEmpresaRLSMock.mockImplementation(async (id: string, fn: (tx: TxMock) => Promise<unknown>) => {
-      const tx = makeTx();
-      txs.push({ id, tx });
-      return fn(tx);
+      return fn(makeTx());
     });
     filtrarFaturamentosMock.mockReturnValue([{ clienteId: "cli-1" }, { clienteId: "cli-1" }, { clienteId: "cli-2" }]);
     filtrarContasReceberMock.mockReturnValue([]);
@@ -116,121 +111,78 @@ describe("API /api/dashboard GET (route.ts)", () => {
     buildGruposEmpresaMock.mockReturnValue([{ id: "emp-01", nome: "Matriz Norte", cnpj: "11.111.111/0001-11", filiais: [] }]);
   });
 
-  it("retorna 401 quando a sessão não tem empresaId", async () => {
-    getServerSessionMock.mockResolvedValue(null);
+  it("carrega acessos extras do usuario e soma os ids no carregamento de empresas", async () => {
+    empresaFindUniqueMock.mockResolvedValue(null);
+    acessosFindManyMock.mockResolvedValue([{ empresaId: "emp-extra" }]);
 
-    const res = await GET(new Request("http://localhost/api/dashboard"));
-
-    expect(res.status).toBe(401);
-    expect(await res.json()).toEqual({ error: "Não autenticado" });
-    expect(empresaFindUniqueMock).not.toHaveBeenCalled();
-  });
-
-  it("monta a resposta completa com todos os campos do DashboardResponse", async () => {
-    txs.length = 0;
-    withEmpresaRLSMock.mockImplementation(async (id: string, fn: (tx: TxMock) => Promise<unknown>) => {
-      const tx = makeTx([{ id: "cli-1", nome: "A" }, { id: "cli-2", nome: "B" }], [{ id: "fat-1" }], [{ id: "cr-1" }]);
-      txs.push({ id, tx });
-      return fn(tx);
-    });
-
-    const res = await GET(new Request("http://localhost/api/dashboard"));
-    const json = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(Object.keys(json).sort()).toEqual(
-      [
-        "clientes",
-        "clientesAtivosFiltrados",
-        "faturamentoCliente",
-        "faturamentoMes",
-        "faturamentoTotal",
-        "faturamentos",
-        "grupos",
-        "projecao",
-        "regiaoParticipacao",
-        "ticketMedio",
-        "totalClientes",
-        "valorVencido",
-      ].sort()
-    );
-    expect(json.totalClientes).toBe(2);
-    // Set de clienteId únicos sobre o resultado filtrado
-    expect(json.clientesAtivosFiltrados).toBe(2);
-    expect(json.faturamentoTotal).toBe(100);
-    expect(json.ticketMedio).toBe(50);
-    expect(json.clientes).toHaveLength(2);
-    expect(json.faturamentos).toEqual([{ id: "nota-1" }]);
-    expect(json.grupos).toHaveLength(1);
-  });
-
-  it("aplica escopo de tenant em cada consulta (RLS por empresa, ativo:true)", async () => {
-    txs.length = 0;
     await GET(new Request("http://localhost/api/dashboard"));
 
-    expect(withEmpresaRLSMock).toHaveBeenCalledTimes(1);
-    expect(txs[0].id).toBe("emp-01");
-    expect(txs[0].tx.cliente.findMany).toHaveBeenCalledWith({
-      where: { ativo: true, empresaId: "emp-01" },
-      orderBy: { nome: "asc" },
+    expect(acessosFindManyMock).toHaveBeenCalledWith({
+      where: { usuarioId: "usr-1" },
+      select: { empresaId: true },
     });
-    expect(txs[0].tx.faturamento.findMany).toHaveBeenCalledWith({
-      where: { empresaId: "emp-01" },
-      include: { cliente: true },
-      orderBy: { dataEmissao: "asc" },
-    });
-    expect(txs[0].tx.contaReceber.findMany).toHaveBeenCalledWith({
-      where: { empresaId: "emp-01" },
-      include: { baixas: true, cliente: true },
-      orderBy: { vencimento: "asc" },
-    });
+    expect(empresaFindUniqueMock).toHaveBeenCalledTimes(2);
+    expect(empresaFindUniqueMock.mock.calls.map(([args]) => args.where.id)).toEqual(["emp-01", "emp-extra"]);
   });
 
-  it("converte a query string em filtros e repassa para os builders de métricas", async () => {
-    const url = "http://localhost/api/dashboard?cliente=ACME&inicial=2026-01-01&final=2026-01-31&matriz=emp-01&empresaId=fil-1&empresaId=fil-2";
+  it("não consulta acessos extras quando a sessão não tem usuarioId", async () => {
+    getServerSessionMock.mockResolvedValue(sessaoCom("emp-01"));
 
-    await GET(new Request(url));
+    await GET(new Request("http://localhost/api/dashboard"));
 
-    const filtros = {
-      cliente: "ACME",
-      dataInicial: "2026-01-01",
-      dataFinal: "2026-01-31",
+    expect(acessosFindManyMock).not.toHaveBeenCalled();
+    expect(empresaFindUniqueMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignora empresas inexistentes e cai para [empresaId] quando nenhuma hierarquia carrega", async () => {
+    empresaFindUniqueMock.mockResolvedValue(null);
+
+    await GET(new Request("http://localhost/api/dashboard"));
+
+    expect(resolveIdsPermitidosTotalMock).not.toHaveBeenCalled();
+    expect(resolveEmpresaIdsConsultaMock).toHaveBeenCalledWith(["emp-01"], []);
+    expect(buildGruposEmpresaMock).toHaveBeenCalledWith([]);
+  });
+
+  it("usa a própria empresa como matriz quando ela é independente (matrizId null)", async () => {
+    empresaFindUniqueMock.mockResolvedValue(matrizIndependente("emp-01", [{ id: "fil-1" }]));
+
+    await GET(new Request("http://localhost/api/dashboard"));
+
+    expect(buildGruposEmpresaMock).toHaveBeenCalledWith([
+      { id: "emp-01", nome: "Matriz Norte", cnpj: "11.111.111/0001-11", matrizId: null, filiais: [{ id: "fil-1" }] },
+    ]);
+  });
+
+  it("usa a matriz da hierarquia quando a empresa da sessão é filial", async () => {
+    empresaFindUniqueMock.mockResolvedValue({
+      id: "fil-1",
+      nome: "Filial Sul",
+      cnpj: "22.222.222/0001-22",
       matrizId: "emp-01",
-      empresaIds: ["fil-1", "fil-2"],
-    };
-    expect(filtrarFaturamentosMock).toHaveBeenCalledWith(expect.any(Array), filtros);
-    expect(filtrarContasReceberMock).toHaveBeenCalledWith(expect.any(Array), filtros);
-    expect(resolveEmpresaIdsConsultaMock).toHaveBeenCalledWith(["emp-01"], ["fil-1", "fil-2"]);
-  });
-
-  it("executa uma consulta RLS por empresa em idsConsulta e mescla os resultados", async () => {
-    resolveEmpresaIdsConsultaMock.mockReturnValue(["emp-01", "emp-02"]);
-    txs.length = 0;
-    let chamada = 0;
-    withEmpresaRLSMock.mockImplementation(async (id: string, fn: (tx: TxMock) => Promise<unknown>) => {
-      const tx = makeTx([{ id: `cli-${++chamada}` }]);
-      txs.push({ id, tx });
-      return fn(tx);
+      filiais: [],
+      matriz: { id: "emp-01", nome: "Matriz Norte", cnpj: "11.111.111/0001-11", filiais: [{ id: "fil-1" }] },
     });
 
-    const res = await GET(new Request("http://localhost/api/dashboard"));
-    const json = await res.json();
+    await GET(new Request("http://localhost/api/dashboard"));
 
-    expect(txs.map((t) => t.id)).toEqual(["emp-01", "emp-02"]);
-    expect(json.totalClientes).toBe(2);
-    expect(json.clientes.map((c: { id: string }) => c.id)).toEqual(["cli-1", "cli-2"]);
+    expect(buildGruposEmpresaMock).toHaveBeenCalledWith([
+      { id: "emp-01", nome: "Matriz Norte", cnpj: "11.111.111/0001-11", matrizId: null, filiais: [{ id: "fil-1" }] },
+    ]);
   });
 
-  it("retorna 500 e registra logApiError quando a consulta RLS falha", async () => {
-    withEmpresaRLSMock.mockRejectedValue(new Error("banco indisponível"));
+  it("não gera grupo quando a filial foi carregada sem a matriz correspondente", async () => {
+    empresaFindUniqueMock.mockResolvedValue({
+      id: "fil-1",
+      nome: "Filial Órfã",
+      cnpj: "22.222.222/0001-22",
+      matrizId: "emp-01",
+      filiais: [],
+      matriz: null,
+    });
 
-    const res = await GET(new Request("http://localhost/api/dashboard"));
+    await GET(new Request("http://localhost/api/dashboard"));
 
-    expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: "Erro interno" });
-    expect(logApiErrorMock).toHaveBeenCalledWith(
-      "Erro ao buscar dados do dashboard",
-      expect.any(Error)
-    );
+    expect(buildGruposEmpresaMock).toHaveBeenCalledWith([]);
   });
 });

@@ -2,7 +2,11 @@
 
 import React from "react";
 import { RefreshCw, Building2 } from "lucide-react";
-import { NotaFiscalRow, TableSkeleton, type DashboardNotaFiscal } from "./NotaFiscalRow";
+import {
+  NotaFiscalRow,
+  TableSkeleton,
+  type DashboardNotaFiscal,
+} from "./NotaFiscalRow";
 
 export type { DashboardNotaFiscal };
 
@@ -25,15 +29,26 @@ function InvoicesTitleBlock() {
         </span>
       </div>
       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-        Notas fiscais faturadas (SF2) da Filial 01 integradas e sincronizadas via Protheus ERP
+        Notas fiscais faturadas (SF2) da Filial 01 integradas e sincronizadas
+        via Protheus ERP
       </p>
     </div>
   );
 }
-function InvoicesActions({ totalNotas, loading, onRefresh }: { totalNotas: number; loading: boolean; onRefresh?: () => void }) {
+function InvoicesActions({
+  totalNotas,
+  loading,
+  onRefresh,
+}: {
+  totalNotas: number;
+  loading: boolean;
+  onRefresh?: () => void;
+}) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{totalNotas} nota(s) exibida(s)</span>
+      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+        {totalNotas} nota(s) exibida(s)
+      </span>
       {onRefresh && (
         <button
           onClick={onRefresh}
@@ -51,16 +66,34 @@ function InvoicesThead() {
   return (
     <thead className="bg-slate-50 dark:bg-slate-800/60">
       <tr>
-        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Nota Fiscal</th>
-        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Cliente</th>
-        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Emissão</th>
-        <th className="text-right py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Valor Total</th>
-        <th className="text-center py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status</th>
+        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+          Nota Fiscal
+        </th>
+        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+          Cliente
+        </th>
+        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+          Emissão
+        </th>
+        <th className="text-right py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+          Valor Total
+        </th>
+        <th className="text-center py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+          Status
+        </th>
       </tr>
     </thead>
   );
 }
-function InvoicesBody({ faturamentos, loading, totalNotas }: { faturamentos: DashboardNotaFiscal[]; loading: boolean; totalNotas: number }) {
+function InvoicesBody({
+  faturamentos,
+  loading,
+  totalNotas,
+}: {
+  faturamentos: DashboardNotaFiscal[];
+  loading: boolean;
+  totalNotas: number;
+}) {
   return (
     <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
       {loading ? (
@@ -69,8 +102,11 @@ function InvoicesBody({ faturamentos, loading, totalNotas }: { faturamentos: Das
         faturamentos.map((nf) => <NotaFiscalRow key={nf.id} nf={nf} />)
       ) : (
         <tr>
-          <td colSpan={5} className="py-10 text-center text-slate-400 dark:text-slate-500 text-sm">
-            Nenhuma nota fiscal encontrada para a Filial 01 (LC1 CONTADORES - MATRIZ).
+          <td
+            colSpan={6}
+            className="py-10 text-center text-slate-400 dark:text-slate-500 text-sm"
+          >
+            Nenhuma nota fiscal encontrada.
           </td>
         </tr>
       )}
@@ -78,20 +114,32 @@ function InvoicesBody({ faturamentos, loading, totalNotas }: { faturamentos: Das
   );
 }
 
-export function DashboardInvoicesTable({ faturamentos, loading, onRefresh }: DashboardInvoicesTableProps) {
+export function DashboardInvoicesTable({
+  faturamentos,
+  loading,
+  onRefresh,
+}: DashboardInvoicesTableProps) {
   const totalNotas = faturamentos?.length || 0;
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden mb-8">
       <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
         <InvoicesTitleBlock />
-        <InvoicesActions totalNotas={totalNotas} loading={loading} onRefresh={onRefresh} />
+        <InvoicesActions
+          totalNotas={totalNotas}
+          loading={loading}
+          onRefresh={onRefresh}
+        />
       </div>
 
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">
           <InvoicesThead />
-          <InvoicesBody faturamentos={faturamentos} loading={loading} totalNotas={totalNotas} />
+          <InvoicesBody
+            faturamentos={faturamentos}
+            loading={loading}
+            totalNotas={totalNotas}
+          />
         </table>
       </div>
     </div>

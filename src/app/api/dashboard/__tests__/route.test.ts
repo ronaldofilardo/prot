@@ -72,7 +72,11 @@ type TxMock = {
   contaReceber: { findMany: ReturnType<typeof vi.fn> };
 };
 
-function makeTx(clientes: unknown[] = [], faturamentos: unknown[] = [], contas: unknown[] = []): TxMock {
+function makeTx(
+  clientes: unknown[] = [],
+  faturamentos: unknown[] = [],
+  contas: unknown[] = [],
+): TxMock {
   return {
     cliente: { findMany: vi.fn().mockResolvedValue(clientes) },
     faturamento: { findMany: vi.fn().mockResolvedValue(faturamentos) },
@@ -85,7 +89,14 @@ function sessaoCom(empresaId?: string, usuarioId?: string): Session {
 }
 
 function matrizIndependente(id = "emp-01", filiais: unknown[] = []) {
-  return { id, nome: "Matriz Norte", cnpj: "11.111.111/0001-11", matrizId: null, filiais, matriz: null };
+  return {
+    id,
+    nome: "Matriz Norte",
+    cnpj: "11.111.111/0001-11",
+    matrizId: null,
+    filiais,
+    matriz: null,
+  };
 }
 
 describe("API /api/dashboard GET (route.ts)", () => {
@@ -100,20 +111,51 @@ describe("API /api/dashboard GET (route.ts)", () => {
     acessosFindManyMock.mockResolvedValue([]);
     resolveIdsPermitidosTotalMock.mockReturnValue(["emp-01"]);
     resolveEmpresaIdsConsultaMock.mockReturnValue(["emp-01"]);
-    withEmpresaRLSMock.mockImplementation(async (id: string, fn: (tx: TxMock) => Promise<unknown>) => {
-      const tx = makeTx();
-      txs.push({ id, tx });
-      return fn(tx);
-    });
-    filtrarFaturamentosMock.mockReturnValue([{ clienteId: "cli-1" }, { clienteId: "cli-1" }, { clienteId: "cli-2" }]);
+    withEmpresaRLSMock.mockImplementation(
+      async (id: string, fn: (tx: TxMock) => Promise<unknown>) => {
+        const tx = makeTx();
+        txs.push({ id, tx });
+        return fn(tx);
+      },
+    );
+    filtrarFaturamentosMock.mockReturnValue([
+      { clienteId: "cli-1" },
+      { clienteId: "cli-1" },
+      { clienteId: "cli-2" },
+    ]);
     filtrarContasReceberMock.mockReturnValue([]);
-    calcularKPIsMock.mockReturnValue({ faturamentoTotal: 100, valorVencido: 10, ticketMedio: 50 });
+    calcularKPIsMock.mockReturnValue({
+      faturamentoTotal: 100,
+      valorVencido: 10,
+      ticketMedio: 50,
+    });
     buildFaturamentoMesMock.mockReturnValue([{ mes: "2026-01", valor: 100 }]);
-    buildTabelaNotasMock.mockReturnValue([{ id: "nota-1" }]);
-    buildFaturamentoClienteMock.mockReturnValue([{ nome: "Cliente", valor: 100 }]);
+    buildTabelaNotasMock.mockReturnValue([
+      {
+        id: "nota-1",
+        filial: "01",
+        numeroNota: "NF-001",
+        clienteNome: "Cliente",
+        clienteCodigo: "001",
+        dataEmissao: "2026-01-15",
+        valorTotal: 100,
+      },
+    ]);
+    buildFaturamentoClienteMock.mockReturnValue([
+      { nome: "Cliente", valor: 100 },
+    ]);
     buildRegiaoParticipacaoMock.mockReturnValue([{ nome: "SP", valor: 100 }]);
-    buildProjecaoMock.mockReturnValue([{ mes: "2026-01", real: 100, projetado: 120 }]);
-    buildGruposEmpresaMock.mockReturnValue([{ id: "emp-01", nome: "Matriz Norte", cnpj: "11.111.111/0001-11", filiais: [] }]);
+    buildProjecaoMock.mockReturnValue([
+      { mes: "2026-01", real: 100, projetado: 120 },
+    ]);
+    buildGruposEmpresaMock.mockReturnValue([
+      {
+        id: "emp-01",
+        nome: "Matriz Norte",
+        cnpj: "11.111.111/0001-11",
+        filiais: [],
+      },
+    ]);
   });
 
   it("retorna 401 quando a sessão não tem empresaId", async () => {
@@ -128,11 +170,20 @@ describe("API /api/dashboard GET (route.ts)", () => {
 
   it("monta a resposta completa com todos os campos do DashboardResponse", async () => {
     txs.length = 0;
-    withEmpresaRLSMock.mockImplementation(async (id: string, fn: (tx: TxMock) => Promise<unknown>) => {
-      const tx = makeTx([{ id: "cli-1", nome: "A" }, { id: "cli-2", nome: "B" }], [{ id: "fat-1" }], [{ id: "cr-1" }]);
-      txs.push({ id, tx });
-      return fn(tx);
-    });
+    withEmpresaRLSMock.mockImplementation(
+      async (id: string, fn: (tx: TxMock) => Promise<unknown>) => {
+        const tx = makeTx(
+          [
+            { id: "cli-1", nome: "A" },
+            { id: "cli-2", nome: "B" },
+          ],
+          [{ id: "fat-1" }],
+          [{ id: "cr-1" }],
+        );
+        txs.push({ id, tx });
+        return fn(tx);
+      },
+    );
 
     const res = await GET(new Request("http://localhost/api/dashboard"));
     const json = await res.json();
@@ -152,7 +203,7 @@ describe("API /api/dashboard GET (route.ts)", () => {
         "ticketMedio",
         "totalClientes",
         "valorVencido",
-      ].sort()
+      ].sort(),
     );
     expect(json.totalClientes).toBe(2);
     // Set de clienteId únicos sobre o resultado filtrado
@@ -160,7 +211,17 @@ describe("API /api/dashboard GET (route.ts)", () => {
     expect(json.faturamentoTotal).toBe(100);
     expect(json.ticketMedio).toBe(50);
     expect(json.clientes).toHaveLength(2);
-    expect(json.faturamentos).toEqual([{ id: "nota-1" }]);
+    expect(json.faturamentos).toEqual([
+      {
+        id: "nota-1",
+        filial: "01",
+        numeroNota: "NF-001",
+        clienteNome: "Cliente",
+        clienteCodigo: "001",
+        dataEmissao: "2026-01-15",
+        valorTotal: 100,
+      },
+    ]);
     expect(json.grupos).toHaveLength(1);
   });
 
@@ -187,7 +248,8 @@ describe("API /api/dashboard GET (route.ts)", () => {
   });
 
   it("converte a query string em filtros e repassa para os builders de métricas", async () => {
-    const url = "http://localhost/api/dashboard?cliente=ACME&inicial=2026-01-01&final=2026-01-31&matriz=emp-01&empresaId=fil-1&empresaId=fil-2";
+    const url =
+      "http://localhost/api/dashboard?cliente=ACME&inicial=2026-01-01&final=2026-01-31&matriz=emp-01&empresaId=fil-1&empresaId=fil-2";
 
     await GET(new Request(url));
 
@@ -198,27 +260,41 @@ describe("API /api/dashboard GET (route.ts)", () => {
       matrizId: "emp-01",
       empresaIds: ["fil-1", "fil-2"],
     };
-    expect(filtrarFaturamentosMock).toHaveBeenCalledWith(expect.any(Array), filtros);
-    expect(filtrarContasReceberMock).toHaveBeenCalledWith(expect.any(Array), filtros);
-    expect(resolveEmpresaIdsConsultaMock).toHaveBeenCalledWith(["emp-01"], ["fil-1", "fil-2"]);
+    expect(filtrarFaturamentosMock).toHaveBeenCalledWith(
+      expect.any(Array),
+      filtros,
+    );
+    expect(filtrarContasReceberMock).toHaveBeenCalledWith(
+      expect.any(Array),
+      filtros,
+    );
+    expect(resolveEmpresaIdsConsultaMock).toHaveBeenCalledWith(
+      ["emp-01"],
+      ["fil-1", "fil-2"],
+    );
   });
 
   it("executa uma consulta RLS por empresa em idsConsulta e mescla os resultados", async () => {
     resolveEmpresaIdsConsultaMock.mockReturnValue(["emp-01", "emp-02"]);
     txs.length = 0;
     let chamada = 0;
-    withEmpresaRLSMock.mockImplementation(async (id: string, fn: (tx: TxMock) => Promise<unknown>) => {
-      const tx = makeTx([{ id: `cli-${++chamada}` }]);
-      txs.push({ id, tx });
-      return fn(tx);
-    });
+    withEmpresaRLSMock.mockImplementation(
+      async (id: string, fn: (tx: TxMock) => Promise<unknown>) => {
+        const tx = makeTx([{ id: `cli-${++chamada}` }]);
+        txs.push({ id, tx });
+        return fn(tx);
+      },
+    );
 
     const res = await GET(new Request("http://localhost/api/dashboard"));
     const json = await res.json();
 
     expect(txs.map((t) => t.id)).toEqual(["emp-01", "emp-02"]);
     expect(json.totalClientes).toBe(2);
-    expect(json.clientes.map((c: { id: string }) => c.id)).toEqual(["cli-1", "cli-2"]);
+    expect(json.clientes.map((c: { id: string }) => c.id)).toEqual([
+      "cli-1",
+      "cli-2",
+    ]);
   });
 
   it("retorna 500 e registra logApiError quando a consulta RLS falha", async () => {
@@ -230,7 +306,7 @@ describe("API /api/dashboard GET (route.ts)", () => {
     expect(await res.json()).toEqual({ error: "Erro interno" });
     expect(logApiErrorMock).toHaveBeenCalledWith(
       "Erro ao buscar dados do dashboard",
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 });

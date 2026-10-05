@@ -1,84 +1,91 @@
-import type { ClienteDB, FaturamentoDB, ContaReceberDB, DecimalValue } from "./db";
+import type {
+  Faturamento,
+  FaturamentoMes,
+  FaturamentoCliente,
+  RegiaoParticipacao,
+  FaturamentoItemDTO,
+} from "@/lib/types/dashboard";
+import { formatMesAno } from "./metrics-projection";
 
-export type { DecimalValue };
-export type DecimalLike = DecimalValue;
-export type Cliente = ClienteDB;
-export type Faturamento = FaturamentoDB;
-export type ContaReceber = ContaReceberDB;
+export function buildFaturamentoMes(
+  faturamentosFiltrados: Faturamento[],
+): FaturamentoMes[] {
+  const mesMap = new Map<
+    string,
+    { orderKey: string; mes: string; valor: number }
+  >();
 
-export interface DashboardFilters {
-  cliente: string;
-  dataInicial: string;
-  dataFinal: string;
-  /** id da empresa matriz selecionada no filtro (null = nenhuma). */
-  matrizId: string | null;
-  /** empresaId's (filiais) marcados dentro da matriz selecionada. */
-  empresaIds: string[];
+  for (const f of faturamentosFiltrados) {
+    const d = new Date(f.dataEmissao);
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const orderKey = `${year}-${month}`;
+    const label = formatMesAno(d);
+
+    const existing = mesMap.get(orderKey);
+    if (existing) {
+      existing.valor += Number(f.valorTotal);
+    } else {
+      mesMap.set(orderKey, {
+        orderKey,
+        mes: label,
+        valor: Number(f.valorTotal),
+      });
+    }
+  }
+
+  return Array.from(mesMap.values())
+    .sort((a, b) => a.orderKey.localeCompare(b.orderKey))
+    .map((m) => ({ mes: m.mes, valor: Math.round(m.valor * 100) / 100 }));
 }
 
-/** Uma filial dentro do filtro de matriz/filiais da UI. */
-export interface FilialFiltroDTO {
-  id: string;
-  nome: string;
-  cidade: string;
-  uf: string;
+export function buildFaturamentoCliente(
+  faturamentosFiltrados: Faturamento[],
+): FaturamentoCliente[] {
+  const clienteMap = new Map<string, { nome: string; valor: number }>();
+  for (const f of faturamentosFiltrados) {
+    const nome = f.cliente.nome;
+    const current = clienteMap.get(nome) || { nome, valor: 0 };
+    current.valor += Number(f.valorTotal);
+    clienteMap.set(nome, current);
+  }
+  return Array.from(clienteMap.values())
+    .map((c) => ({ nome: c.nome, valor: Math.round(c.valor * 100) / 100 }))
+    .sort((a, b) => b.valor - a.valor);
 }
 
-/** Uma matriz e suas filiais, para popular o seletor de empresa/grupo. */
-export interface EmpresaGrupoDTO {
-  id: string;
-  nome: string;
-  cnpj: string | null;
-  filiais: FilialFiltroDTO[];
+export function buildRegiaoParticipacao(
+  faturamentosFiltrados: Faturamento[],
+): RegiaoParticipacao[] {
+  const regiaoMap = new Map<string, { nome: string; valor: number }>();
+  for (const f of faturamentosFiltrados) {
+    const estado = f.cliente.estado?.trim() || "Outros";
+    const current = regiaoMap.get(estado) || { nome: estado, valor: 0 };
+    current.valor += Number(f.valorTotal);
+    regiaoMap.set(estado, current);
+  }
+  return Array.from(regiaoMap.values())
+    .map((r) => ({ nome: r.nome, valor: Math.round(r.valor * 100) / 100 }))
+    .sort((a, b) => b.valor - a.valor);
 }
 
-export interface FaturamentoMesDTO {
-  mes: string;
-  valor: number;
+export function buildTabelaNotas(
+  faturamentosFiltrados: Faturamento[],
+): FaturamentoItemDTO[] {
+  return faturamentosFiltrados
+    .slice()
+    .sort(
+      (a, b) =>
+        new Date(b.dataEmissao).getTime() - new Date(a.dataEmissao).getTime(),
+    )
+    .slice(0, 10)
+    .map((f) => ({
+      id: f.id,
+      filial: f.filial,
+      numeroNota: f.numeroNota,
+      clienteNome: f.cliente.nome,
+      clienteCodigo: f.cliente.codigo,
+      dataEmissao: f.dataEmissao,
+      valorTotal: Number(f.valorTotal),
+    }));
 }
-export type FaturamentoMes = FaturamentoMesDTO;
-
-export interface FaturamentoClienteDTO {
-  nome: string;
-  valor: number;
-}
-export type FaturamentoCliente = FaturamentoClienteDTO;
-
-export interface RegiaoParticipacaoDTO {
-  nome: string;
-  valor: number;
-}
-export type RegiaoParticipacao = RegiaoParticipacaoDTO;
-
-export interface ProjecaoPontoDTO {
-  mes: string;
-  real: number | null;
-  projetado: number | null;
-}
-export type ProjecaoPonto = ProjecaoPontoDTO;
-
-export interface FaturamentoItemDTO {
-  id: string;
-  numeroNota: string;
-  clienteNome: string;
-  clienteCodigo: string;
-  dataEmissao: Date | string;
-  valorTotal: number;
-}
-
-export interface DashboardResponseDTO {
-  totalClientes: number;
-  clientesAtivosFiltrados: number;
-  faturamentoTotal: number;
-  valorVencido: number;
-  ticketMedio: number;
-  faturamentos: FaturamentoItemDTO[];
-  faturamentoMes: FaturamentoMesDTO[];
-  faturamentoCliente: FaturamentoClienteDTO[];
-  regiaoParticipacao: RegiaoParticipacaoDTO[];
-  projecao: ProjecaoPontoDTO[];
-  clientes: ClienteDB[];
-  /** Matrizes (com suas filiais) do tenant, para o filtro de empresa/grupo. */
-  grupos: EmpresaGrupoDTO[];
-}
-export type DashboardResponse = DashboardResponseDTO;

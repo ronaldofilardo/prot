@@ -3,15 +3,22 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DashboardHeader } from "../DashboardHeader";
 import { ActiveFiltersBadge } from "../ActiveFiltersBadge";
 import { DashboardKpiCards, type DashboardData } from "../DashboardKpiCards";
-import { NotaFiscalRow, TableSkeleton, type DashboardNotaFiscal } from "../NotaFiscalRow";
+import {
+  NotaFiscalRow,
+  TableSkeleton,
+  type DashboardNotaFiscal,
+} from "../NotaFiscalRow";
 import { DashboardInvoicesTable } from "../DashboardInvoicesTable";
 import { useFilters } from "@/hooks/useFilters";
 
 const brl = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }).replace(/ /g, " ");
+  v
+    .toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    .replace(/ /g, " ");
 
 const nf: DashboardNotaFiscal = {
   id: "1",
+  filial: "01",
   numeroNota: "12345",
   clienteNome: "ACME LTDA",
   clienteCodigo: "00123",
@@ -36,12 +43,20 @@ describe("componentes de cabecalho e KPIs do dashboard", () => {
   it("DashboardHeader exibe titulo e status de conexao", () => {
     render(<DashboardHeader />);
 
-    expect(screen.getByRole("heading", { name: "Dashboard Financeiro Protheus" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Dashboard Financeiro Protheus" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Protheus Mock Conectado")).toBeInTheDocument();
   });
 
   it("ActiveFiltersBadge exibe os tres chips quando preenchidos", () => {
-    render(<ActiveFiltersBadge cliente="ACME" dataInicial="2026-01-01" dataFinal="2026-01-31" />);
+    render(
+      <ActiveFiltersBadge
+        cliente="ACME"
+        dataInicial="2026-01-01"
+        dataFinal="2026-01-31"
+      />,
+    );
 
     expect(screen.getByText("Cliente: ACME")).toBeInTheDocument();
     expect(screen.getByText("De: 2026-01-01")).toBeInTheDocument();
@@ -92,10 +107,12 @@ describe("componentes de cabecalho e KPIs do dashboard", () => {
         <tbody>
           <NotaFiscalRow nf={nf} />
         </tbody>
-      </table>
+      </table>,
     );
 
-    const data = new Date("2026-01-15").toLocaleDateString("pt-BR", { timeZone: "UTC" });
+    const data = new Date("2026-01-15").toLocaleDateString("pt-BR", {
+      timeZone: "UTC",
+    });
     expect(screen.getByText("12345")).toBeInTheDocument();
     expect(screen.getByText("ACME LTDA")).toBeInTheDocument();
     expect(screen.getByText(/C.d: 00123/)).toBeInTheDocument();
@@ -108,9 +125,11 @@ describe("componentes de cabecalho e KPIs do dashboard", () => {
     render(
       <table>
         <tbody>
-          <NotaFiscalRow nf={{ ...nf, valorTotal: undefined as unknown as number }} />
+          <NotaFiscalRow
+            nf={{ ...nf, valorTotal: undefined as unknown as number }}
+          />
         </tbody>
-      </table>
+      </table>,
     );
 
     expect(screen.getByText("R$ 0,00")).toBeInTheDocument();
@@ -122,7 +141,7 @@ describe("componentes de cabecalho e KPIs do dashboard", () => {
         <tbody>
           <TableSkeleton />
         </tbody>
-      </table>
+      </table>,
     );
 
     expect(container.querySelectorAll("tr")).toHaveLength(5);
@@ -130,7 +149,13 @@ describe("componentes de cabecalho e KPIs do dashboard", () => {
 
   it("tabela de notas lista os registros e aciona o refresh", () => {
     const onRefresh = vi.fn();
-    render(<DashboardInvoicesTable faturamentos={[nf]} loading={false} onRefresh={onRefresh} />);
+    render(
+      <DashboardInvoicesTable
+        faturamentos={[nf]}
+        loading={false}
+        onRefresh={onRefresh}
+      />,
+    );
 
     expect(screen.getByText("1 nota(s) exibida(s)")).toBeInTheDocument();
     expect(screen.getByText("12345")).toBeInTheDocument();
@@ -146,7 +171,13 @@ describe("componentes de cabecalho e KPIs do dashboard", () => {
   });
 
   it("tabela em loading desabilita o refresh", () => {
-    render(<DashboardInvoicesTable faturamentos={[nf]} loading onRefresh={vi.fn()} />);
+    render(
+      <DashboardInvoicesTable
+        faturamentos={[nf]}
+        loading
+        onRefresh={vi.fn()}
+      />,
+    );
 
     expect(screen.getByTitle("Recarregar notas fiscais")).toBeDisabled();
   });

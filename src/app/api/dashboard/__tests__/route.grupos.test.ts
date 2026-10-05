@@ -72,7 +72,11 @@ type TxMock = {
   contaReceber: { findMany: ReturnType<typeof vi.fn> };
 };
 
-function makeTx(clientes: unknown[] = [], faturamentos: unknown[] = [], contas: unknown[] = []): TxMock {
+function makeTx(
+  clientes: unknown[] = [],
+  faturamentos: unknown[] = [],
+  contas: unknown[] = [],
+): TxMock {
   return {
     cliente: { findMany: vi.fn().mockResolvedValue(clientes) },
     faturamento: { findMany: vi.fn().mockResolvedValue(faturamentos) },
@@ -85,7 +89,14 @@ function sessaoCom(empresaId?: string, usuarioId?: string): Session {
 }
 
 function matrizIndependente(id = "emp-01", filiais: unknown[] = []) {
-  return { id, nome: "Matriz Norte", cnpj: "11.111.111/0001-11", matrizId: null, filiais, matriz: null };
+  return {
+    id,
+    nome: "Matriz Norte",
+    cnpj: "11.111.111/0001-11",
+    matrizId: null,
+    filiais,
+    matriz: null,
+  };
 }
 
 describe("API /api/dashboard GET (route.ts) — escopo de empresas e grupos", () => {
@@ -97,18 +108,49 @@ describe("API /api/dashboard GET (route.ts) — escopo de empresas e grupos", ()
     acessosFindManyMock.mockResolvedValue([]);
     resolveIdsPermitidosTotalMock.mockReturnValue(["emp-01"]);
     resolveEmpresaIdsConsultaMock.mockReturnValue(["emp-01"]);
-    withEmpresaRLSMock.mockImplementation(async (id: string, fn: (tx: TxMock) => Promise<unknown>) => {
-      return fn(makeTx());
-    });
-    filtrarFaturamentosMock.mockReturnValue([{ clienteId: "cli-1" }, { clienteId: "cli-1" }, { clienteId: "cli-2" }]);
+    withEmpresaRLSMock.mockImplementation(
+      async (id: string, fn: (tx: TxMock) => Promise<unknown>) => {
+        return fn(makeTx());
+      },
+    );
+    filtrarFaturamentosMock.mockReturnValue([
+      { clienteId: "cli-1" },
+      { clienteId: "cli-1" },
+      { clienteId: "cli-2" },
+    ]);
     filtrarContasReceberMock.mockReturnValue([]);
-    calcularKPIsMock.mockReturnValue({ faturamentoTotal: 100, valorVencido: 10, ticketMedio: 50 });
+    calcularKPIsMock.mockReturnValue({
+      faturamentoTotal: 100,
+      valorVencido: 10,
+      ticketMedio: 50,
+    });
     buildFaturamentoMesMock.mockReturnValue([{ mes: "2026-01", valor: 100 }]);
-    buildTabelaNotasMock.mockReturnValue([{ id: "nota-1" }]);
-    buildFaturamentoClienteMock.mockReturnValue([{ nome: "Cliente", valor: 100 }]);
+    buildTabelaNotasMock.mockReturnValue([
+      {
+        id: "nota-1",
+        filial: "01",
+        numeroNota: "NF-001",
+        clienteNome: "Cliente",
+        clienteCodigo: "001",
+        dataEmissao: "2026-01-15",
+        valorTotal: 100,
+      },
+    ]);
+    buildFaturamentoClienteMock.mockReturnValue([
+      { nome: "Cliente", valor: 100 },
+    ]);
     buildRegiaoParticipacaoMock.mockReturnValue([{ nome: "SP", valor: 100 }]);
-    buildProjecaoMock.mockReturnValue([{ mes: "2026-01", real: 100, projetado: 120 }]);
-    buildGruposEmpresaMock.mockReturnValue([{ id: "emp-01", nome: "Matriz Norte", cnpj: "11.111.111/0001-11", filiais: [] }]);
+    buildProjecaoMock.mockReturnValue([
+      { mes: "2026-01", real: 100, projetado: 120 },
+    ]);
+    buildGruposEmpresaMock.mockReturnValue([
+      {
+        id: "emp-01",
+        nome: "Matriz Norte",
+        cnpj: "11.111.111/0001-11",
+        filiais: [],
+      },
+    ]);
   });
 
   it("carrega acessos extras do usuario e soma os ids no carregamento de empresas", async () => {
@@ -122,7 +164,9 @@ describe("API /api/dashboard GET (route.ts) — escopo de empresas e grupos", ()
       select: { empresaId: true },
     });
     expect(empresaFindUniqueMock).toHaveBeenCalledTimes(2);
-    expect(empresaFindUniqueMock.mock.calls.map(([args]) => args.where.id)).toEqual(["emp-01", "emp-extra"]);
+    expect(
+      empresaFindUniqueMock.mock.calls.map(([args]) => args.where.id),
+    ).toEqual(["emp-01", "emp-extra"]);
   });
 
   it("não consulta acessos extras quando a sessão não tem usuarioId", async () => {
@@ -145,12 +189,20 @@ describe("API /api/dashboard GET (route.ts) — escopo de empresas e grupos", ()
   });
 
   it("usa a própria empresa como matriz quando ela é independente (matrizId null)", async () => {
-    empresaFindUniqueMock.mockResolvedValue(matrizIndependente("emp-01", [{ id: "fil-1" }]));
+    empresaFindUniqueMock.mockResolvedValue(
+      matrizIndependente("emp-01", [{ id: "fil-1" }]),
+    );
 
     await GET(new Request("http://localhost/api/dashboard"));
 
     expect(buildGruposEmpresaMock).toHaveBeenCalledWith([
-      { id: "emp-01", nome: "Matriz Norte", cnpj: "11.111.111/0001-11", matrizId: null, filiais: [{ id: "fil-1" }] },
+      {
+        id: "emp-01",
+        nome: "Matriz Norte",
+        cnpj: "11.111.111/0001-11",
+        matrizId: null,
+        filiais: [{ id: "fil-1" }],
+      },
     ]);
   });
 
@@ -161,13 +213,24 @@ describe("API /api/dashboard GET (route.ts) — escopo de empresas e grupos", ()
       cnpj: "22.222.222/0001-22",
       matrizId: "emp-01",
       filiais: [],
-      matriz: { id: "emp-01", nome: "Matriz Norte", cnpj: "11.111.111/0001-11", filiais: [{ id: "fil-1" }] },
+      matriz: {
+        id: "emp-01",
+        nome: "Matriz Norte",
+        cnpj: "11.111.111/0001-11",
+        filiais: [{ id: "fil-1" }],
+      },
     });
 
     await GET(new Request("http://localhost/api/dashboard"));
 
     expect(buildGruposEmpresaMock).toHaveBeenCalledWith([
-      { id: "emp-01", nome: "Matriz Norte", cnpj: "11.111.111/0001-11", matrizId: null, filiais: [{ id: "fil-1" }] },
+      {
+        id: "emp-01",
+        nome: "Matriz Norte",
+        cnpj: "11.111.111/0001-11",
+        matrizId: null,
+        filiais: [{ id: "fil-1" }],
+      },
     ]);
   });
 

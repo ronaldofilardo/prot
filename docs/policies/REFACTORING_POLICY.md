@@ -495,8 +495,8 @@ Tipos em uso: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 ## 11. Fila de Refatoração (medida em Outubro/2026)
 
 **Medição:** `readFileSync(p,'utf8').split('\n').length` sobre `.ts`/`.tsx` em `src/`, `components/`, `lib/` (exclui `node_modules`, `.next`, `coverage`). Complexidade via ESLint `complexity` (§12.3).
-**Universo:** 110 arquivos-fonte + 24 arquivos de teste (Fase 5; era 107 + 24 na Fase 4, 105 + 24 na Fase 3, 87 + 18 na medição inicial).
-**Baseline do gate (Out/2026, pós Fase 5):** 24 arquivos de teste, **166 testes verdes**, **54.64% linhas** (`docs/reports/coverage-2026-10.txt`); `pnpm test` + `pnpm lint` (0 erros) + `npx tsc --noEmit` + `npx next build` verdes; `pnpm test:coverage` exit 0 com os thresholds da §3.4 (52/41/52/52 globais). (Fase 4: 165 testes / 54.19%; Fase 3: 165 testes / 53.81%; Fase 2: 165 testes / 53.04%; Fase 1: 165 testes / 50.97%; Fase 0: 115 testes / 38.99%.)
+**Universo:** 114 arquivos-fonte + 43 arquivos de teste (Fase 7; era 110 + 41 na Fase 6, 110 + 24 na Fase 5, 107 + 24 na Fase 4, 105 + 24 na Fase 3, 87 + 18 na medição inicial).
+**Baseline do gate (Out/2026, pós Fase 7):** 43 arquivos de teste, **309 testes verdes**, **90.73% linhas** (`docs/reports/coverage-2026-10.txt`, regenerado na Fase 6 com 90.70%); `pnpm test` + `pnpm lint` (0 erros) + `pnpm check-quality` + `pnpm typecheck` + `npx next build` verdes; `pnpm test:coverage` exit 0 com os thresholds da §3.4 (80/79/80/80 globais). (Fase 6: 41 arquivos / 309 testes / 90.70%; Fase 5: 24 / 166 / 54.64%; Fase 4: 165 testes / 54.19%; Fase 3: 165 testes / 53.81%; Fase 2: 165 testes / 53.04%; Fase 1: 165 testes / 50.97%; Fase 0: 115 testes / 38.99%.)
 
 ### 11.1 🔴 CRÍTICA — Bloqueia merge
 
@@ -519,7 +519,7 @@ Tipos em uso: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 | `src/lib/auth.ts` + `auth-claims.ts` | **52 + 68** (era 93) | **≤8** (era 12) | auth.ts 100% ✅ | ✅ Fase 4 — `authorize` (41 linhas, CC 12) → `src/lib/auth-claims.ts` (irmão; `lib/auth/` proibido por colisão de resolução); callbacks jwt/session permanecem em `auth.ts` |
 | `src/lib/integration/protheus-soap-client.ts` | **172** | — | **0%** | 🟡 gatilho §5 (150+): planejar divisão; limite de client (200) ainda ok |
 
-> **0 funções com CC > 10** — fila de complexidade **zerada na Fase 5** (era 2 após a Fase 4, 6 antes dela, 8 na Fase 3, 11 na medição inicial). Restam **33 funções > 30 linhas** em produção como dívida conhecida (UI, hooks, geradores de opções de gráfico e a rota `ingest` POST 57) — maioria é exibição pura (skeletons/labels), sem risco; endereçar na Fase 6 ou ao mexer no arquivo. Maior delas: `buildProjecaoAreaOption` (111), `EmpresaFilialFilter` (109), `DashboardFilterBar` (88).
+> **0 funções com CC > 10** — fila de complexidade **zerada na Fase 5** (era 2 após a Fase 4, 6 antes dela, 8 na Fase 3, 11 na medição inicial) e **agora bloqueada pelo gate** (regra `complexity` no ESLint + `pnpm check-quality`, Fase 7). Restam **35 funções > 30 linhas** em produção como dívida conhecida (medição Fase 7 via ESLint `max-lines-per-function`; era 33 — as extrações da Fase 7 criaram `FiliaisPanel`/`FilterFields` ainda > 30) — maioria é exibição pura (skeletons/labels), sem risco; endereçar ao mexer no arquivo. Maiores: `buildProjecaoAreaOption` (111), `useUploadPanel` (99), `useEmpresaProtheus` (93).
 
 ### 11.3 🟡 Dívida Estrutural — pagar antes de ampliar a base
 
@@ -536,10 +536,12 @@ Tipos em uso: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 
 | Arquivo | Linhas | Observação |
 |---------|--------|------------|
-| `prisma/seed.ts` | 269 | Dividir por modelo se tocar |
+| `prisma/seed.ts` | 269 | Dividir por modelo se tocar; `main()` tem CC 28 — regra `complexity` desligada para `prisma/**` (§12.2), limite da §4.1 (300) ok |
 | `prisma/schema.prisma` | 181 | 9 modelos — migrar com caution, uma mudança por vez |
 
 ### 11.5 Regenerar a fila
+
+> **Fase 7:** o gate de linhas por arquivo + CC é automatizado (`pnpm check-quality`); os comandos abaixo servem para medição ad-hoc e para a fila de funções > 30 linhas (fora do gate).
 
 ```powershell
 node -e "const fs=require('fs'),p=require('path');const w=(d,o=[])=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){if(['node_modules','.next','coverage'].includes(e.name))continue;const f=p.join(d,e.name);e.isDirectory()?w(f,o):/\.tsx?$/.test(e.name)&&!/\.test\.|\.d\.ts$/.test(e.name)&&o.push([f,fs.readFileSync(f,'utf8').split('\n').length])}return o};w('src').concat(w('components'),w('lib')).sort((a,b)=>b[1]-a[1]).filter(([,n])=>n>150).forEach(([f,n])=>console.log(n,f))"
@@ -564,16 +566,22 @@ npx eslint --rule '{"complexity":["error",10]}' --format json src
 | Cobertura | @vitest/coverage-v8 | `pnpm test:coverage` |
 | Build | Next.js | `npx next build` |
 | Lint | ESLint 9 (flat, `eslint-config-next`) | `pnpm lint` |
-| Tipos | TypeScript | `npx tsc --noEmit` |
-| Complexidade por função | ESLint `complexity` | `npx eslint --rule '{"complexity":["error",10]}' --format json src` |
+| Tipos | TypeScript | `pnpm typecheck` (alias de `tsc --noEmit`) |
+| Guardrail (linhas por arquivo + CC ≤ 10) | `scripts/check-quality.mjs` (ESLint API) | `pnpm check-quality` (exit 1 em violação; roda no CI) |
+| Complexidade por função | ESLint `complexity` (≤ 10, embutido no lint) | `pnpm lint` |
 | Duplicação | jscpd | `npx jscpd src` |
-| Tamanho | Node one-liner | §11.5 |
+| Tamanho | Node one-liner (adi-hoc) | §11.5 (`pnpm check-quality` cobre o gate) |
 | Grafo de contexto | graft | `graft build` / `graft ask "<pergunta>"` |
 | Prisma | Prisma CLI | `npx prisma migrate dev --name <descricao_curta>` |
 
-### 12.2 Scripts ausentes (criar quando a fila começar)
+### 12.2 Guardrails automáticos (Fase 7)
 
-Recomenda-se adicionar `scripts/check-quality.mjs` (linhas por arquivo + CC por função, falhando no CI) e o script `typecheck` no `package.json`. O `eslint.config.mjs` atual **não tem** regra `complexity` nem `max-lines` — enquanto não forem adicionadas, a medição é manual (§11.5).
+`scripts/check-quality.mjs` (**`pnpm check-quality`**) é o gate descrito na §12.2 original e roda no CI:
+
+- **Linhas por arquivo** (§4.1, por categoria): componente 100, página 150, route 120, hook 120, client 200, utilitário 120, teste 250 — falha com `exit 1`;
+- **CC ≤ 10 por função** (§4) via API do ESLint (`overrideConfig`), falha com `exit 1`.
+
+Complementos: o script `typecheck` existe no `package.json`; o `eslint.config.mjs` aplica `complexity: ["error", 10]` para todo o projeto **exceto `prisma/**`** (`seed.ts` é "fora do escopo de `src/`" na §4.1 — CC 28 registrado na §11.4) e ignora `.kilo/`, `coverage/` e `graft/` (artefatos não-fonte). Os 6 arquivos que estouravam os limites do gate foram adequados na Fase 7 (§16). Medição manual (fallback): §11.5.
 
 ### 12.3 Extensões recomendadas
 
@@ -639,4 +647,5 @@ Revisar trimestralmente e atualizar conforme: padrões da indústria, mudanças 
 **Fase 4 aplicada (Out/2026):** fila de CC > 10 em `lib/` eliminada + 5 funções > 30 linhas decompostas: `protheus-adapter.ts` CC 23/18/11 → ≤3 (helpers em `_internals/adapter-fields.ts`, sem testes alterados — `externalId` ainda propaga `"undefined"`), `authorize` → `lib/auth-claims.ts` (`extrairCredenciais` + `validarCredenciais`; irmão de `auth.ts` para não colidir na resolução), `getProtheusClient` 40 → 13 linhas (`opcoesRestOauth` + `clientFromCredencial`), `fetchNewToken` 43 → 10 + `getValidToken` 33 → 16 (`executeTokenRequest` + `interpretTokenResponse`), `pullAndSyncFromProtheus` 58 → 13 (`executarJob` + `registrarFalha`). 165/165 testes; ratchet global para 51/41/51/52 (54.19% linhas / 42.10% branches — branches caiu 1.8pp com os novos pontos de decisão, ainda acima do floor 41); globo de auth na §3.4 ampliado para `src/lib/auth*.ts` (89.19% combinado ≥ floor 80). Commits `59f1736`, `c4800ea`, `4b9c973`, `982df73`, `21290e2`.
 **Fase 5 aplicada (Out/2026):** os 2 últimos alvos de CC > 10, **zerando a fila de complexidade**: `dashboard/page.tsx` DashboardContent CC 22 → 6 (110 → 50 linhas) com `DashboardErrorState`, `DashboardTabPanel` (CC 7) e puras `buildChartsData`/`buildKpiData` em `components/dashboard/dashboard-tab-data.ts`; `DashboardChartsGrid.tsx` CC 18 → 7 (91 linhas) com seções `FaturamentoCharts`/`ProjecaoCharts`. DOM, props, testids e 4 skeletons idênticos; +1 teste de caracterização do estado de erro (166 testes; `page.tsx` 85.71% → 100%); ratchet global para 52/41/52/52 (54.64% linhas; glob `src/components/**` 6 → 11, real 8.23% → 13.69%). Commits `3d43a33`, `cba9c8f`.
 **Fase 6 aplicada (Out/2026):** rampa de cobertura até a meta de 80% — **6 batches, +143 testes (166 → 309)**: 6a `lib/utils/charts` (fachada `dashboardCharts`: temas, formatters, donut, projeção); 6b `components/charts` (echarts mockado + `useTheme` mockado) e `components/ui` (Table/Card/Badge/Button/Input); 6c hooks `useLogin` (6), `useTheme` (3, `matchMedia` stubado) e `useDashboard` (7, `useFilters` real + debounce 350ms com timers fake); 6d `useEmpresaProtheus` (11, carga/sincronização com timers fake) e `useUploadPanel` (+10: drop, upload, falhas); 6e componentes — `dashboard-widgets` (12), `dashboard-filters` (10), `empresa-cards` (14), `empresa-protheus-panel` (4, integração com fetch), `upload-sections` (8) e `login-form` (5), com `vitest-setup.ts` migrado para `@testing-library/jest-dom/vitest` (matchers tipados); 6f `sync-baixas` (5), `sync-contas-receber` (5), `protheus-soap-client` (7: envelope, auth, SOAP Fault, factory) e `token-info` (12: JWT, fallbacks, `empresaFromTokenInfo`). Global: **54.64% → 90.70% linhas / 81.30% branches**; ratchet para **80/79/80/80** + globs (hooks 16 → 30, components 11 → 30, utils 70 → 90). Descobertas cobertas: `hooks` 156/156, `components` 147/147, `charts`/`utils` 81/81, integration 96/96. Commits `984ad7b`, `da21908`, `8f0dc55`, `4fb9649`, `f7e98ac`, `7b6c219`.
+**Fase 7 aplicada (Out/2026):** guardrails automáticos (§12.2) — `scripts/check-quality.mjs` (`pnpm check-quality`: linhas por arquivo §4.1 + CC ≤ 10 via ESLint API; exit 1 em violação; **testado com 2 testes negativos** — arquivo > limite e função CC 12 — e removidos em seguida), script `typecheck` no `package.json`, step `pnpm check-quality` no CI (`npx tsc --noEmit` → `pnpm typecheck`) e regra `complexity: ["error",10]` no `eslint.config.mjs` (escopo: tudo exceto `prisma/**`, "fora do escopo de `src/`" pela §4.1; ignores `.kilo/`/`coverage/`/`graft/` — warnings de lint 12 → 3). Pré-requisito: **6 arquivos estouravam os limites da §4** e foram adequados com os testes existentes como rede de segurança — `useEmpresaProtheus.ts` 128 → 99 (interfaces → `empresa-protheus-types.ts` + re-export), `EmpresaFilialFilter.tsx` 132 → 85 (+`FiliaisPanel.tsx` 82), `DashboardFilterBar.tsx` 105 → 56 (+`FilterFields.tsx` 92), `empresa-grupo.ts` 124 → 43 (domínio hierarquia → `empresa-hierarquia.ts` com `export *`, sem ciclo; testes/dashboard importam sem mudança), `route.test.ts` 311 → 237 (+`route.grupos.test.ts`, 6 testes de escopo/hierarquia movidos) e `protheus-rest-client.test.ts` 262 → 162 (+`protheus-rest-client.empresa.test.ts`, 2 testes de empresa/filiais movidos; duplicação de `vi.mock` segue o padrão dos outros 7 arquivos de teste do repo). Gate completo: 43 arquivos / **309 testes**, lint 0 erros / 3 warnings, check-quality PASSOU, typecheck 0, build 0, coverage exit 0 (**90.73% linhas / 81.30% branches / 92.44% funcs**; thresholds 80/79/80/80 inalterados); universo 114 prod + 43 teste; fila de funções > 30 reavaliada: 35.
 **Próxima revisão:** Janeiro 2027

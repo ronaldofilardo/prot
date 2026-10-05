@@ -40,9 +40,9 @@ const Pulse = ({ w = "w-32" }: { w?: string }) => (
   <div className={`h-8 bg-slate-200 dark:bg-slate-800 animate-pulse rounded-md ${w} mb-1`} />
 );
 
-export function DashboardKpiCards({ data, loading }: { data: DashboardData; loading: boolean }) {
+function KpiCardsValores({ data, loading }: { data: DashboardData; loading: boolean }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+    <>
       <KpiCard
         title="Faturamento Total"
         value={loading ? <Pulse w="w-36" /> : formatCurrency(data.faturamentoTotal)}
@@ -56,6 +56,13 @@ export function DashboardKpiCards({ data, loading }: { data: DashboardData; load
         colorClass="text-rose-600 dark:text-rose-400"
         icon={<span className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400"><AlertCircle size={18} /></span>}
       />
+    </>
+  );
+}
+
+function KpiCardsResumo({ data, loading }: { data: DashboardData; loading: boolean }) {
+  return (
+    <>
       <KpiCard
         title="Ticket Médio"
         value={loading ? <Pulse /> : formatCurrency(data.ticketMedio)}
@@ -70,6 +77,15 @@ export function DashboardKpiCards({ data, loading }: { data: DashboardData; load
         colorClass="text-purple-600 dark:text-purple-400"
         icon={<span className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400"><Users size={18} /></span>}
       />
+    </>
+  );
+}
+
+export function DashboardKpiCards({ data, loading }: { data: DashboardData; loading: boolean }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <KpiCardsValores data={data} loading={loading} />
+      <KpiCardsResumo data={data} loading={loading} />
     </div>
   );
 }

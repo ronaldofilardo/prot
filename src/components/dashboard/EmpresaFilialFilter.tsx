@@ -22,33 +22,35 @@ import { FiliaisPanel } from "./FiliaisPanel";
 export function EmpresaFilialFilter({ grupos }: { grupos: EmpresaGrupoDTO[] }) {
   const { matrizId, empresaIds, setMatriz, setEmpresaIds } = useFilters();
   const [ufFiltro, setUfFiltro] = useState("");
-
-  const matrizAtual = useMemo(
-    () => grupos.find((g) => g.id === matrizId) ?? null,
-    [grupos, matrizId]
-  );
-
+  const matrizAtual = useMemo(() => grupos.find((g) => g.id === matrizId) ?? null, [grupos, matrizId]);
   const filiais = matrizAtual?.filiais ?? [];
-
   function handleSelecionarMatriz(id: string) {
     setUfFiltro("");
     setMatriz(id || null);
     setEmpresaIds(idsParaSelecionarAoEscolherMatriz(grupos, id));
   }
-
   function handleAlternarFilial(filialId: string) {
     setEmpresaIds(alternarFilial(empresaIds, filialId));
   }
-
   function handleAlternarTodas(marcar: boolean) {
     setEmpresaIds(alternarTodasFiliais(filiais, marcar));
   }
 
   return (
     <div>
-      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-        Empresa / matriz
-      </label>
+      <EmpresaSelect grupos={grupos} matrizId={matrizId} onSelecionar={handleSelecionarMatriz} />
+      {matrizAtual && filiais.length > 0 && (
+        <FiliaisPanel filiais={filiais} empresaIds={empresaIds} ufFiltro={ufFiltro}
+          onUfFiltroChange={setUfFiltro} onAlternarFilial={handleAlternarFilial} onAlternarTodas={handleAlternarTodas} />
+      )}
+    </div>
+  );
+}
+
+function EmpresaSelect({ grupos, matrizId, onSelecionar }: { grupos: EmpresaGrupoDTO[]; matrizId: string | null; onSelecionar: (id: string) => void }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Empresa / matriz</label>
       <div className="relative">
         <Building2
           className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none"
@@ -56,7 +58,7 @@ export function EmpresaFilialFilter({ grupos }: { grupos: EmpresaGrupoDTO[] }) {
         />
         <select
           value={matrizId ?? ""}
-          onChange={(e) => handleSelecionarMatriz(e.target.value)}
+          onChange={(e) => onSelecionar(e.target.value)}
           className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-all"
         >
           <option value="">Todas as empresas</option>
@@ -68,17 +70,6 @@ export function EmpresaFilialFilter({ grupos }: { grupos: EmpresaGrupoDTO[] }) {
           ))}
         </select>
       </div>
-
-      {matrizAtual && filiais.length > 0 && (
-        <FiliaisPanel
-          filiais={filiais}
-          empresaIds={empresaIds}
-          ufFiltro={ufFiltro}
-          onUfFiltroChange={setUfFiltro}
-          onAlternarFilial={handleAlternarFilial}
-          onAlternarTodas={handleAlternarTodas}
-        />
-      )}
     </div>
   );
 }

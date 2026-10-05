@@ -7,15 +7,28 @@ import type { EmpresaGrupoDTO } from "@/lib/types/dashboard";
 import { ActiveFiltersBadge } from "./ActiveFiltersBadge";
 import { FilterFields, type ClienteItem } from "./FilterFields";
 
-export function DashboardFilterBar({
-  clientes,
-  grupos = [],
-}: {
-  clientes: ClienteItem[];
-  /** Empresas matriz (com suas filiais) disponíveis para o filtro de grupo. */
-  grupos?: EmpresaGrupoDTO[];
-}) {
-  const { cliente, dataInicial, dataFinal, matrizId, empresaIds, setCliente, setDataInicial, setDataFinal, limparFiltros } = useFilters();
+function LimparFiltrosButton({ visivel }: { visivel: boolean }) {
+  const limparFiltros = useFilters((s) => s.limparFiltros);
+  return (
+    <div className="flex items-center gap-2 self-end">
+      {visivel && (
+        <button
+          type="button"
+          onClick={limparFiltros}
+          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          title="Limpar todos os filtros"
+        >
+          <RotateCcw size={15} />
+          Limpar
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Empresas matriz (com suas filiais) disponíveis para o filtro de grupo. */
+export function DashboardFilterBar({ clientes, grupos = [] }: { clientes: ClienteItem[]; grupos?: EmpresaGrupoDTO[] }) {
+  const { cliente, dataInicial, dataFinal, matrizId, empresaIds, setCliente, setDataInicial, setDataFinal } = useFilters();
   const temFiltroAtivo = Boolean(cliente || dataInicial || dataFinal || matrizId || empresaIds.length > 0);
 
   return (
@@ -33,19 +46,7 @@ export function DashboardFilterBar({
             onDataFinalChange={setDataFinal}
           />
 
-          <div className="flex items-center gap-2 self-end">
-            {temFiltroAtivo && (
-              <button
-                type="button"
-                onClick={limparFiltros}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                title="Limpar todos os filtros"
-              >
-                <RotateCcw size={15} />
-                Limpar
-              </button>
-            )}
-          </div>
+          <LimparFiltrosButton visivel={temFiltroAtivo} />
         </div>
 
         {temFiltroAtivo && <ActiveFiltersBadge cliente={cliente} dataInicial={dataInicial} dataFinal={dataFinal} />}

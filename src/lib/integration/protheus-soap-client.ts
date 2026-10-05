@@ -65,7 +65,7 @@ export class ProtheusSoapClient implements ProtheusClient {
     return parseSoapRows(xml, ROW_TAG[tabela] || tabela);
   }
 
-  async fetchEmpresa(_customPath?: string): Promise<ProtheusEmpresaInfo | null> {
+  async fetchEmpresa(): Promise<ProtheusEmpresaInfo | null> {
     return {
       nome: `Empresa Protheus ${this.config.empresaId}`,
       cnpj: "00.000.000/0001-00",
@@ -74,7 +74,7 @@ export class ProtheusSoapClient implements ProtheusClient {
     };
   }
 
-  async fetchFiliais(_customPath?: string): Promise<ProtheusFilialInfo[]> {
+  async fetchFiliais(): Promise<ProtheusFilialInfo[]> {
     return [
       {
         codigoEmpresa: this.config.empresaId,

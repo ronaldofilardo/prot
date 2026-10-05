@@ -1,5 +1,5 @@
+import type { FaturamentoComCliente } from "@/lib/types/dashboard";
 import type {
-  Faturamento,
   FaturamentoMes,
   FaturamentoCliente,
   RegiaoParticipacao,
@@ -7,7 +7,7 @@ import type {
 } from "@/lib/types/dashboard";
 import { formatMesAno } from "./metrics-projection";
 
-export function buildFaturamentoMes(faturamentosFiltrados: Faturamento[]): FaturamentoMes[] {
+export function buildFaturamentoMes(faturamentosFiltrados: FaturamentoComCliente[]): FaturamentoMes[] {
   const mesMap = new Map<string, { orderKey: string; mes: string; valor: number }>();
 
   for (const f of faturamentosFiltrados) {
@@ -30,7 +30,7 @@ export function buildFaturamentoMes(faturamentosFiltrados: Faturamento[]): Fatur
     .map((m) => ({ mes: m.mes, valor: Math.round(m.valor * 100) / 100 }));
 }
 
-export function buildFaturamentoCliente(faturamentosFiltrados: Faturamento[]): FaturamentoCliente[] {
+export function buildFaturamentoCliente(faturamentosFiltrados: FaturamentoComCliente[]): FaturamentoCliente[] {
   const clienteMap = new Map<string, { nome: string; valor: number }>();
   for (const f of faturamentosFiltrados) {
     const nome = f.cliente.nome;
@@ -43,7 +43,7 @@ export function buildFaturamentoCliente(faturamentosFiltrados: Faturamento[]): F
     .sort((a, b) => b.valor - a.valor);
 }
 
-export function buildRegiaoParticipacao(faturamentosFiltrados: Faturamento[]): RegiaoParticipacao[] {
+export function buildRegiaoParticipacao(faturamentosFiltrados: FaturamentoComCliente[]): RegiaoParticipacao[] {
   const regiaoMap = new Map<string, { nome: string; valor: number }>();
   for (const f of faturamentosFiltrados) {
     const estado = f.cliente.estado?.trim() || "Outros";
@@ -56,17 +56,18 @@ export function buildRegiaoParticipacao(faturamentosFiltrados: Faturamento[]): R
     .sort((a, b) => b.valor - a.valor);
 }
 
-export function buildTabelaNotas(faturamentosFiltrados: Faturamento[]): FaturamentoItemDTO[] {
+export function buildTabelaNotas(faturamentosFiltrados: FaturamentoComCliente[]): FaturamentoItemDTO[] {
   return faturamentosFiltrados
     .slice()
     .sort((a, b) => new Date(b.dataEmissao).getTime() - new Date(a.dataEmissao).getTime())
     .slice(0, 10)
     .map((f) => ({
       id: f.id,
+      filial: f.filial,
       numeroNota: f.numeroNota,
       clienteNome: f.cliente.nome,
       clienteCodigo: f.cliente.codigo,
-      dataEmissao: f.dataEmissao,
+      dataEmissao: f.dataEmissao.toISOString(),
       valorTotal: Number(f.valorTotal),
     }));
 }

@@ -20,7 +20,7 @@ export default defineConfig({
       // ganhar cobertura, até a meta de 80% (atingida na Fase 6 — real 90.7% linhas).
       thresholds: {
         statements: 80,
-        branches: 79,
+        branches: 80,
         functions: 80,
         lines: 80,
         "src/lib/utils/**": { lines: 90 },

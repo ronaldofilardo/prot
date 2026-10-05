@@ -1,6 +1,8 @@
-import type { Faturamento, ContaReceber, DashboardFilters } from "@/lib/types/dashboard";
+import type { Faturamento, ContaReceber } from "@prisma/client";
+import type { FaturamentoComCliente, ContaReceberComClienteEBaixas } from "@/lib/types/dashboard";
+import type { DashboardFilters } from "@/lib/types/dashboard";
 
-export function filtrarFaturamentos(faturamentos: Faturamento[], filters: DashboardFilters): Faturamento[] {
+export function filtrarFaturamentos(faturamentos: FaturamentoComCliente[], filters: DashboardFilters): FaturamentoComCliente[] {
   let resultado = faturamentos;
 
   if (filters.cliente) {
@@ -27,7 +29,7 @@ export function filtrarFaturamentos(faturamentos: Faturamento[], filters: Dashbo
   return resultado;
 }
 
-export function filtrarContasReceber(contas: ContaReceber[], filters: DashboardFilters): ContaReceber[] {
+export function filtrarContasReceber(contas: ContaReceberComClienteEBaixas[], filters: DashboardFilters): ContaReceberComClienteEBaixas[] {
   let resultado = contas;
 
   if (filters.cliente) {

@@ -1,27 +1,31 @@
 import { describe, it, expect } from "vitest";
 import { filtrarFaturamentos, filtrarContasReceber } from "../metrics-filter";
-import type { Faturamento, ContaReceber } from "@/lib/types/dashboard";
+import type { FaturamentoComCliente, ContaReceberComClienteEBaixas } from "@/lib/types/dashboard";
+import { Decimal } from "@prisma/client/runtime/library";
+import type { Cliente } from "@prisma/client";
 
 describe("Filtragem de Métricas (metrics-filter)", () => {
-  const faturamentosMock: Faturamento[] = [
+  const faturamentosMock: FaturamentoComCliente[] = [
     {
       id: "fat-1",
       filial: "01",
       numeroNota: "000001",
-      dataEmissao: "2026-05-10",
-      valorTotal: 1000,
+      dataEmissao: new Date("2026-05-10"),
+      valorTotal: new Decimal(1000),
       clienteId: "cli-1",
       empresaId: "emp-1",
+      sincronizadoEm: new Date(),
       cliente: { id: "cli-1", nome: "Acme Indústria", codigo: "ACME01", estado: "SP" },
     },
     {
       id: "fat-2",
       filial: "01",
       numeroNota: "000002",
-      dataEmissao: "2026-07-20",
-      valorTotal: 2000,
+      dataEmissao: new Date("2026-07-20"),
+      valorTotal: new Decimal(2000),
       clienteId: "cli-2",
       empresaId: "emp-1",
+      sincronizadoEm: new Date(),
       cliente: { id: "cli-2", nome: "Beta Logística", codigo: "BETA02", estado: "MG" },
     },
   ];
@@ -62,7 +66,7 @@ describe("Filtragem de Métricas (metrics-filter)", () => {
   });
 
   it("filtra contas a receber por cliente", () => {
-    const contasMock: ContaReceber[] = [
+    const contasMock: ContaReceberComClienteEBaixas[] = [
       {
         id: "cr-1",
         filial: "01",
@@ -70,11 +74,12 @@ describe("Filtragem de Métricas (metrics-filter)", () => {
         numero: "001",
         parcela: "A",
         tipo: "NF",
-        dataEmissao: "2026-05-10",
-        vencimento: "2026-06-10",
-        valor: 500,
+        dataEmissao: new Date("2026-05-10"),
+        vencimento: new Date("2026-06-10"),
+        valor: new Decimal(500),
         clienteId: "cli-1",
         empresaId: "emp-1",
+        sincronizadoEm: new Date(),
         cliente: { id: "cli-1", nome: "Acme Indústria", codigo: "ACME01" },
         baixas: [],
       },
@@ -85,11 +90,12 @@ describe("Filtragem de Métricas (metrics-filter)", () => {
         numero: "002",
         parcela: "A",
         tipo: "NF",
-        dataEmissao: "2026-07-20",
-        vencimento: "2026-08-20",
-        valor: 1000,
+        dataEmissao: new Date("2026-07-20"),
+        vencimento: new Date("2026-08-20"),
+        valor: new Decimal(1000),
         clienteId: "cli-2",
         empresaId: "emp-1",
+        sincronizadoEm: new Date(),
         cliente: { id: "cli-2", nome: "Beta Logística", codigo: "BETA02" },
         baixas: [],
       },

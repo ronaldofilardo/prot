@@ -5,38 +5,42 @@ import {
   buildRegiaoParticipacao,
   buildTabelaNotas,
 } from "../metrics-grouping";
-import type { Faturamento } from "@/lib/types/dashboard";
+import type { FaturamentoComCliente } from "@/lib/types/dashboard";
+import { Decimal } from "@prisma/client/runtime/library";
 
 describe("Agrupamento de Faturamentos (metrics-grouping)", () => {
-  const faturamentosMock: Faturamento[] = [
+  const faturamentosMock: FaturamentoComCliente[] = [
     {
       id: "fat-1",
       filial: "01",
       numeroNota: "NF-01",
-      dataEmissao: "2026-01-15T10:00:00Z",
-      valorTotal: 500,
+      dataEmissao: new Date("2026-01-15T10:00:00Z"),
+      valorTotal: new Decimal(500),
       clienteId: "c1",
       empresaId: "e1",
+      sincronizadoEm: new Date(),
       cliente: { id: "c1", nome: "Cliente Alpha", codigo: "A1", estado: "SP" },
     },
     {
       id: "fat-2",
       filial: "01",
       numeroNota: "NF-02",
-      dataEmissao: "2026-01-20T10:00:00Z",
-      valorTotal: 700,
+      dataEmissao: new Date("2026-01-20T10:00:00Z"),
+      valorTotal: new Decimal(700),
       clienteId: "c1",
       empresaId: "e1",
+      sincronizadoEm: new Date(),
       cliente: { id: "c1", nome: "Cliente Alpha", codigo: "A1", estado: "SP" },
     },
     {
       id: "fat-3",
       filial: "01",
       numeroNota: "NF-03",
-      dataEmissao: "2026-02-10T10:00:00Z",
-      valorTotal: 1200,
+      dataEmissao: new Date("2026-02-10T10:00:00Z"),
+      valorTotal: new Decimal(1200),
       clienteId: "c2",
       empresaId: "e1",
+      sincronizadoEm: new Date(),
       cliente: { id: "c2", nome: "Cliente Beta", codigo: "B1", estado: "RJ" },
     },
   ];

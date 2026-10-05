@@ -1,4 +1,4 @@
-import type { EmpresaGrupoDTO } from "@/lib/types/dashboard";
+import type { EmpresaGrupoDTO, FaturamentoItemDTO } from "@/lib/types/dashboard";
 
 export interface DashboardData {
   totalClientes: number;
@@ -6,14 +6,7 @@ export interface DashboardData {
   faturamentoTotal: number;
   valorVencido: number;
   ticketMedio: number;
-  faturamentos: Array<{
-    id: string;
-    numeroNota: string;
-    clienteNome: string;
-    clienteCodigo: string;
-    dataEmissao: string;
-    valorTotal: number;
-  }>;
+  faturamentos: FaturamentoItemDTO[];
   faturamentoMes: Array<{ mes: string; valor: number }>;
   faturamentoCliente: Array<{ nome: string; valor: number }>;
   regiaoParticipacao: Array<{ nome: string; valor: number }>;

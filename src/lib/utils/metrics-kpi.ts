@@ -1,4 +1,4 @@
-import type { Faturamento, ContaReceber } from "@/lib/types/dashboard";
+import type { FaturamentoComCliente, ContaReceberComClienteEBaixas } from "@/lib/types/dashboard";
 
 export interface KPIsCalculados {
   faturamentoTotal: number;
@@ -6,18 +6,18 @@ export interface KPIsCalculados {
   ticketMedio: number;
 }
 
-function totalBaixado(cr: ContaReceber): number {
+function totalBaixado(cr: ContaReceberComClienteEBaixas): number {
   return cr.baixas.reduce((acc: number, b) => acc + Number(b.valorBaixa), 0);
 }
 
-function contaVencida(cr: ContaReceber, hoje: Date): boolean {
+function contaVencida(cr: ContaReceberComClienteEBaixas, hoje: Date): boolean {
   const dataVenc = new Date(cr.vencimento);
   return dataVenc < hoje && totalBaixado(cr) < Number(cr.valor);
 }
 
 export function calcularKPIs(
-  faturamentosFiltrados: Faturamento[],
-  contasReceberFiltrados: ContaReceber[]
+  faturamentosFiltrados: FaturamentoComCliente[],
+  contasReceberFiltrados: ContaReceberComClienteEBaixas[]
 ): KPIsCalculados {
   const faturamentoTotal = faturamentosFiltrados.reduce(
     (acc, f) => acc + Number(f.valorTotal),
@@ -28,7 +28,7 @@ export function calcularKPIs(
   const contasVencidas = contasReceberFiltrados.filter((cr) => contaVencida(cr, hoje));
 
   const valorVencido = contasVencidas.reduce(
-    (acc: number, cr: ContaReceber) => acc + (Number(cr.valor) - totalBaixado(cr)),
+    (acc: number, cr: ContaReceberComClienteEBaixas) => acc + (Number(cr.valor) - totalBaixado(cr)),
     0
   );
 

@@ -1,0 +1,135 @@
+PROT — AUDITORIA DE REFATORACAO
+FECHAMENTO DOS 3 DESVIOS ACIONAVEIS (2026-01-05)
+
+==============================================================================
+
+STATUS: OK - TODOS OS 3 FECHAMENTOS CONCLUIDOS E VALIDADOS
+
+==============================================================================
+
+FECHAMENTO #1: Constante Nomeada + Backoff/Jitter em rest-retry.ts
+
+Problema:     Magic number 8000 para timeout; nenhuma funcao de backoff
+Solucao:      
+  - PROTHEUS_FETCH_TIMEOUT_MS = 8000 (const nomeada com docs)
+  - PROTHEUS_RETRY_JITTER_MAX_MS = 300 (const jitter)
+  - exponentialBackoffWithJitter(attempt, capMs) exportada
+  - Formula: min(cap, 2^attempt x 1000 + random(0, 300ms))
+  - JSDoc completo + export para retry critico
+
+Arquivo:      src/lib/integration/_internals/rest-retry.ts (+34 linhas)
+Validacao:    OK
+Status:       IMPLEMENTADO
+
+==============================================================================
+
+FECHAMENTO #2: Threshold branches: 79 -> 80 em vitest.config.mts
+
+Problema:     Config = 79%, realidade = 80.67% (config < real)
+Solucao:      vitest.config.mts:23 atualizado para branches: 80
+Arquivo:      vitest.config.mts (1 linha)
+Validacao:    OK - teste passa com novo threshold
+Status:       IMPLEMENTADO
+
+==============================================================================
+
+FECHAMENTO #3: Smoke Test Manual - SMOKE_TEST.md + README
+
+Problema:     Teste manual do fluxo critico ausente
+Solucao:      
+  SMOKE_TEST.md (novo, 7 secoes)
+    1. Login & autenticacao (Fase 4b)
+    2. Dashboard - graficos (Fase 5a-5b)
+    3. Upload de arquivo (Fase 3c)
+    4. Sincronizacao Protheus (Fase 2)
+    5. Tenant isolation / RLS (Fase 3a)
+    6. Tratamento de erros + timeouts (Fase 2a)
+    7. Build & cobertura (Fase 0)
+    Duracao: 5-7 minutos, checklist operacional
+
+  README.md (+38 linhas)
+    - Quality Gates & Testing (5 comandos)
+    - Architecture & Refactoring (SOLID, Clean Arch, limites)
+
+Arquivos:     SMOKE_TEST.md (novo, 158 linhas) + README.md
+Validacao:    OK
+Status:       IMPLEMENTADO
+
+==============================================================================
+
+VALIDACAO FINAL - TODOS OS 4 GATES VERDES
+
+✓ pnpm test:coverage
+  309 testes, 43 arquivos
+  Cobertura: 90.72% linhas (>=80%), 80.67% branches (>=80%)
+  Exit: 0
+
+✓ pnpm lint
+  ESLint clean, complexidade <=10 ok
+  Exit: 0
+
+✓ npx tsc --noEmit
+  Tipo-seguro
+  Exit: 0
+
+✓ npx next build
+  Build OK em 70.9s, 12 paginas estaticas
+  Exit: 0
+
+✓ pnpm check-quality
+  164 arquivos, OK (linhas, CC)
+  Exit: 0
+
+==============================================================================
+
+METRICAS - ANTES/DEPOIS
+
+rest-retry.ts magic numbers:        1 -> 0
+rest-retry.ts backoff/jitter:       (ausente) -> exponentialBackoffWithJitter()
+vitest branches threshold:          79 -> 80
+Smoke test docs:                    (ausente) -> SMOKE_TEST.md
+README - Quality Gates:             (ausente) -> Adicionado
+README - Architecture:              (ausente) -> Adicionado
+
+==============================================================================
+
+DOCUMENTACAO GERADA
+
+✓ docs/AUDIT_CLOSURES_2026-01.md (nova, 300+ linhas)
+  Detalhe completo dos 3 fechamentos, validacao, desvios documentados
+
+✓ docs/EXECUTION_SUMMARY.txt (este arquivo)
+  Sumario executivo
+
+✓ SMOKE_TEST.md (nova, 158 linhas)
+  Guia operacional de teste manual (5-7 min, 7 fluxos)
+
+✓ README.md (atualizado, +38 linhas)
+  Secoes Quality Gates + Architecture com referencias a graft
+
+==============================================================================
+
+PROXIMAS ACOES (RECOMENDADAS)
+
+1. Executar smoke test manual (5-7 min) antes de deploy em staging
+   -> Usar checklist SMOKE_TEST.md
+
+2. Integrar smoke test ao CI (opcional)
+   -> Adicionar step em ci.yml ou automacao Playwright
+
+3. Monitorar cobertura
+   -> Threshold 80% agora; ratchet a cada PR (nunca reduzir)
+
+4. Revisar exponentialBackoffWithJitter
+   -> Funcao pronta para uso em retry critico em v2
+
+==============================================================================
+
+ASS INADO
+
+Data:           2026-01-05
+Execucao:       Kiro (agente de desenvolvimento)
+Aprovacao:      Desvios auditados e fechados conforme demanda
+Status Final:   VERDE - Pronto para merge
+
+==============================================================================

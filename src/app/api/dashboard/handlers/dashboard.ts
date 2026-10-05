@@ -9,9 +9,18 @@ import {
   buildTabelaNotas,
 } from "@/lib/utils/dashboardMetrics";
 import { buildGruposEmpresa } from "@/lib/utils/empresa-grupo-dto";
-import { resolveEmpresaIdsConsulta, resolveIdsPermitidosTotal } from "@/lib/utils/empresa-grupo";
-import type { DashboardResponse, DashboardFilters } from "@/lib/types/dashboard";
-import { carregarDadosFinanceiros, carregarHierarquias } from "../_internals/dashboard-query";
+import {
+  resolveEmpresaIdsConsulta,
+  resolveIdsPermitidosTotal,
+} from "@/lib/utils/empresa-grupo";
+import type {
+  DashboardResponse,
+  DashboardFilters,
+} from "@/lib/types/dashboard";
+import {
+  carregarDadosFinanceiros,
+  carregarHierarquias,
+} from "../_internals/dashboard-query";
 
 type DadosFinanceiros = Awaited<ReturnType<typeof carregarDadosFinanceiros>>;
 
@@ -27,16 +36,25 @@ interface RelatorioParams {
 }
 
 function montarDashboardResponse(dados: RespostaInput): DashboardResponse {
-  const faturamentosFiltrados = filtrarFaturamentos(dados.faturamentos, dados.filters);
-  const contasReceberFiltrados = filtrarContasReceber(dados.contasReceber, dados.filters);
+  const faturamentosFiltrados = filtrarFaturamentos(
+    dados.faturamentos,
+    dados.filters,
+    dados.filialMap,
+  );
+  const contasReceberFiltrados = filtrarContasReceber(
+    dados.contasReceber,
+    dados.filters,
+  );
   const { faturamentoTotal, valorVencido, ticketMedio } = calcularKPIs(
     faturamentosFiltrados,
-    contasReceberFiltrados
+    contasReceberFiltrados,
   );
   const faturamentoMes = buildFaturamentoMes(faturamentosFiltrados);
   return {
     totalClientes: dados.clientes.length,
-    clientesAtivosFiltrados: new Set(faturamentosFiltrados.map((f) => f.clienteId)).size,
+    clientesAtivosFiltrados: new Set(
+      faturamentosFiltrados.map((f) => f.clienteId),
+    ).size,
     faturamentoTotal,
     valorVencido,
     ticketMedio,
@@ -55,10 +73,19 @@ export async function buildDashboardReport({
   usuarioId,
   filters,
 }: RelatorioParams): Promise<DashboardResponse> {
-  const { hierarquias, matrizRowsPorId } = await carregarHierarquias(empresaId, usuarioId);
+  const { hierarquias, matrizRowsPorId } = await carregarHierarquias(
+    empresaId,
+    usuarioId,
+  );
 
-  const idsPermitidos = hierarquias.length > 0 ? resolveIdsPermitidosTotal(hierarquias) : [empresaId];
-  const idsConsulta = resolveEmpresaIdsConsulta(idsPermitidos, filters.empresaIds);
+  const idsPermitidos =
+    hierarquias.length > 0
+      ? resolveIdsPermitidosTotal(hierarquias)
+      : [empresaId];
+  const idsConsulta = resolveEmpresaIdsConsulta(
+    idsPermitidos,
+    filters.empresaIds,
+  );
   // Um "grupo" por matriz distinta acessível — cada empresa
   // independente (sem filial) vira um grupo com filiais: [], o que
   // já é suficiente para listá-la pelo nome no seletor da UI.

@@ -9,10 +9,15 @@ const INCLUDE_HIERARQUIA = {
 } as const;
 
 function carregarEmpresaComHierarquia(id: string) {
-  return prisma.empresa.findUnique({ where: { id }, include: INCLUDE_HIERARQUIA });
+  return prisma.empresa.findUnique({
+    where: { id },
+    include: INCLUDE_HIERARQUIA,
+  });
 }
 
-type EmpresaComHierarquia = NonNullable<Awaited<ReturnType<typeof carregarEmpresaComHierarquia>>>;
+type EmpresaComHierarquia = NonNullable<
+  Awaited<ReturnType<typeof carregarEmpresaComHierarquia>>
+>;
 
 /**
  * A partir de uma Empresa carregada com `INCLUDE_HIERARQUIA`, retorna a
@@ -20,9 +25,17 @@ type EmpresaComHierarquia = NonNullable<Awaited<ReturnType<typeof carregarEmpres
  * empresa quando ela já é a matriz (ou é independente, sem filial
  * nenhuma), ou `empresa.matriz` quando ela é uma filial.
  */
-function extrairMatrizRow(empresa: EmpresaComHierarquia): EmpresaComFiliaisRow | null {
+function extrairMatrizRow(
+  empresa: EmpresaComHierarquia,
+): EmpresaComFiliaisRow | null {
   if (empresa.matrizId === null) {
-    return { id: empresa.id, nome: empresa.nome, cnpj: empresa.cnpj, matrizId: null, filiais: empresa.filiais };
+    return {
+      id: empresa.id,
+      nome: empresa.nome,
+      cnpj: empresa.cnpj,
+      matrizId: null,
+      filiais: empresa.filiais,
+    };
   }
   if (!empresa.matriz) return null;
   return {
@@ -49,12 +62,20 @@ export interface Hierarquias {
  *    CFO que gere várias empresas independentes, cada uma com seu
  *    próprio CNPJ e sem relação de matriz/filial entre si.
  */
-export async function carregarHierarquias(empresaId: string, usuarioId?: string): Promise<Hierarquias> {
+export async function carregarHierarquias(
+  empresaId: string,
+  usuarioId?: string,
+): Promise<Hierarquias> {
   const acessosExtras = usuarioId
-    ? await prisma.usuarioEmpresaAcesso.findMany({ where: { usuarioId }, select: { empresaId: true } })
+    ? await prisma.usuarioEmpresaAcesso.findMany({
+        where: { usuarioId },
+        select: { empresaId: true },
+      })
     : [];
   const idsParaCarregar = [empresaId, ...acessosExtras.map((a) => a.empresaId)];
-  const empresasCarregadas = await Promise.all(idsParaCarregar.map(carregarEmpresaComHierarquia));
+  const empresasCarregadas = await Promise.all(
+    idsParaCarregar.map(carregarEmpresaComHierarquia),
+  );
 
   const hierarquias: EmpresaHierarquia[] = [];
   const matrizRowsPorId = new Map<string, EmpresaComFiliaisRow>();
@@ -77,12 +98,26 @@ export async function carregarHierarquias(empresaId: string, usuarioId?: string)
  * (mudança maior, exige nova migration), disparamos uma transação RLS
  * por empresa e mesclamos aqui na aplicação.
  */
-export async function carregarDadosFinanceiros(idsConsulta: string[]) {
+export async function carregarDadosFinanceiros(
+  idsConsulta: string[],
+  filialMap?: Record<string, string>,
+) {
+  // Se filialMap não foi fornecido, cria um mapa simples (fallback)
+  const mapa = filialMap || {};
+  for (const id of idsConsulta) {
+    if (!mapa[id]) {
+      mapa[id] = "01"; // fallback: assume filial 01
+    }
+  }
+
   const resultadosPorEmpresa = await Promise.all(
     idsConsulta.map((id) =>
       withEmpresaRLS(id, (tx) =>
         Promise.all([
-          tx.cliente.findMany({ where: { ativo: true, empresaId: id }, orderBy: { nome: "asc" } }),
+          tx.cliente.findMany({
+            where: { ativo: true, empresaId: id },
+            orderBy: { nome: "asc" },
+          }),
           tx.faturamento.findMany({
             where: { empresaId: id },
             include: { cliente: true },
@@ -93,13 +128,16 @@ export async function carregarDadosFinanceiros(idsConsulta: string[]) {
             include: { baixas: true, cliente: true },
             orderBy: { vencimento: "asc" },
           }),
-        ])
-      )
-    )
+        ]),
+      ),
+    ),
   );
   return {
     clientes: resultadosPorEmpresa.flatMap(([clientes]) => clientes),
-    faturamentos: resultadosPorEmpresa.flatMap(([, faturamentos]) => faturamentos),
+    faturamentos: resultadosPorEmpresa.flatMap(
+      ([, faturamentos]) => faturamentos,
+    ),
     contasReceber: resultadosPorEmpresa.flatMap(([, , contas]) => contas),
+    filialMap,
   };
 }

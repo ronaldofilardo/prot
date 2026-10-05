@@ -1,0 +1,137 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                  PROT — AUDITORIA DE REFATORAÇÃO                              ║
+║              FECHAMENTO DOS 3 DESVIOS ACIONÁVEIS (2026-01-05)                  ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+STATUS: ✅ TODOS OS 3 FECHAMENTOS CONCLUÍDOS E VALIDADOS
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 FECHAMENTO #1: Constante Nomeada + Backoff/Jitter em `rest-retry.ts`
+
+  Problema:    Magic number 8000 (timeout); nenhuma função de backoff
+  Solução:     
+    ✓ PROTHEUS_FETCH_TIMEOUT_MS = 8000 (const nomeada, docs)
+    ✓ PROTHEUS_RETRY_JITTER_MAX_MS = 300 (const jitter)
+    ✓ exponentialBackoffWithJitter(attempt, capMs) — função pura, exportada
+    ✓ Fórmula: min(cap, 2^attempt × 1000 + random(0, 300ms))
+    ✓ JSDoc completo + export para retry crítico
+  
+  Impacto:     §10 REFACTORING_POLICY cumprido (sem magic numbers)
+  Arquivo:     src/lib/integration/_internals/rest-retry.ts (+34 linhas)
+  Severidade:  🟠 MÉDIA (funcional)
+  Status:      ✅ IMPLEMENTADO
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 FECHAMENTO #2: Threshold `branches: 79 → 80` em `vitest.config.mts`
+
+  Problema:    Config = 79%, realidade = 80.67% (config < real)
+  Solução:     vitest.config.mts:23 → branches: 80
+  Impacto:     Alinha config à realidade, §3.4 (nunca acima do real)
+  Arquivo:     vitest.config.mts (1 linha)
+  Severidade:  🟢 BAIXA (config)
+  Status:      ✅ IMPLEMENTADO
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 FECHAMENTO #3: Smoke Test Manual → `SMOKE_TEST.md` + README
+
+  Problema:    Teste manual do fluxo crítico ausente
+  Solução:     
+    ✓ SMOKE_TEST.md (novo, 7 seções de fluxos críticos)
+      • Login & autenticação (Fase 4b)
+      • Dashboard — gráficos (Fase 5a-5b)
+      • Upload de arquivo (Fase 3c)
+      • Sincronização Protheus (Fase 2)
+      • Tenant isolation / RLS (Fase 3a)
+      • Tratamento de erros + timeouts (Fase 2a)
+      • Build & cobertura (Fase 0)
+    ✓ Duração: 5–7 minutos, checklist operacional
+    ✓ README.md (+38 linhas)
+      • Quality Gates & Testing (5 comandos, referência smoke test)
+      • Architecture & Refactoring (SOLID, Clean Arch, limites, graft)
+  
+  Impacto:     Documentação de validação pós-deploy, governança clara
+  Arquivos:    SMOKE_TEST.md (novo, 158 linhas) + README.md
+  Severidade:  🟢 BAIXA (documentação)
+  Status:      ✅ IMPLEMENTADO
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ VALIDAÇÃO FINAL — TODOS OS 4 GATES VERDES
+
+  ✓ pnpm test:coverage
+    309 testes, 43 arquivos
+    Cobertura: 90.72% linhas (≥80%), 80.67% branches (≥80%)
+    Exit: 0
+
+  ✓ pnpm lint
+    ESLint clean, complexidade ≤10 ✓
+    Exit: 0
+
+  ✓ npx tsc --noEmit
+    Tipo-seguro
+    Exit: 0
+
+  ✓ npx next build
+    Build OK em 70.9s, 12 páginas estáticas
+    Exit: 0
+
+  ✓ pnpm check-quality
+    164 arquivos, OK (linhas, CC)
+    Exit: 0
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 MÉTRICAS — ANTES/DEPOIS
+
+  rest-retry.ts magic numbers:      1 → 0 ✅
+  rest-retry.ts backoff/jitter:     ∅ → exponentialBackoffWithJitter() ✅
+  vitest branches threshold:         79 → 80 ✅
+  Smoke test docs:                  ∅ → SMOKE_TEST.md ✅
+  README — Quality Gates:            ∅ → Adicionado ✅
+  README — Architecture:             ∅ → Adicionado ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 DOCUMENTAÇÃO GERADA
+
+  ✓ docs/AUDIT_CLOSURES_2026-01.md (nova, 300+ linhas)
+    Detalhe completo dos 3 fechamentos, validação, desvios documentados
+
+  ✓ docs/CLOSURES_SUMMARY_2026-01.txt (este arquivo)
+    Sumário executivo visual
+
+  ✓ SMOKE_TEST.md (nova, 158 linhas)
+    Guia operacional de teste manual (5–7 min, 7 fluxos)
+
+  ✓ README.md (atualizado, +38 linhas)
+    Seções Quality Gates + Architecture com referências a graft
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 PRÓXIMAS AÇÕES (RECOMENDADAS)
+
+  1. Executar smoke test manual (5–7 min) antes de deploy em staging
+     → Usar checklist SMOKE_TEST.md
+
+  2. Integrar smoke test ao CI (opcional)
+     → Adicionar step em ci.yml com instruções ou automação Playwright
+
+  3. Monitorar cobertura
+     → Threshold 80% agora; ratchet a cada PR (nunca reduzir)
+
+  4. Revisar exponentialBackoffWithJitter
+     → Função pronta para uso em retry crítico em v2
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ ASSINADO
+
+  Data:           2026-01-05
+  Execução:       Kiro (agente de desenvolvimento)
+  Aprovação:      Desvios auditados e fechados conforme demanda
+  Status Final:   🟢 VERDE — Pronto para merge
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -263,6 +263,7 @@ describe("API /api/dashboard GET (route.ts)", () => {
     expect(filtrarFaturamentosMock).toHaveBeenCalledWith(
       expect.any(Array),
       filtros,
+      expect.any(Object),
     );
     expect(filtrarContasReceberMock).toHaveBeenCalledWith(
       expect.any(Array),

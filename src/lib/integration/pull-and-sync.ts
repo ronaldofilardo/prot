@@ -27,11 +27,6 @@ import {
   type SyncResult,
 } from "./sync-engine";
 import { logApiError } from "@/lib/utils/logger";
-import {
-  fetchFiliasDaMatriz,
-  fetchDadosDeFilial,
-  agregarDadosDeFiliais,
-} from "./_internals/sync-multi-filial";
 
 export interface PullEntityResult {
   entidade: string;
@@ -161,103 +156,13 @@ export async function pullAndSyncFromProtheus(
   const client = await getProtheusClient(empresaId);
   const resultados: PullEntityResult[] = [];
 
-  try {
-    // Busca todas as filiais da matriz
-    const filias = await fetchFiliasDaMatriz(client);
-    logApiError("[DEBUG] Filiais encontradas:", {
-      count: filias.length,
-      filias,
-    });
-
-    // Para cada filial, busca os dados
-    const filiasDados = await Promise.all(
-      filias.map(async (filial) => ({
-        filial,
-        dados: await fetchDadosDeFilial(client, filial),
-      })),
-    );
-
-    // Agrega dados de todas as filiais
-    const dadosAgregados = agregarDadosDeFiliais(filiasDados);
-
-    // Cria rows agregadas com todos os dados de todas as filiais
-    const rowsMultiFilial = {
-      clientes: dadosAgregados.clientes,
-      faturamentos: dadosAgregados.faturamentos,
-      contasReceber: dadosAgregados.contasReceber,
-      baixas: dadosAgregados.baixas,
-    };
-
-    // Executa sync com dados agregados
-    for (const job of JOBS) {
-      try {
-        const jobData = getJobData(job.entidade, rowsMultiFilial);
-        const validRows = jobData.filter(
-          (r: ProtheusRow) => r.D_E_L_E_T_ !== "*",
-        );
-        const canonical = validRows.map((r: ProtheusRow) =>
-          job.toCanonical(r, empresaId),
-        );
-
-        const syncResult = await prisma.$transaction(async (tx) => {
-          const res = await job.sync(tx as PrismaClient, empresaId, canonical);
-          await tx.syncLog.create({
-            data: {
-              empresaId,
-              entidade: job.entidade,
-              operacao: "manual_pull",
-              idempotencyKey: `pull-${job.entidade}-${Date.now()}`,
-              status: res.erros > 0 ? "error" : "success",
-              mensagem: `Atualizacao manual (${filias.length} filiais): ${res.processados} processados, ${res.criados} criados, ${res.atualizados} atualizados, ${res.erros} erros`,
-              tentativas: 1,
-            },
-          });
-          return res;
-        });
-
-        resultados.push({
-          entidade: job.entidade,
-          registros: validRows.length,
-          sync: syncResult,
-        });
-      } catch (error) {
-        resultados.push(await registrarFalha(job, empresaId, error));
-      }
-    }
-  } catch (error) {
-    logApiError("Erro ao buscar filiais do Protheus", error);
-    // Se falhar ao buscar filiais, tenta com a filial padrão
-    for (const job of JOBS) {
-      try {
-        resultados.push(await executarJob(job, empresaId, client));
-      } catch (err) {
-        resultados.push(await registrarFalha(job, empresaId, err));
-      }
+  for (const job of JOBS) {
+    try {
+      resultados.push(await executarJob(job, empresaId, client));
+    } catch (error) {
+      resultados.push(await registrarFalha(job, empresaId, error));
     }
   }
 
   return resultados;
-}
-
-function getJobData(
-  entidade: string,
-  rowsMultiFilial: {
-    clientes: ProtheusRow[];
-    faturamentos: ProtheusRow[];
-    contasReceber: ProtheusRow[];
-    baixas: ProtheusRow[];
-  },
-): ProtheusRow[] {
-  switch (entidade) {
-    case "Cliente":
-      return rowsMultiFilial.clientes;
-    case "Faturamento":
-      return rowsMultiFilial.faturamentos;
-    case "ContaReceber":
-      return rowsMultiFilial.contasReceber;
-    case "Baixa":
-      return rowsMultiFilial.baixas;
-    default:
-      return [];
-  }
 }

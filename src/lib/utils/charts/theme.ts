@@ -6,7 +6,20 @@ export interface EChartsTooltipParam {
   axisValue?: string;
 }
 
-export function getThemeColors(isDark = false) {
+export interface ThemeColors {
+  blue: string;
+  indigo: string;
+  purple: string;
+  textMuted: string;
+  border: string;
+  grid: string;
+  tooltipBg: string;
+  tooltipBorder: string;
+  tooltipTitle: string;
+  tooltipText: string;
+}
+
+export function getThemeColors(isDark = false): ThemeColors {
   return {
     blue: "#3b82f6",
     indigo: "#6366f1",

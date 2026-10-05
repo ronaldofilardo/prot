@@ -25,6 +25,18 @@ export function parseMesAno(mesAnoStr: string): Date {
   return new Date();
 }
 
+function pontoProjetado(ultimosValores: number[], ultimaData: Date, passo: number): ProjecaoPonto {
+  const mediaMovel =
+    ultimosValores.reduce((sum, val) => sum + val, 0) / (ultimosValores.length || 1);
+  const valorProjetado = Math.round(mediaMovel * 100) / 100;
+  const dataFutura = proximoMes(ultimaData, passo);
+  return {
+    mes: formatMesAno(dataFutura),
+    real: null,
+    projetado: valorProjetado,
+  };
+}
+
 export function buildProjecao(sortedMeses: FaturamentoMes[]): ProjecaoPonto[] {
   const projecao: ProjecaoPonto[] = sortedMeses.map((m) => ({
     mes: m.mes,
@@ -41,19 +53,7 @@ export function buildProjecao(sortedMeses: FaturamentoMes[]): ProjecaoPonto[] {
     }
 
     for (let i = 1; i <= 3; i++) {
-      const mediaMovel =
-        ultimosValores.reduce((sum, val) => sum + val, 0) /
-        (ultimosValores.length || 1);
-      const valorProjetado = Math.round(mediaMovel * 100) / 100;
-
-      const dataFutura = proximoMes(ultimaData, i);
-      const mesFuturoLabel = formatMesAno(dataFutura);
-
-      projecao.push({
-        mes: mesFuturoLabel,
-        real: null,
-        projetado: valorProjetado,
-      });
+      projecao.push(pontoProjetado(ultimosValores, ultimaData, i));
     }
   }
 

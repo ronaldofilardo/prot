@@ -6,6 +6,15 @@ export interface KPIsCalculados {
   ticketMedio: number;
 }
 
+function totalBaixado(cr: ContaReceber): number {
+  return cr.baixas.reduce((acc: number, b) => acc + Number(b.valorBaixa), 0);
+}
+
+function contaVencida(cr: ContaReceber, hoje: Date): boolean {
+  const dataVenc = new Date(cr.vencimento);
+  return dataVenc < hoje && totalBaixado(cr) < Number(cr.valor);
+}
+
 export function calcularKPIs(
   faturamentosFiltrados: Faturamento[],
   contasReceberFiltrados: ContaReceber[]
@@ -16,22 +25,12 @@ export function calcularKPIs(
   );
 
   const hoje = new Date();
-  const contasVencidas = contasReceberFiltrados.filter((cr) => {
-    const totalBaixado = cr.baixas.reduce(
-      (acc: number, b) => acc + Number(b.valorBaixa),
-      0
-    );
-    const dataVenc = new Date(cr.vencimento);
-    return dataVenc < hoje && totalBaixado < Number(cr.valor);
-  });
+  const contasVencidas = contasReceberFiltrados.filter((cr) => contaVencida(cr, hoje));
 
-  const valorVencido = contasVencidas.reduce((acc: number, cr: ContaReceber) => {
-    const totalBaixado = cr.baixas.reduce(
-      (acc: number, b) => acc + Number(b.valorBaixa),
-      0
-    );
-    return acc + (Number(cr.valor) - totalBaixado);
-  }, 0);
+  const valorVencido = contasVencidas.reduce(
+    (acc: number, cr: ContaReceber) => acc + (Number(cr.valor) - totalBaixado(cr)),
+    0
+  );
 
   const ticketMedio =
     faturamentosFiltrados.length > 0

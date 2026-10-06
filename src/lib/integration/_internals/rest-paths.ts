@@ -8,14 +8,15 @@ export const EMPRESA_FALLBACK_PATHS: string[] = [
 ];
 
 export const FILIAIS_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_FILIAL,A1_MUN,A1_EST&pageSize=500",
-  "/rest/api/framework/v1/genericQuery?tables=SF2&fields=F2_FILIAL&pageSize=500",
-  "/rest/api/framework/v1/genericQuery?tables=SB1&fields=B1_FILIAL&pageSize=500",
+  // SM0 = tabela oficial de cadastro de empresas/filiais no Protheus
+  "/rest/api/framework/v1/genericQuery?tables=SM0&fields=M0_CODIGO,M0_CODFIL,M0_NOME,M0_NOMECOM,M0_CGC,M0_CIDENT,M0_FILIAL&pageSize=500",
   "/rest/api/framework/v1/branches",
   "/api/framework/v1/branches",
   "/rest/api/protheus/v1/filiais",
   "/api/protheus/v1/filiais",
   "/rest/api/v1/branches",
+  // SA1 como último recurso: retorna clientes, usamos apenas para deduzir filiais únicas
+  "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_FILIAL&pageSize=500",
 ];
 
 export const CLIENTES_FALLBACK_PATHS: string[] = [

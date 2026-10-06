@@ -112,7 +112,11 @@ export function mapRowToFilial(
   idx: number,
   empresaId: string
 ): ProtheusFilialInfo {
+  // SM0: M0_CODFIL = código da filial completo (ex: "00101001")
+  // SA1: A1_FILIAL = filial do cliente (mesmo formato)
   const codFil = firstTruthy(
+    row.M0_CODFIL,
+    row.M0_FILIAL,
     row.branchId,
     row.codigoFilial,
     row.filial,
@@ -120,25 +124,31 @@ export function mapRowToFilial(
     row.A1_FILIAL,
     row.F2_FILIAL,
     row.B1_FILIAL,
-    row.M0_CODFIL,
     String(idx + 1).padStart(2, "0")
   );
+
   const isMatriz =
     codFil === "01" ||
     codFil === "0001" ||
     codFil === "00101001" ||
     codFil.endsWith("01") ||
     codFil.endsWith("001") ||
-    String(row.name || row.nome || "").toUpperCase().includes("MATRIZ");
+    String(row.M0_NOME || row.M0_NOMECOM || row.name || row.nome || "").toUpperCase().includes("MATRIZ");
+
+  // SM0: M0_NOME = razão social, M0_NOMECOM = nome fantasia
   const nome = firstTruthy(
+    row.M0_NOME,
+    row.M0_NOMECOM,
     row.name,
     row.nome,
     row.razaoSocial,
-    row.M0_FILIAL,
-    isMatriz ? "LC1 CONTADORES - MATRIZ" : `Filial ${codFil}`
+    isMatriz ? "MATRIZ" : `Filial ${codFil}`
   );
-  const cnpj = firstTruthy(row.cgc, row.cnpj, row.M0_CGC);
-  let codigoEmpresa = firstTruthy(row.companyId, row.codigoEmpresa, row.M0_CODIGO, empresaId);
+
+  // SM0: M0_CGC = CNPJ
+  const cnpj = firstTruthy(row.M0_CGC, row.cgc, row.cnpj);
+
+  let codigoEmpresa = firstTruthy(row.M0_CODIGO, row.companyId, row.codigoEmpresa, empresaId);
   let codigoUnidade = "01";
   let codigoFilial = codFil;
   const filialCompleta = codFil;
@@ -157,8 +167,8 @@ export function mapRowToFilial(
     nome,
     cnpj,
     tipo: isMatriz ? "Matriz" : "Filial",
-    cidade: firstTruthy(row.city, row.cidade, row.A1_MUN, row.M0_CIDENT, "Curitiba"),
-    uf: firstTruthy(row.state, row.uf, row.A1_EST, row.M0_ESTENT, "PR"),
+    cidade: firstTruthy(row.M0_CIDENT, row.city, row.cidade, row.A1_MUN, "Curitiba"),
+    uf: firstTruthy(row.M0_ESTENT, row.state, row.uf, row.A1_EST, "PR"),
     status: "Ativa",
   };
 }

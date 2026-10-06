@@ -96,10 +96,12 @@ export class ProtheusRestClient implements ProtheusClient {
       return [buildFallbackFilial(this.config.empresaId, this.config.filial)];
     }
     const filiais = rows.map((row, idx) => mapRowToFilial(row, idx, this.config.empresaId));
+    // Deduplica pelo código completo da filial (evita repetição quando SA1 retorna N clientes por filial)
     const unique = new Map<string, ProtheusFilialInfo>();
     for (const f of filiais) {
-      if (!unique.has(f.codigoFilial)) {
-        unique.set(f.codigoFilial, f);
+      const key = f.filialCompleta || f.codigoFilial;
+      if (!unique.has(key)) {
+        unique.set(key, f);
       }
     }
     return Array.from(unique.values());

@@ -2,11 +2,8 @@
 
 import React from "react";
 import { RefreshCw, Building2 } from "lucide-react";
-import {
-  NotaFiscalRow,
-  TableSkeleton,
-  type DashboardNotaFiscal,
-} from "./NotaFiscalRow";
+import { DashboardNotaFiscal, TableSkeleton, NotaFiscalRow } from "./NotaFiscalRow";
+import { InvoicesThead, TableWrapper } from "./common/InvoicesTableParts";
 
 export type { DashboardNotaFiscal };
 
@@ -54,20 +51,6 @@ function InvoicesActions({ totalNotas, loading, onRefresh }: { totalNotas: numbe
   );
 }
 
-function InvoicesThead() {
-  return (
-    <thead className="bg-slate-50 dark:bg-slate-800/60">
-      <tr>
-        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Nota Fiscal</th>
-        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Cliente</th>
-        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Emissão</th>
-        <th className="text-right py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Valor Total</th>
-        <th className="text-center py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status</th>
-      </tr>
-    </thead>
-  );
-}
-
 function InvoicesBody({ faturamentos, loading, totalNotas }: { faturamentos: DashboardNotaFiscal[]; loading: boolean; totalNotas: number }) {
   if (loading) return <TableSkeleton />;
   if (totalNotas === 0) {
@@ -76,14 +59,6 @@ function InvoicesBody({ faturamentos, loading, totalNotas }: { faturamentos: Das
     );
   }
   return <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">{faturamentos.map((nf) => <NotaFiscalRow key={nf.id} nf={nf} />)}</tbody>;
-}
-
-function TableWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">{children}</table>
-    </div>
-  );
 }
 
 function HeaderSection({ totalNotas, loading, onRefresh }: { totalNotas: number; loading: boolean; onRefresh?: () => void }) {

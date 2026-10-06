@@ -35,20 +35,11 @@ function InvoicesTitleBlock() {
     </div>
   );
 }
-function InvoicesActions({
-  totalNotas,
-  loading,
-  onRefresh,
-}: {
-  totalNotas: number;
-  loading: boolean;
-  onRefresh?: () => void;
-}) {
+
+function InvoicesActions({ totalNotas, loading, onRefresh }: { totalNotas: number; loading: boolean; onRefresh?: () => void }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-        {totalNotas} nota(s) exibida(s)
-      </span>
+      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{totalNotas} nota(s) exibida(s)</span>
       {onRefresh && (
         <button
           onClick={onRefresh}
@@ -62,86 +53,58 @@ function InvoicesActions({
     </div>
   );
 }
+
 function InvoicesThead() {
   return (
     <thead className="bg-slate-50 dark:bg-slate-800/60">
       <tr>
-        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-          Nota Fiscal
-        </th>
-        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-          Cliente
-        </th>
-        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-          Emissão
-        </th>
-        <th className="text-right py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-          Valor Total
-        </th>
-        <th className="text-center py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-          Status
-        </th>
+        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Nota Fiscal</th>
+        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Cliente</th>
+        <th className="text-left py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Emissão</th>
+        <th className="text-right py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Valor Total</th>
+        <th className="text-center py-3.5 px-6 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status</th>
       </tr>
     </thead>
   );
 }
-function InvoicesBody({
-  faturamentos,
-  loading,
-  totalNotas,
-}: {
-  faturamentos: DashboardNotaFiscal[];
-  loading: boolean;
-  totalNotas: number;
-}) {
+
+function InvoicesBody({ faturamentos, loading, totalNotas }: { faturamentos: DashboardNotaFiscal[]; loading: boolean; totalNotas: number }) {
+  if (loading) return <TableSkeleton />;
+  if (totalNotas === 0) {
+    return (
+      <tr><td colSpan={6} className="py-10 text-center text-slate-400 dark:text-slate-500 text-sm">Nenhuma nota fiscal encontrada.</td></tr>
+    );
+  }
+  return <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">{faturamentos.map((nf) => <NotaFiscalRow key={nf.id} nf={nf} />)}</tbody>;
+}
+
+function TableWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
-      {loading ? (
-        <TableSkeleton />
-      ) : totalNotas > 0 ? (
-        faturamentos.map((nf) => <NotaFiscalRow key={nf.id} nf={nf} />)
-      ) : (
-        <tr>
-          <td
-            colSpan={6}
-            className="py-10 text-center text-slate-400 dark:text-slate-500 text-sm"
-          >
-            Nenhuma nota fiscal encontrada.
-          </td>
-        </tr>
-      )}
-    </tbody>
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">{children}</table>
+    </div>
   );
 }
 
-export function DashboardInvoicesTable({
-  faturamentos,
-  loading,
-  onRefresh,
-}: DashboardInvoicesTableProps) {
+function HeaderSection({ totalNotas, loading, onRefresh }: { totalNotas: number; loading: boolean; onRefresh?: () => void }) {
+  return (
+    <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
+      <InvoicesTitleBlock />
+      <InvoicesActions totalNotas={totalNotas} loading={loading} onRefresh={onRefresh} />
+    </div>
+  );
+}
+
+export function DashboardInvoicesTable({ faturamentos, loading, onRefresh }: DashboardInvoicesTableProps) {
   const totalNotas = faturamentos?.length || 0;
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden mb-8">
-      <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
-        <InvoicesTitleBlock />
-        <InvoicesActions
-          totalNotas={totalNotas}
-          loading={loading}
-          onRefresh={onRefresh}
-        />
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">
-          <InvoicesThead />
-          <InvoicesBody
-            faturamentos={faturamentos}
-            loading={loading}
-            totalNotas={totalNotas}
-          />
-        </table>
-      </div>
+      <HeaderSection totalNotas={totalNotas} loading={loading} onRefresh={onRefresh} />
+      <TableWrapper>
+        <InvoicesThead />
+        <InvoicesBody faturamentos={faturamentos} loading={loading} totalNotas={totalNotas} />
+      </TableWrapper>
     </div>
   );
 }

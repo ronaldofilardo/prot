@@ -26,37 +26,61 @@ function formatDate(dateStr: string) {
   }
 }
 
+function NotaCell({ nf }: { nf: DashboardNotaFiscal }) {
+  return (
+    <td className="py-3.5 px-6 font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+      <FileText size={15} className="text-slate-400 dark:text-slate-500" />
+      {nf.numeroNota}
+    </td>
+  );
+}
+
+function FilialCell({ nf }: { nf: DashboardNotaFiscal }) {
+  return (
+    <td className="py-3.5 px-6">
+      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+        {nf.filial}
+      </span>
+    </td>
+  );
+}
+
+function ClienteCell({ nf }: { nf: DashboardNotaFiscal }) {
+  return (
+    <td className="py-3.5 px-6 text-slate-700 dark:text-slate-300">
+      <div className="font-medium text-slate-800 dark:text-slate-200">{nf.clienteNome}</div>
+      <div className="text-xs text-slate-400 dark:text-slate-500">Cód: {nf.clienteCodigo}</div>
+    </td>
+  );
+}
+
+function DataCell({ nf }: { nf: DashboardNotaFiscal }) {
+  return <td className="py-3.5 px-6 text-slate-600 dark:text-slate-400">{formatDate(nf.dataEmissao)}</td>;
+}
+
+function ValorCell({ nf }: { nf: DashboardNotaFiscal }) {
+  return <td className="py-3.5 px-6 text-right font-bold text-slate-900 dark:text-slate-100">{formatCurrency(nf.valorTotal)}</td>;
+}
+
+function StatusCell() {
+  return (
+    <td className="py-3.5 px-6 text-center">
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+        Faturado
+      </span>
+    </td>
+  );
+}
+
 export function NotaFiscalRow({ nf }: { nf: DashboardNotaFiscal }) {
   return (
     <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-      <td className="py-3.5 px-6 font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-        <FileText size={15} className="text-slate-400 dark:text-slate-500" />
-        {nf.numeroNota}
-      </td>
-      <td className="py-3.5 px-6">
-        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-          {nf.filial}
-        </span>
-      </td>
-      <td className="py-3.5 px-6 text-slate-700 dark:text-slate-300">
-        <div className="font-medium text-slate-800 dark:text-slate-200">
-          {nf.clienteNome}
-        </div>
-        <div className="text-xs text-slate-400 dark:text-slate-500">
-          Cód: {nf.clienteCodigo}
-        </div>
-      </td>
-      <td className="py-3.5 px-6 text-slate-600 dark:text-slate-400">
-        {formatDate(nf.dataEmissao)}
-      </td>
-      <td className="py-3.5 px-6 text-right font-bold text-slate-900 dark:text-slate-100">
-        {formatCurrency(nf.valorTotal)}
-      </td>
-      <td className="py-3.5 px-6 text-center">
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-          Faturado
-        </span>
-      </td>
+      <NotaCell nf={nf} />
+      <FilialCell nf={nf} />
+      <ClienteCell nf={nf} />
+      <DataCell nf={nf} />
+      <ValorCell nf={nf} />
+      <StatusCell />
     </tr>
   );
 }
@@ -66,24 +90,12 @@ export function TableSkeleton() {
     <>
       {Array.from({ length: 5 }).map((_, idx) => (
         <tr key={idx} className="animate-pulse">
-          <td className="py-4 px-6">
-            <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-16" />
-          </td>
-          <td className="py-4 px-6">
-            <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-12" />
-          </td>
-          <td className="py-4 px-6">
-            <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-48" />
-          </td>
-          <td className="py-4 px-6">
-            <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-24" />
-          </td>
-          <td className="py-4 px-6 text-right">
-            <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-28 ml-auto" />
-          </td>
-          <td className="py-4 px-6 text-center">
-            <div className="h-5 bg-slate-200 dark:bg-slate-800 rounded-full w-16 mx-auto" />
-          </td>
+          <td className="py-4 px-6"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-16" /></td>
+          <td className="py-4 px-6"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-12" /></td>
+          <td className="py-4 px-6"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-48" /></td>
+          <td className="py-4 px-6"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-24" /></td>
+          <td className="py-4 px-6 text-right"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-28 ml-auto" /></td>
+          <td className="py-4 px-6 text-center"><div className="h-5 bg-slate-200 dark:bg-slate-800 rounded-full w-16 mx-auto" /></td>
         </tr>
       ))}
     </>

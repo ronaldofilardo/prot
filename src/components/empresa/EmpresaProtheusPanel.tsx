@@ -32,6 +32,24 @@ function MensagensPainel({ success, error }: { success: string | null; error: st
   );
 }
 
+function DadosEmpresa({ dadosExibicao, filiais, tokenInfo }: { dadosExibicao: unknown; filiais: unknown[]; tokenInfo: unknown }) {
+  return (
+    <EmpresaDadosCard
+      dados={dadosExibicao}
+      filialPadrao={filiais[0]}
+      badge={tokenInfo?.ativo ? "Conectado" : "Pendente"}
+      badgeColor={tokenInfo?.ativo ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"}
+    />
+  );
+}
+
+function SyncBannerConditional({ temDivergencia, salvando, onSalvar, empresaProtheusNome }: { temDivergencia: boolean; salvando: boolean; onSalvar: () => void; empresaProtheusNome?: string }) {
+  if (!temDivergencia) return null;
+  return (
+    <EmpresaSyncBanner salvando={salvando} onSalvar={onSalvar} empresaProtheusNome={empresaProtheusNome} />
+  );
+}
+
 export function EmpresaProtheusPanel() {
   const {
     empresaAtual,
@@ -55,21 +73,9 @@ export function EmpresaProtheusPanel() {
       <TokenStatusCard tokenInfo={tokenInfo} />
       <ProtheusCredenciaisCard onSuccess={buscarDadosProtheus} />
       <MensagensPainel success={success} error={error} temProtheus={Boolean(empresaProtheus)} />
-      <EmpresaDadosCard
-        dados={dadosExibicao}
-        filialPadrao={filiais[0]}
-        badge={tokenInfo?.ativo ? "Conectado" : "Pendente"}
-        badgeColor={tokenInfo?.ativo ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"}
-      />
+      <DadosEmpresa dadosExibicao={dadosExibicao} filiais={filiais} tokenInfo={tokenInfo} />
       <EmpresaFiliaisCard filiais={filiais} loading={loading} />
-      {temDivergencia && (
-        <EmpresaSyncBanner
-          salvando={salvando}
-          onSalvar={sincronizarComProtheus}
-          empresaProtheusNome={empresaProtheus?.nome}
-        />
-      )}
+      <SyncBannerConditional temDivergencia={temDivergencia} salvando={salvando} onSalvar={sincronizarComProtheus} empresaProtheusNome={empresaProtheus?.nome} />
     </div>
   );
 }
-

@@ -111,4 +111,63 @@ describe("Protheus REST client — empresa e filiais", () => {
       status: "Ativa",
     });
   });
+
+  it("busca lista de registros de SA1 com A1_COD, A1_NOME, A1_FILIAL, A1_CGC mantendo todos os registros", async () => {
+    vi.stubEnv("PROTHEUS_REST_BASE_URL", "https://protheus.example.test");
+    vi.stubEnv("PROTHEUS_REST_AUTH_MODE", "bearer");
+    vi.stubEnv("PROTHEUS_REST_ACCESS_TOKEN", "test-token");
+    vi.stubEnv(
+      "PROTHEUS_REST_FILIAIS_PATH",
+      "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_COD,A1_NOME,A1_FILIAL,A1_CGC"
+    );
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          items: [
+            {
+              a1_filial: "00101001",
+              a1_cod: "000099",
+              a1_nome: "A J BOBATO",
+              a1_cgc: "07493739000202",
+            },
+            {
+              a1_filial: "00101001",
+              a1_cod: "000192",
+              a1_nome: "AGUAS CLARAS INVESTIMENTOS LTDA.",
+              a1_cgc: "19668551000156",
+            },
+            {
+              a1_filial: "00101001",
+              a1_cod: "000028",
+              a1_nome: "ALENCAR E MACHADO LTDA",
+              a1_cgc: "24310087000161",
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = buildProtheusRestClientFromEnv();
+    const filiais = await client.fetchFiliais();
+
+    expect(filiais).toHaveLength(3);
+    expect(filiais[0].nome).toBe("A J BOBATO");
+    expect(filiais[0].cnpj).toBe("07.493.739/0002-02");
+    expect(filiais[0].codigoEmpresa).toBe("001");
+    expect(filiais[0].codigoUnidade).toBe("01");
+    expect(filiais[0].codigoFilial).toBe("001");
+    expect(filiais[0].filialCompleta).toBe("00101001");
+    expect(filiais[0].id).toBe("000099");
+
+    expect(filiais[1].nome).toBe("AGUAS CLARAS INVESTIMENTOS LTDA.");
+    expect(filiais[1].cnpj).toBe("19.668.551/0001-56");
+    expect(filiais[1].id).toBe("000192");
+
+    expect(filiais[2].nome).toBe("ALENCAR E MACHADO LTDA");
+    expect(filiais[2].cnpj).toBe("24.310.087/0001-61");
+    expect(filiais[2].id).toBe("000028");
+  });
 });

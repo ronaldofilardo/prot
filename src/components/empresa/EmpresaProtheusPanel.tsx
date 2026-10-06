@@ -10,7 +10,7 @@ import { TokenStatusCard } from "./common/TokenStatusCard";
 import { EmpresaFiliaisCard } from "./common/EmpresaFiliaisCard";
 import { EmpresaSyncBanner } from "./common/EmpresaSyncBanner";
 
-function MensagensPainel({ success, error, temProtheus }: { success: string | null; error: string | null; temProtheus: boolean }) {
+function MensagensPainel({ success, error }: { success: string | null; error: string | null; temProtheus?: boolean }) {
   return (
     <>
       {success && (
@@ -19,7 +19,7 @@ function MensagensPainel({ success, error, temProtheus }: { success: string | nu
           <span className="text-sm text-emerald-800 dark:text-emerald-300">{success}</span>
         </div>
       )}
-      {error && !temProtheus && (
+      {error && (
         <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 p-4 rounded-xl flex items-start gap-3">
           <AlertCircle size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="text-sm text-amber-800 dark:text-amber-300">

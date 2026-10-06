@@ -8,6 +8,8 @@ export const EMPRESA_FALLBACK_PATHS: string[] = [
 ];
 
 export const FILIAIS_FALLBACK_PATHS: string[] = [
+  // SA1 com campos de filial, código, nome e CNPJ (validado no Protheus Cloud)
+  "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_COD,A1_NOME,A1_FILIAL,A1_CGC&pageSize=500",
   // SM0 = tabela oficial de cadastro de empresas/filiais no Protheus
   "/rest/api/framework/v1/genericQuery?tables=SM0&fields=M0_CODIGO,M0_CODFIL,M0_NOME,M0_NOMECOM,M0_CGC,M0_CIDENT,M0_FILIAL&pageSize=500",
   "/rest/api/framework/v1/branches",
@@ -15,8 +17,6 @@ export const FILIAIS_FALLBACK_PATHS: string[] = [
   "/rest/api/protheus/v1/filiais",
   "/api/protheus/v1/filiais",
   "/rest/api/v1/branches",
-  // SA1 como último recurso: retorna clientes, usamos apenas para deduzir filiais únicas
-  "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_FILIAL&pageSize=500",
 ];
 
 export const CLIENTES_FALLBACK_PATHS: string[] = [
@@ -57,8 +57,14 @@ export function buildCandidatePaths(
   customPath: string | undefined,
   sources: Array<string | undefined>
 ): string[] {
+  const result: string[] = [];
   if (customPath) {
-    return [customPath];
+    result.push(customPath);
   }
-  return Array.from(new Set(sources.filter((p): p is string => Boolean(p))));
+  for (const s of sources) {
+    if (s && !result.includes(s)) {
+      result.push(s);
+    }
+  }
+  return result;
 }

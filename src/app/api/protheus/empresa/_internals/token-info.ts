@@ -40,14 +40,16 @@ function deriveClienteProtheus(baseUrl: string): string {
 function buildTokenInfo(token: string): TokenInfo {
   const payload = parseJwt(token);
   const clienteProtheus = deriveClienteProtheus(process.env.PROTHEUS_REST_BASE_URL || "");
+  const isExpirado = payload?.exp ? Date.now() >= payload.exp * 1000 : false;
+  const horaExpira = payload?.exp ? new Date(payload.exp * 1000).toLocaleTimeString("pt-BR") : "60 min";
 
   return {
-    ativo: true,
+    ativo: !isExpirado,
     clienteProtheus,
     clienteId: "141404",
     ambiente: payload?.envId || "CHVDPE_141403_PR_DV",
     usuario: payload?.sub ? `${payload.sub} (admin)` : "Administrador (admin)",
-    expiraEm: payload?.exp ? new Date(payload.exp * 1000).toLocaleTimeString("pt-BR") : "60 min",
+    expiraEm: isExpirado ? `${horaExpira} (Expirado)` : horaExpira,
     tokenPreview: `${token.slice(0, 16)}...${token.slice(-8)}`,
   };
 }

@@ -60,12 +60,15 @@ export async function buildEmpresaView(empresaId: string, customPath?: string): 
 
   try {
     const { empresaProtheus, filiais } = await carregarProtheus({ empresaId, customPath, tokenInfo, filiaisPadrao });
+    const protheusError = tokenInfo && !tokenInfo.ativo
+      ? `Token Protheus expirado (${tokenInfo.expiraEm}). Atualize o PROTHEUS_REST_ACCESS_TOKEN no arquivo .env`
+      : null;
     logIntegration("Consulta de dados da empresa no Protheus realizada com sucesso", {
       empresaId,
       temDados: Boolean(empresaProtheus),
       totalFiliais: filiais.length,
     });
-    return { empresaAtual, tokenInfo, filiaisPadrao, empresaProtheus, filiais, protheusError: null };
+    return { empresaAtual, tokenInfo, filiaisPadrao, empresaProtheus, filiais, protheusError };
   } catch (protheusError) {
     const msg = protheusError instanceof Error ? protheusError.message : "Erro ao conectar com Protheus";
     logApiError("Falha na consulta REST de tabela no Protheus", protheusError);

@@ -89,19 +89,31 @@ function selectEmpresaRow(
   return target || rows[0];
 }
 
+export function formatCnpjOuCpf(val: string): string {
+  const digits = val.replace(/\D/g, "");
+  if (digits.length === 14) {
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+  }
+  if (digits.length === 11) {
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+  }
+  return val;
+}
+
 export function mapEmpresaInfo(rows: ProtheusRow[], config: UrlConfig): ProtheusEmpresaInfo {
   const target = selectEmpresaRow(rows, config.empresaId, config.filial);
+  const rawCnpj = firstTruthy(target.A1_CGC, target.cgc, target.cnpj, target.M0_CGC);
   return {
     nome: firstTruthy(
+      target.A1_NOME,
       target.name,
       target.nome,
       target.razaoSocial,
-      target.A1_NOME,
       target.M0_NOME,
       target.M0_NOMECOM,
       "Empresa Protheus"
     ),
-    cnpj: firstTruthy(target.cgc, target.cnpj, target.A1_CGC, target.M0_CGC),
+    cnpj: rawCnpj ? formatCnpjOuCpf(rawCnpj) : "",
     codigoEmpresa: config.empresaId,
     codigoFilial: config.filial,
   };
@@ -112,41 +124,44 @@ export function mapRowToFilial(
   idx: number,
   empresaId: string
 ): ProtheusFilialInfo {
-  // SM0: M0_CODFIL = código da filial completo (ex: "00101001")
-  // SA1: A1_FILIAL = filial do cliente (mesmo formato)
   const codFil = firstTruthy(
+    row.A1_FILIAL,
     row.M0_CODFIL,
     row.M0_FILIAL,
     row.branchId,
     row.codigoFilial,
     row.filial,
     row.codigo,
-    row.A1_FILIAL,
     row.F2_FILIAL,
     row.B1_FILIAL,
     String(idx + 1).padStart(2, "0")
   );
 
-  const isMatriz =
-    codFil === "01" ||
-    codFil === "0001" ||
-    codFil === "00101001" ||
-    codFil.endsWith("01") ||
-    codFil.endsWith("001") ||
-    String(row.M0_NOME || row.M0_NOMECOM || row.name || row.nome || "").toUpperCase().includes("MATRIZ");
-
-  // SM0: M0_NOME = razão social, M0_NOMECOM = nome fantasia
-  const nome = firstTruthy(
+  const rawNome = firstTruthy(
+    row.A1_NOME,
     row.M0_NOME,
     row.M0_NOMECOM,
     row.name,
     row.nome,
-    row.razaoSocial,
-    isMatriz ? "MATRIZ" : `Filial ${codFil}`
+    row.razaoSocial
   );
 
-  // SM0: M0_CGC = CNPJ
-  const cnpj = firstTruthy(row.M0_CGC, row.cgc, row.cnpj);
+  const isMatriz =
+    !row.A1_NOME &&
+    (codFil === "01" ||
+      codFil === "0001" ||
+      codFil === "00101001" ||
+      codFil.endsWith("01") ||
+      codFil.endsWith("001") ||
+      String(rawNome).toUpperCase().includes("MATRIZ"));
+
+  const nome = firstTruthy(
+    rawNome,
+    isMatriz ? "LC1 CONTADORES - MATRIZ" : `Filial ${codFil}`
+  );
+
+  const rawCnpj = firstTruthy(row.A1_CGC, row.M0_CGC, row.cgc, row.cnpj);
+  const cnpj = rawCnpj ? formatCnpjOuCpf(rawCnpj) : "";
 
   let codigoEmpresa = firstTruthy(row.M0_CODIGO, row.companyId, row.codigoEmpresa, empresaId);
   let codigoUnidade = "01";
@@ -159,7 +174,10 @@ export function mapRowToFilial(
     codigoFilial = codFil.substring(5, 8);
   }
 
+  const id = firstTruthy(row.A1_COD, row.id);
+
   return {
+    ...(id ? { id } : {}),
     codigoEmpresa,
     codigoUnidade,
     codigoFilial,
@@ -167,8 +185,8 @@ export function mapRowToFilial(
     nome,
     cnpj,
     tipo: isMatriz ? "Matriz" : "Filial",
-    cidade: firstTruthy(row.M0_CIDENT, row.city, row.cidade, row.A1_MUN, "Curitiba"),
-    uf: firstTruthy(row.M0_ESTENT, row.state, row.uf, row.A1_EST, "PR"),
+    cidade: firstTruthy(row.A1_MUN, row.M0_CIDENT, row.city, row.cidade, "Curitiba"),
+    uf: firstTruthy(row.A1_EST, row.M0_ESTENT, row.state, row.uf, "PR"),
     status: "Ativa",
   };
 }

@@ -3,16 +3,21 @@ import { KeyRound, ShieldCheck, Server, User, Building2 } from "lucide-react";
 import type { TokenStatusInfo } from "@/hooks/useEmpresaProtheus";
 
 function TokenHeader({ tokenInfo }: { tokenInfo: TokenStatusInfo }) {
+  const isAtivo = tokenInfo.ativo;
   return (
     <div className="flex items-center justify-between flex-wrap gap-2">
       <div className="flex items-center gap-2">
-        <ShieldCheck className="text-emerald-600 dark:text-emerald-400" size={18} />
-        <span className="text-sm font-bold text-emerald-900 dark:text-emerald-200">
-          Conexão e Token Protheus Validados com Sucesso!
+        <ShieldCheck className={isAtivo ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"} size={18} />
+        <span className={`text-sm font-bold ${isAtivo ? "text-emerald-900 dark:text-emerald-200" : "text-amber-900 dark:text-amber-200"}`}>
+          {isAtivo ? "Conexão e Token Protheus Validados com Sucesso!" : "Token Protheus Expirado ou Inválido"}
         </span>
       </div>
-      <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
-        OAuth2 Ativo (Expira em: {tokenInfo.expiraEm})
+      <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
+        isAtivo
+          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
+          : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+      }`}>
+        {isAtivo ? "OAuth2 Ativo" : "OAuth2 Expirado"} (Expira em: {tokenInfo.expiraEm})
       </span>
     </div>
   );

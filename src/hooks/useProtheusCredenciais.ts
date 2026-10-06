@@ -5,6 +5,13 @@ interface Feedback {
   msg: string;
 }
 
+interface CredenciaisPayload {
+  username?: string;
+  password?: string;
+  accessToken?: string;
+  baseUrl?: string;
+}
+
 async function carregarCredenciaisSalvas(setSavedUser: (v: string | null) => void, setUsername: (v: string) => void) {
   try {
     const res = await fetch("/api/protheus/credenciais");
@@ -19,20 +26,85 @@ async function carregarCredenciaisSalvas(setSavedUser: (v: string | null) => voi
   }
 }
 
-async function salvarCredenciaisApi(username: string, password: string) {
+async function salvarCredenciaisApi(payload: CredenciaisPayload) {
   const res = await fetch("/api/protheus/credenciais", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify(payload),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Erro ao conectar ao Protheus com as credenciais informadas.");
   return data;
 }
 
+function buildPayload(username: string, password: string, accessToken: string): CredenciaisPayload {
+  const p: CredenciaisPayload = {};
+  if (username.trim()) p.username = username.trim();
+  if (password?.trim()) p.password = password.trim();
+  if (accessToken?.trim()) p.accessToken = accessToken.trim();
+  return p;
+}
+
+function validateInputs(username: string, accessToken: string, setFeedback: (v: Feedback | null) => void): boolean {
+  if (!username.trim() && !accessToken.trim()) {
+    setFeedback({ tipo: "erro", msg: "Informe o usuário/senha ou o Token de acesso do Protheus." });
+    return false;
+  }
+  return true;
+}
+
+function applySuccess(
+  data: { aviso?: string },
+  username: string,
+  setFeedback: (v: Feedback | null) => void,
+  setSavedUser: (v: string | null) => void,
+  setPassword: (v: string) => void,
+  setAccessToken: (v: string) => void,
+  onSuccess?: () => void
+) {
+  const msg = data.aviso || "Credenciais salvas! Token atualizado e validado com sucesso.";
+  setFeedback({ tipo: "ok", msg });
+  if (username.trim()) setSavedUser(username.trim());
+  setPassword("");
+  setAccessToken("");
+  if (onSuccess) onSuccess();
+}
+
+function applyError(
+  err: unknown,
+  setFeedback: (v: Feedback | null) => void
+) {
+  setFeedback({ tipo: "erro", msg: err instanceof Error ? err.message : "Falha de rede ao conectar com o servidor." });
+}
+
+function handleSalvar(
+  e: React.FormEvent,
+  username: string,
+  password: string,
+  accessToken: string,
+  setFeedback: (v: Feedback | null) => void,
+  setSavedUser: (v: string | null) => void,
+  setPassword: (v: string) => void,
+  setAccessToken: (v: string) => void,
+  setLoading: (v: boolean) => void,
+  onSuccess?: () => void
+) {
+  e.preventDefault();
+  if (!validateInputs(username, accessToken, setFeedback)) return;
+
+  setLoading(true);
+  setFeedback(null);
+  const payload = buildPayload(username, password, accessToken);
+  salvarCredenciaisApi(payload)
+    .then((data) => applySuccess(data, username, setFeedback, setSavedUser, setPassword, setAccessToken, onSuccess))
+    .catch((err) => applyError(err, setFeedback))
+    .finally(() => setLoading(false));
+}
+
 export function useProtheusCredenciais(onSuccess?: () => void) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [accessToken, setAccessToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [savedUser, setSavedUser] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -45,27 +117,10 @@ export function useProtheusCredenciais(onSuccess?: () => void) {
     return () => { ativo = false; };
   }, []);
 
-  const handleSalvar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      setFeedback({ tipo: "erro", msg: "Informe o usuário e a senha do Protheus." });
-      return;
-    }
+  const handleSalvarCallback = useCallback(
+    (e: React.FormEvent) => handleSalvar(e, username, password, accessToken, setFeedback, setSavedUser, setPassword, setAccessToken, setLoading, onSuccess),
+    [username, password, accessToken, onSuccess]
+  );
 
-    setLoading(true);
-    setFeedback(null);
-    try {
-      await salvarCredenciaisApi(username, password);
-      setFeedback({ tipo: "ok", msg: "Credenciais salvas! Token renovado e rotacionado automaticamente." });
-      setSavedUser(username);
-      setPassword("");
-      if (onSuccess) onSuccess();
-    } catch (err) {
-      setFeedback({ tipo: "erro", msg: err instanceof Error ? err.message : "Falha de rede ao conectar com o servidor." });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return { username, setUsername, password, setPassword, loading, savedUser, feedback, handleSalvar };
+  return { username, setUsername, password, setPassword, accessToken, setAccessToken, loading, savedUser, feedback, handleSalvar: handleSalvarCallback };
 }

@@ -1,5 +1,5 @@
 export const EMPRESA_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_NOME,A1_CGC&pageSize=1",
+  "/rest/api/framework/v1/genericQuery?tables=SM0&fields=M0_CODIGO,M0_CODFIL,M0_NOME,M0_CGC&pageSize=1",
   "/rest/api/protheus/v1/companies",
   "/api/protheus/v1/companies",
   "/rest/api/protheus/v1/company",

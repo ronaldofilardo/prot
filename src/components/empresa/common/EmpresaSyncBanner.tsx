@@ -4,14 +4,20 @@ import { ArrowRight, Loader2 } from "lucide-react";
 interface EmpresaSyncBannerProps {
   salvando: boolean;
   onSalvar: () => void;
+  empresaProtheusNome?: string;
 }
 
-export function EmpresaSyncBanner({ salvando, onSalvar }: EmpresaSyncBannerProps) {
+export function EmpresaSyncBanner({ salvando, onSalvar, empresaProtheusNome }: EmpresaSyncBannerProps) {
   return (
     <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between gap-4 flex-wrap">
-      <span className="text-xs text-slate-600 dark:text-slate-400">
-        Deseja atualizar a razão social e CNPJ da empresa com as informações do Protheus?
-      </span>
+      <div className="text-xs text-slate-600 dark:text-slate-400">
+        <span>Deseja atualizar a razão social e CNPJ da empresa com as informações do Protheus?</span>
+        {empresaProtheusNome && (
+          <span className="block font-semibold text-slate-800 dark:text-slate-200 mt-1">
+            {empresaProtheusNome}
+          </span>
+        )}
+      </div>
       <button
         onClick={onSalvar}
         disabled={salvando}
@@ -23,3 +29,4 @@ export function EmpresaSyncBanner({ salvando, onSalvar }: EmpresaSyncBannerProps
     </div>
   );
 }
+

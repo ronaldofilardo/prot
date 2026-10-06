@@ -14,22 +14,30 @@ const cardProps = {
 };
 
 describe("EmpresaDadosCard", () => {
-  it("exibe dados completos com usuario conectado", () => {
+  it("exibe dados completos com usuario conectado e parametros erp", () => {
+    const filial = { codigoEmpresa: "01", codigoFilial: "01", codigoUnidade: "01", nome: "Matriz LC1", tipo: "Matriz" } as const;
     render(
-      <EmpresaDadosCard {...cardProps} dados={{ nome: "ACME", cnpj: "11.111.111/0001-11", usuarioLogado: "admin" }} />
+      <EmpresaDadosCard
+        {...cardProps}
+        dados={{ nome: "ACME", cnpj: "11.111.111/0001-11", usuarioLogado: "admin" }}
+        filialPadrao={filial}
+      />
     );
 
     expect(screen.getByText("ACME")).toBeInTheDocument();
     expect(screen.getByText("11.111.111/0001-11")).toBeInTheDocument();
-    expect(screen.getByText("Usuário Conectado:")).toBeInTheDocument();
+    expect(screen.getByText("Usuário Conectado")).toBeInTheDocument();
     expect(screen.getByText("admin")).toBeInTheDocument();
+    expect(screen.getByText("Empresa 01")).toBeInTheDocument();
+    expect(screen.getByText("Unidade 01")).toBeInTheDocument();
+    expect(screen.getByText("Tipo: Matriz")).toBeInTheDocument();
   });
 
   it("sem dados exibe a mensagem vazia configurada", () => {
     render(<EmpresaDadosCard {...cardProps} dados={null} />);
 
     expect(screen.getByText("Sem dados cadastrais.")).toBeInTheDocument();
-    expect(screen.queryByText("Razão Social / Nome do Cliente")).toBeNull();
+    expect(screen.queryByText("Razão Social / Nome da Empresa")).toBeNull();
   });
 
   it("nome e cnpj ausentes usam os textos de fallback", () => {
@@ -37,7 +45,7 @@ describe("EmpresaDadosCard", () => {
 
     expect(screen.getByText("Não informado")).toBeInTheDocument();
     expect(screen.getByText("Não cadastrado")).toBeInTheDocument();
-    expect(screen.queryByText("Usuário Conectado:")).toBeNull();
+    expect(screen.queryByText("Usuário Conectado")).toBeNull();
   });
 });
 
@@ -52,23 +60,21 @@ describe("EmpresaFiliaisCard", () => {
     status: "Inativa",
   } as const;
 
-  it("lista filiais com badges e fallbacks de cnpj e status", () => {
-    const { container } = render(<EmpresaFiliaisCard filiais={[filialMatriz, filialComum]} />);
+  it("lista clientes com fallbacks de cnpj, status e acoes", () => {
+    render(<EmpresaFiliaisCard filiais={[filialMatriz, filialComum]} />);
 
-    expect(screen.getByText("2 filiais cadastradas")).toBeInTheDocument();
-    expect(screen.getByText("Filial 01")).toBeInTheDocument();
-    expect(screen.getByText("Empresa 01")).toBeInTheDocument();
-    expect(screen.getAllByText("Unidade 01").length).toBeGreaterThan(0);
+    expect(screen.getByText("2 clientes cadastrados")).toBeInTheDocument();
+    expect(screen.getByText("Matriz LC1")).toBeInTheDocument();
+    expect(screen.getByText("Filial SP")).toBeInTheDocument();
     expect(screen.getByText("Mesmo da Matriz")).toBeInTheDocument();
     expect(screen.getByText("Inativa")).toBeInTheDocument();
-    expect(container.querySelector(".text-indigo-700")).not.toBeNull();
-    expect(container.querySelector(".text-slate-700")).not.toBeNull();
+    expect(screen.getAllByRole("button", { name: /Filtrar/ }).length).toBe(2);
   });
 
-  it("uma unica filial usa o rotulo singular", () => {
+  it("um unico cliente usa o rotulo singular", () => {
     render(<EmpresaFiliaisCard filiais={[filialMatriz]} />);
 
-    expect(screen.getByText("1 filial cadastrada")).toBeInTheDocument();
+    expect(screen.getByText("1 cliente cadastrado")).toBeInTheDocument();
     expect(screen.getByText("Ativa")).toBeInTheDocument();
     expect(screen.queryByText("22.222.222/0001-22")).toBeNull();
   });
@@ -77,7 +83,7 @@ describe("EmpresaFiliaisCard", () => {
     render(<EmpresaFiliaisCard filiais={[]} loading />);
 
     expect(screen.getByText("Carregando filiais...")).toBeInTheDocument();
-    expect(screen.getByText("0 filiais cadastradas")).toBeInTheDocument();
+    expect(screen.getByText("0 clientes cadastrados")).toBeInTheDocument();
   });
 
   it("sem filiais parado mostra a mensagem de vazio", () => {

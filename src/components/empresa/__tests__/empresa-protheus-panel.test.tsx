@@ -38,12 +38,11 @@ describe("EmpresaProtheusPanel", () => {
     vi.useRealTimers();
   });
 
-  it("estado inicial mostra carregamento e cards vazios", () => {
+  it("estado inicial mostra carregamento e card vazio", () => {
     render(<EmpresaProtheusPanel />);
 
     expect(screen.getByText("Consultando Protheus...")).toBeInTheDocument();
     expect(screen.getByText("Nenhum dado cadastrado no sistema.")).toBeInTheDocument();
-    expect(screen.getByText("Clique em 'Buscar no Protheus' para carregar os dados cadastrais do ERP.")).toBeInTheDocument();
     expect(screen.getByText("Carregando filiais...")).toBeInTheDocument();
     expect(screen.queryByText(/Conexão e Token Protheus/)).toBeNull();
     expect(screen.queryByText(/Deseja atualizar a razão social/)).toBeNull();
@@ -57,7 +56,7 @@ describe("EmpresaProtheusPanel", () => {
     expect(screen.getByText(/Conexão e Token Protheus/)).toBeInTheDocument();
     expect(screen.getByText("ACME Protheus")).toBeInTheDocument();
     expect(screen.getByText("Conectado")).toBeInTheDocument();
-    expect(screen.getByText("1 filial cadastrada")).toBeInTheDocument();
+    expect(screen.getByText("1 cliente cadastrado")).toBeInTheDocument();
     expect(screen.getByText(/Deseja atualizar a razão social/)).toBeInTheDocument();
     expect(screen.getAllByText("admin").length).toBeGreaterThan(0);
     expect(screen.queryByText(/Status da consulta/)).toBeNull();

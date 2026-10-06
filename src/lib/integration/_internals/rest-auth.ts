@@ -1,25 +1,9 @@
 import { ProtheusClientError } from "../protheus-client";
 import { protheusTokenProvider } from "../protheus-token-provider";
+import { parseJwtExpiry, isTokenExpired } from "./token-network";
 import type { ProtheusRestConfig } from "./rest-types";
 
-export async function buildAuthHeader(
-  config: ProtheusRestConfig,
-  forceRefresh = false
-): Promise<string> {
-  if (config.authMode === "oauth2") {
-    const provider = config.tokenProvider ?? protheusTokenProvider;
-    const targetEmpresaId = config.empresaSaaSId || config.empresaId;
-    const token = await provider.getValidToken(targetEmpresaId, forceRefresh);
-    return `Bearer ${token}`;
-  }
-  if (config.authMode === "bearer") {
-    if (!config.token) {
-      throw new ProtheusClientError(
-        "PROTHEUS_REST_ACCESS_TOKEN nao configurado (authMode=bearer)"
-      );
-    }
-    return `Bearer ${config.token}`;
-  }
+function buildBasicAuth(config: ProtheusRestConfig): string {
   if (!config.username || !config.password) {
     throw new ProtheusClientError(
       "PROTHEUS_REST_USER/PROTHEUS_REST_PASSWORD nao configurados (authMode=basic)"
@@ -27,4 +11,47 @@ export async function buildAuthHeader(
   }
   const raw = `${config.username}:${config.password}`;
   return `Basic ${Buffer.from(raw).toString("base64")}`;
+}
+
+async function buildBearerAuth(config: ProtheusRestConfig, forceRefresh: boolean): Promise<string> {
+  if (!config.token) {
+    throw new ProtheusClientError("PROTHEUS_REST_ACCESS_TOKEN nao configurado (authMode=bearer)");
+  }
+  const expiry = parseJwtExpiry(config.token);
+  if (!forceRefresh && !isTokenExpired(expiry)) {
+    return `Bearer ${config.token}`;
+  }
+
+  const provider = config.tokenProvider ?? protheusTokenProvider;
+  const targetEmpresaId = config.empresaSaaSId || config.empresaId;
+  try {
+    const token = await provider.getValidToken(targetEmpresaId, forceRefresh);
+    if (token) return `Bearer ${token}`;
+  } catch (err) {
+    if (!forceRefresh) return `Bearer ${config.token}`;
+    throw err;
+  }
+  return `Bearer ${config.token}`;
+}
+
+async function buildOAuth2Auth(config: ProtheusRestConfig, forceRefresh: boolean): Promise<string> {
+  const provider = config.tokenProvider ?? protheusTokenProvider;
+  const targetEmpresaId = config.empresaSaaSId || config.empresaId;
+  const token = await provider.getValidToken(targetEmpresaId, forceRefresh);
+  return `Bearer ${token}`;
+}
+
+export async function buildAuthHeader(
+  config: ProtheusRestConfig,
+  forceRefresh = false
+): Promise<string> {
+  if (config.authMode === "bearer") {
+    return buildBearerAuth(config, forceRefresh);
+  }
+
+  if (config.authMode === "oauth2") {
+    return buildOAuth2Auth(config, forceRefresh);
+  }
+
+  return buildBasicAuth(config);
 }

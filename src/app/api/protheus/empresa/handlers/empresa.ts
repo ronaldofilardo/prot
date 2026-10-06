@@ -31,6 +31,8 @@ interface CarregarProtheusCtx {
   filiaisPadrao: FilialView[];
 }
 
+import { sincronizarClientesProtheusNoBanco } from "../_internals/sync-protheus-clientes";
+
 async function carregarProtheus(ctx: CarregarProtheusCtx) {
   const client = await getProtheusClient(ctx.empresaId);
   const [empresaBruta, filiaisProtheus] = await Promise.all([
@@ -38,7 +40,11 @@ async function carregarProtheus(ctx: CarregarProtheusCtx) {
     client.fetchFiliais(ctx.customPath).catch(() => []),
   ]);
   const filiais = filiaisProtheus.length > 0 ? filiaisProtheus : ctx.filiaisPadrao;
-  const empresaProtheus: EmpresaProtheusView = empresaBruta
+  if (filiaisProtheus.length > 0) {
+    sincronizarClientesProtheusNoBanco(ctx.empresaId, filiaisProtheus).catch(() => null);
+  }
+  const isCliente = Boolean(empresaBruta && filiaisProtheus.some((f) => f.nome === empresaBruta.nome));
+  const empresaProtheus: EmpresaProtheusView = (empresaBruta && !isCliente)
     ? {
         ...empresaBruta,
         clienteId: ctx.tokenInfo?.clienteId,
@@ -55,11 +61,12 @@ export async function buildEmpresaView(empresaId: string, customPath?: string): 
     return { empresaAtual: null, tokenInfo: null, filiaisPadrao: [], empresaProtheus: null, filiais: [], protheusError: null };
   }
 
-  const tokenInfo = await resolveTokenInfo(empresaId);
+  let tokenInfo = await resolveTokenInfo(empresaId);
   const filiaisPadrao = buildFiliaisPadrao(empresaAtual, tokenInfo);
 
   try {
     const { empresaProtheus, filiais } = await carregarProtheus({ empresaId, customPath, tokenInfo, filiaisPadrao });
+    tokenInfo = await resolveTokenInfo(empresaId);
     const protheusError = tokenInfo && !tokenInfo.ativo
       ? `Token Protheus expirado (${tokenInfo.expiraEm}). Atualize o PROTHEUS_REST_ACCESS_TOKEN no arquivo .env`
       : null;

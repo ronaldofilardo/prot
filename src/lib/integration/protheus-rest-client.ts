@@ -58,10 +58,14 @@ export class ProtheusRestClient implements ProtheusClient {
     const url = buildRequestUrl(path, this.config, settingName);
     let auth = await buildAuthHeader(this.config);
     let response = await executeFetch(url.toString(), auth, path);
-    // Se retornar 401 e for oauth2, tenta renovar o token e repetir uma vez
-    if (response.status === 401 && this.config.authMode === "oauth2") {
-      auth = await buildAuthHeader(this.config, true);
-      response = await executeFetch(url.toString(), auth, path);
+    // Se retornar 401, tenta renovar o token e repetir uma vez
+    if (response.status === 401 && (this.config.authMode === "oauth2" || this.config.authMode === "bearer")) {
+      try {
+        auth = await buildAuthHeader(this.config, true);
+        response = await executeFetch(url.toString(), auth, path);
+      } catch {
+        // Se a renovacao falhar, mantem a resposta original
+      }
     }
     return readRows(response, path);
   }

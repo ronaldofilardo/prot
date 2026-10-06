@@ -3,10 +3,10 @@
 import React from "react";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { useEmpresaProtheus } from "@/hooks/useEmpresaProtheus";
-import type { EmpresaDados } from "@/hooks/useEmpresaProtheus";
 import { EmpresaDadosCard } from "./common/EmpresaDadosCard";
 import { EmpresaHeaderAction } from "./common/EmpresaHeaderAction";
 import { TokenStatusCard } from "./common/TokenStatusCard";
+import { ProtheusCredenciaisCard } from "./common/ProtheusCredenciaisCard";
 import { EmpresaFiliaisCard } from "./common/EmpresaFiliaisCard";
 import { EmpresaSyncBanner } from "./common/EmpresaSyncBanner";
 
@@ -32,39 +32,44 @@ function MensagensPainel({ success, error }: { success: string | null; error: st
   );
 }
 
-function DadosGrid({ empresaAtual, empresaProtheus }: { empresaAtual: EmpresaDados | null; empresaProtheus: EmpresaDados | null }) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <EmpresaDadosCard
-        titulo="Cadastro no Sistema"
-        badge="Atual"
-        badgeColor="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-        dados={empresaAtual}
-        emptyMessage="Nenhum dado cadastrado no sistema."
-      />
-      <EmpresaDadosCard
-        titulo="Dados Retornados do Protheus"
-        badge={empresaProtheus ? "Conectado" : "Pendente"}
-        badgeColor={empresaProtheus ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300"}
-        dados={empresaProtheus}
-        emptyMessage="Clique em 'Buscar no Protheus' para carregar os dados cadastrais do ERP."
-      />
-    </div>
-  );
-}
-
 export function EmpresaProtheusPanel() {
-  const { empresaAtual, empresaProtheus, tokenInfo, filiais, loading, salvando, error, success, buscarDadosProtheus, sincronizarComProtheus } = useEmpresaProtheus();
+  const {
+    empresaAtual,
+    empresaProtheus,
+    tokenInfo,
+    filiais,
+    loading,
+    salvando,
+    error,
+    success,
+    buscarDadosProtheus,
+    sincronizarComProtheus,
+  } = useEmpresaProtheus();
+
+  const dadosExibicao = empresaAtual || empresaProtheus;
+  const temDivergencia = Boolean(empresaProtheus && empresaAtual && empresaProtheus.nome !== empresaAtual.nome);
+
   return (
     <div className="space-y-6">
       <EmpresaHeaderAction loading={loading} onBuscar={buscarDadosProtheus} />
       <TokenStatusCard tokenInfo={tokenInfo} />
+      <ProtheusCredenciaisCard onSuccess={buscarDadosProtheus} />
       <MensagensPainel success={success} error={error} temProtheus={Boolean(empresaProtheus)} />
-      <DadosGrid empresaAtual={empresaAtual} empresaProtheus={empresaProtheus} />
+      <EmpresaDadosCard
+        dados={dadosExibicao}
+        filialPadrao={filiais[0]}
+        badge={tokenInfo?.ativo ? "Conectado" : "Pendente"}
+        badgeColor={tokenInfo?.ativo ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"}
+      />
       <EmpresaFiliaisCard filiais={filiais} loading={loading} />
-      {empresaProtheus && (
-        <EmpresaSyncBanner salvando={salvando} onSalvar={sincronizarComProtheus} />
+      {temDivergencia && (
+        <EmpresaSyncBanner
+          salvando={salvando}
+          onSalvar={sincronizarComProtheus}
+          empresaProtheusNome={empresaProtheus?.nome}
+        />
       )}
     </div>
   );
 }
+

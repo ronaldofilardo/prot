@@ -132,8 +132,14 @@ export async function carregarDadosFinanceiros(
       ),
     ),
   );
+  const todosClientes = resultadosPorEmpresa.flatMap(([clientes]) => clientes);
+  const temProtheus = todosClientes.some((c) => Boolean(c.codigo && c.codigo.length === 6 && c.loja !== "undefined"));
+  const clientes = temProtheus
+    ? todosClientes.filter((c) => Boolean(c.codigo && c.codigo.length === 6 && c.loja !== "undefined"))
+    : todosClientes;
+
   return {
-    clientes: resultadosPorEmpresa.flatMap(([clientes]) => clientes),
+    clientes,
     faturamentos: resultadosPorEmpresa.flatMap(
       ([, faturamentos]) => faturamentos,
     ),

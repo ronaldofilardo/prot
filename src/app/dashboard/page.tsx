@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useMemo } from "react";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useEmpresaProtheus } from "@/hooks/useEmpresaProtheus";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardFilterBar } from "@/components/dashboard/DashboardFilterBar";
 import { DashboardSidebarNav, type TabType } from "@/components/dashboard/DashboardSidebarNav";
@@ -10,7 +11,21 @@ import { DashboardTabPanel } from "@/components/dashboard/DashboardTabPanel";
 
 function DashboardContent() {
   const { data, loading, error, carregarDados } = useDashboard();
+  const { filiais: protheusClientes } = useEmpresaProtheus();
   const [activeTab, setActiveTab] = useState<TabType>("faturamento");
+
+  const clientesFiltro = useMemo(() => {
+    if (protheusClientes && protheusClientes.length > 0) {
+      return protheusClientes.map((p) => ({
+        id: p.id || p.nome,
+        codigo: p.id || p.codigoFilial || "—",
+        nome: p.nome,
+        cidade: p.cnpj || p.cidade || "",
+        estado: p.uf || "",
+      }));
+    }
+    return data?.clientes || [];
+  }, [protheusClientes, data?.clientes]);
 
   if (error) {
     return <DashboardErrorState error={error} />;
@@ -19,7 +34,7 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
       <DashboardHeader />
-      <DashboardFilterBar clientes={data?.clientes || []} grupos={data?.grupos || []} />
+      <DashboardFilterBar clientes={clientesFiltro} grupos={data?.grupos || []} />
 
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
         <DashboardSidebarNav activeTab={activeTab} onSelectTab={setActiveTab} />

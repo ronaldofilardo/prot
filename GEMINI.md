@@ -2,6 +2,12 @@
 > Objetivo: impedir que o agente codificador gere código que precise ser refatorado depois.
 > Regra fundamental: se o arquivo exigir refatoração, ele não deve ser gerado assim.
 
+1. **Não mascarar cenários com mocks genéricos ou asserções artificiais.**
+   Mocks devem refletir tipos e comportamentos reais. Asserções devem ser específicas e significativas.
+
+2. **Criar uma LINHA BASE em testes antes de qualquer refatoração.**
+   Sempre estabelecer e validar a suíte de testes existente (ou criar a inicial) antes de alterar código.
+
 ---
 
 ## 0. Proibições Absolutas (Agente NÃO DEVE gerar)

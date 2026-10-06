@@ -13,14 +13,9 @@ import {
   resolveEmpresaIdsConsulta,
   resolveIdsPermitidosTotal,
 } from "@/lib/utils/empresa-grupo";
-import type {
-  DashboardResponse,
-  DashboardFilters,
-} from "@/lib/types/dashboard";
-import {
-  carregarDadosFinanceiros,
-  carregarHierarquias,
-} from "../_internals/dashboard-query";
+import type { DashboardResponse, DashboardFilters } from "@/lib/types/dashboard";
+import type { FaturamentoComCliente, ContaReceberComClienteEBaixas } from "@/lib/types/dashboard";
+import { carregarDadosFinanceiros, carregarHierarquias } from "../_internals/dashboard-query";
 
 type DadosFinanceiros = Awaited<ReturnType<typeof carregarDadosFinanceiros>>;
 
@@ -35,60 +30,55 @@ interface RelatorioParams {
   filters: DashboardFilters;
 }
 
-function montarDashboardResponse(dados: RespostaInput): DashboardResponse {
-  const faturamentosFiltrados = filtrarFaturamentos(
-    dados.faturamentos,
-    dados.filters,
-    dados.filialMap,
-  );
-  const contasReceberFiltrados = filtrarContasReceber(
-    dados.contasReceber,
-    dados.filters,
-  );
-  const { faturamentoTotal, valorVencido, ticketMedio } = calcularKPIs(
-    faturamentosFiltrados,
-    contasReceberFiltrados,
-  );
-  const faturamentoMes = buildFaturamentoMes(faturamentosFiltrados);
+function buildFaturamentoData(faturamentosFiltrados: FaturamentoComCliente[]) {
   return {
-    totalClientes: dados.clientes.length,
-    clientesAtivosFiltrados: new Set(
-      faturamentosFiltrados.map((f) => f.clienteId),
-    ).size,
-    faturamentoTotal,
-    valorVencido,
-    ticketMedio,
-    faturamentos: buildTabelaNotas(faturamentosFiltrados),
-    faturamentoMes,
+    faturamentoMes: buildFaturamentoMes(faturamentosFiltrados),
     faturamentoCliente: buildFaturamentoCliente(faturamentosFiltrados),
     regiaoParticipacao: buildRegiaoParticipacao(faturamentosFiltrados),
-    projecao: buildProjecao(faturamentoMes),
-    clientes: dados.clientes,
-    grupos: dados.grupos,
+    projecao: buildProjecao(buildFaturamentoMes(faturamentosFiltrados)),
+    faturamentos: buildTabelaNotas(faturamentosFiltrados),
   };
 }
 
-export async function buildDashboardReport({
-  empresaId,
-  usuarioId,
-  filters,
-}: RelatorioParams): Promise<DashboardResponse> {
-  const { hierarquias, matrizRowsPorId } = await carregarHierarquias(
-    empresaId,
-    usuarioId,
-  );
+function buildKpis(faturamentosFiltrados: FaturamentoComCliente[], contasReceberFiltrados: ContaReceberComClienteEBaixas[]) {
+  const { faturamentoTotal, valorVencido, ticketMedio } = calcularKPIs(faturamentosFiltrados, contasReceberFiltrados);
+  return { faturamentoTotal, valorVencido, ticketMedio };
+}
 
-  const idsPermitidos =
-    hierarquias.length > 0
-      ? resolveIdsPermitidosTotal(hierarquias)
-      : [empresaId];
-  const idsConsulta = resolveEmpresaIdsConsulta(
-    idsPermitidos,
-    filters.empresaIds,
-  );
-  // Um "grupo" por matriz distinta acessível — cada empresa
-  // independente (sem filial) vira um grupo com filiais: [], o que
-  // já é suficiente para listá-la pelo nome no seletor da UI.
+function buildClientesInfo(dados: RespostaInput, faturamentosFiltrados: FaturamentoComCliente[]) {
+  return {
+    totalClientes: dados.clientes.length,
+    clientesAtivosFiltrados: new Set(faturamentosFiltrados.map((f) => f.clienteId)).size,
+    clientes: dados.clientes.map((c) => ({
+      id: c.id,
+      codigo: c.codigo,
+      nome: c.nome,
+      cidade: c.cidade || "",
+      estado: c.estado || "",
+    })),
+  };
+}
+
+function buildGruposInfo(dados: RespostaInput) {
+  return { grupos: dados.grupos };
+}
+
+function montarDashboardResponse(dados: RespostaInput): DashboardResponse {
+  const faturamentosFiltrados = filtrarFaturamentos(dados.faturamentos as FaturamentoComCliente[], dados.filters, dados.filialMap);
+  const contasReceberFiltrados = filtrarContasReceber(dados.contasReceber as ContaReceberComClienteEBaixas[], dados.filters);
+  const kpis = buildKpis(faturamentosFiltrados, contasReceberFiltrados);
+  const faturamentoData = buildFaturamentoData(faturamentosFiltrados);
+  const clientesInfo = buildClientesInfo(dados, faturamentosFiltrados);
+  const gruposInfo = buildGruposInfo(dados);
+
+  return { ...clientesInfo, ...kpis, ...faturamentoData, ...gruposInfo };
+}
+
+export async function buildDashboardReport({ empresaId, usuarioId, filters }: RelatorioParams): Promise<DashboardResponse> {
+  const { hierarquias, matrizRowsPorId } = await carregarHierarquias(empresaId, usuarioId);
+
+  const idsPermitidos = hierarquias.length > 0 ? resolveIdsPermitidosTotal(hierarquias) : [empresaId];
+  const idsConsulta = resolveEmpresaIdsConsulta(idsPermitidos, filters.empresaIds);
   const grupos = buildGruposEmpresa(Array.from(matrizRowsPorId.values()));
 
   const dados = await carregarDadosFinanceiros(idsConsulta);

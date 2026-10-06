@@ -19,6 +19,7 @@ describe("DatabaseProtheusTokenProvider", () => {
   let mockDb: CredencialStoreMock;
 
   beforeEach(() => {
+    delete process.env.PROTHEUS_REST_TOKEN_PATH;
     mockCred = {
       empresaId: "empresa-123",
       baseUrl: "https://protheus.example.test:1656",

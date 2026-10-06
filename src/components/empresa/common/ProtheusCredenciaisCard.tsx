@@ -41,7 +41,7 @@ function Feedback({ feedback }: { feedback: { tipo: "ok" | "erro"; msg: string }
 }
 
 export function ProtheusCredenciaisCard({ onSuccess }: { onSuccess?: () => void }) {
-  const { username, setUsername, password, setPassword, loading, savedUser, feedback, handleSalvar } =
+  const { username, setUsername, password, setPassword, accessToken, setAccessToken, loading, savedUser, feedback, handleSalvar } =
     useProtheusCredenciais(onSuccess);
 
   return (
@@ -54,6 +54,8 @@ export function ProtheusCredenciaisCard({ onSuccess }: { onSuccess?: () => void 
         setUsername={setUsername}
         password={password}
         setPassword={setPassword}
+        accessToken={accessToken}
+        setAccessToken={setAccessToken}
         loading={loading}
         onSubmit={handleSalvar}
       />

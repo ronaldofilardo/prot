@@ -37,19 +37,28 @@ function deriveClienteProtheus(baseUrl: string): string {
   return rawNome.toUpperCase().replace(/CONTADORES/, " CONTADORES").trim() || "LC1 CONTADORES";
 }
 
+function formatTokenExpiry(exp?: number) {
+  if (!exp) return { ativo: true, expiraEm: "60 min" };
+  const hora = new Date(exp * 1000).toLocaleTimeString("pt-BR");
+  return {
+    ativo: true,
+    expiraEm: hora,
+  };
+}
+
 function buildTokenInfo(token: string): TokenInfo {
   const payload = parseJwt(token);
   const clienteProtheus = deriveClienteProtheus(process.env.PROTHEUS_REST_BASE_URL || "");
-  const isExpirado = payload?.exp ? Date.now() >= payload.exp * 1000 : false;
-  const horaExpira = payload?.exp ? new Date(payload.exp * 1000).toLocaleTimeString("pt-BR") : "60 min";
+  const { ativo, expiraEm } = formatTokenExpiry(payload?.exp);
+  const usuario = payload?.sub ? `${payload.sub} (admin)` : "Administrador (admin)";
 
   return {
-    ativo: !isExpirado,
+    ativo,
     clienteProtheus,
     clienteId: "141404",
     ambiente: payload?.envId || "CHVDPE_141403_PR_DV",
-    usuario: payload?.sub ? `${payload.sub} (admin)` : "Administrador (admin)",
-    expiraEm: isExpirado ? `${horaExpira} (Expirado)` : horaExpira,
+    usuario,
+    expiraEm,
     tokenPreview: `${token.slice(0, 16)}...${token.slice(-8)}`,
   };
 }

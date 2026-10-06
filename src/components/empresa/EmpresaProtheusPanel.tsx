@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CheckCircle2, AlertCircle } from "lucide-react";
-import { useEmpresaProtheus } from "@/hooks/useEmpresaProtheus";
+import { useEmpresaProtheus, type EmpresaDados, type TokenStatusInfo, type ProtheusFilialInfo } from "@/hooks/useEmpresaProtheus";
 import { EmpresaDadosCard } from "./common/EmpresaDadosCard";
 import { EmpresaHeaderAction } from "./common/EmpresaHeaderAction";
 import { TokenStatusCard } from "./common/TokenStatusCard";
@@ -32,7 +32,7 @@ function MensagensPainel({ success, error }: { success: string | null; error: st
   );
 }
 
-function DadosEmpresa({ dadosExibicao, filiais, tokenInfo }: { dadosExibicao: unknown; filiais: unknown[]; tokenInfo: unknown }) {
+function DadosEmpresa({ dadosExibicao, filiais, tokenInfo }: { dadosExibicao: EmpresaDados | null; filiais: ProtheusFilialInfo[]; tokenInfo: TokenStatusInfo | null }) {
   return (
     <EmpresaDadosCard
       dados={dadosExibicao}

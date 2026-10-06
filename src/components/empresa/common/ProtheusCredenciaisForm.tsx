@@ -29,7 +29,17 @@ function UserInput({ username, setUsername }: { username: string; setUsername: (
   );
 }
 
-function MainFormGrid({ username, setUsername, password, setPassword, showPassword, setShowPassword, loading }: Props & { showPassword: boolean; setShowPassword: (v: boolean) => void }) {
+interface MainFormGridProps {
+  username: string;
+  setUsername: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  showPassword: boolean;
+  setShowPassword: (v: boolean) => void;
+  loading: boolean;
+}
+
+function MainFormGrid({ username, setUsername, password, setPassword, showPassword, setShowPassword, loading }: MainFormGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
       <UserInput username={username} setUsername={setUsername} />

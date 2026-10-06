@@ -17,8 +17,7 @@ async function buildBearerAuth(config: ProtheusRestConfig, forceRefresh: boolean
   if (!config.token) {
     throw new ProtheusClientError("PROTHEUS_REST_ACCESS_TOKEN nao configurado (authMode=bearer)");
   }
-  const expiry = parseJwtExpiry(config.token);
-  if (!forceRefresh && !isTokenExpired(expiry)) {
+  if (!forceRefresh) {
     return `Bearer ${config.token}`;
   }
 
@@ -28,8 +27,7 @@ async function buildBearerAuth(config: ProtheusRestConfig, forceRefresh: boolean
     const token = await provider.getValidToken(targetEmpresaId, forceRefresh);
     if (token) return `Bearer ${token}`;
   } catch (err) {
-    if (!forceRefresh) return `Bearer ${config.token}`;
-    throw err;
+    return `Bearer ${config.token}`;
   }
   return `Bearer ${config.token}`;
 }

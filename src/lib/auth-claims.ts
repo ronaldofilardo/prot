@@ -1,6 +1,7 @@
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/db/prisma-client";
 import { logAuth, logApiError } from "@/lib/utils/logger";
+import { garantirCredenciaisIniciais } from "@/app/api/protheus/credenciais/handlers/credenciais";
 
 interface CredenciaisValidas {
   email: string;
@@ -40,6 +41,9 @@ async function validarCredenciais(email: string, senha: string): Promise<Usuario
   }
 
   logAuth("Autenticacao autorizada com sucesso", { usuarioId: usuario.id });
+
+  // Garante que a empresa do usuario conectado ja tenha tokens Protheus atualizados
+  garantirCredenciaisIniciais(usuario.empresaId).catch(() => null);
 
   return {
     id: usuario.id,

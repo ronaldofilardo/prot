@@ -38,6 +38,7 @@ export function setMemoryToken(accessToken: string, expiresAt: Date, refreshToke
 function syncLocalEnvFile(accessToken: string, refreshToken?: string): void {
   try {
     if (process.env.NODE_ENV === "test" || process.env.VITEST) return;
+    if (!accessToken || accessToken.includes("sig_totvs_fwjwt_auto_renew")) return;
     const envPath = path.resolve(process.cwd(), ".env");
     if (!fs.existsSync(envPath)) return;
     let content = fs.readFileSync(envPath, "utf-8");

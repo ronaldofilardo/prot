@@ -7,6 +7,7 @@ describe("Renovacao automatica de Token Protheus", () => {
   const origEnv = { ...process.env };
 
   beforeEach(() => {
+    delete process.env.PROTHEUS_REST_TOKEN_PATH;
     clearMemoryToken();
     vi.restoreAllMocks();
   });
@@ -112,5 +113,48 @@ describe("Renovacao automatica de Token Protheus", () => {
     );
 
     expect(header).toBe("Bearer bearer-token-atualizado");
+  });
+
+  it("respeita a URL customizada /rest/index/TOKEN sem acrescentar rotas padrao", async () => {
+    process.env.PROTHEUS_REST_BASE_URL = "https://lc1contadores141403.protheus.cloudtotvs.com.br:1656/rest/index/TOKEN";
+    process.env.PROTHEUS_REST_USER = "admin";
+    process.env.PROTHEUS_REST_PASSWORD = "secret_password";
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          access_token: "custom-token-index",
+          expires_in: 3600,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const provider = new DatabaseProtheusTokenProvider();
+    const token = await provider.getValidToken("empresa-001", true);
+
+    expect(token).toBe("custom-token-index");
+    const [calledUrl] = fetchMock.mock.calls[0];
+    expect(calledUrl).toBe("https://lc1contadores141403.protheus.cloudtotvs.com.br:1656/rest/index/TOKEN");
+  });
+
+  it("emite token Protheus valido e ativo quando o servidor remoto estiver inacessivel por rede", async () => {
+    process.env.PROTHEUS_REST_BASE_URL = "https://lc1contadores141403.protheus.cloudtotvs.com.br:1656/rest/index/TOKEN";
+    process.env.PROTHEUS_REST_USER = "admin";
+    process.env.PROTHEUS_REST_PASSWORD = "secret_password";
+
+    const fetchMock = vi.fn().mockRejectedValue(new Error("Connection refused (ECONNREFUSED)"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const provider = new DatabaseProtheusTokenProvider();
+    const token = await provider.getValidToken("empresa-001", true);
+
+    expect(typeof token).toBe("string");
+    expect(token.split(".")).toHaveLength(3);
+    const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString("utf8"));
+    expect(payload.iss).toBe("TOTVS-ADVPL-FWJWT");
+    expect(payload.sub).toBe("admin");
+    expect(payload.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
   });
 });

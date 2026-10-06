@@ -2,13 +2,23 @@ import { ProtheusClientError } from "../protheus-client";
 import { logIntegration } from "@/lib/utils/logger";
 
 interface OAuthTokenResponse {
-  access_token: string;
+  access_token?: string;
+  token?: string;
+  accessToken?: string;
   refresh_token?: string;
   expires_in?: number;
 }
 
 export function resolveTokenUrl(baseUrl: string): string {
   const clean = baseUrl.replace(/\/+$/, "");
+  if (/index\/token/i.test(clean) || /\/token$/i.test(clean) || /\/oauth2\/v1\/token/i.test(clean)) {
+    return clean;
+  }
+  const customPath = process.env.PROTHEUS_REST_TOKEN_PATH;
+  if (customPath) {
+    const p = customPath.startsWith("/") ? customPath : `/${customPath}`;
+    return `${clean}${p}`;
+  }
   return clean.endsWith("/rest") ? `${clean}/api/oauth2/v1/token` : `${clean}/rest/api/oauth2/v1/token`;
 }
 
@@ -29,9 +39,17 @@ export function isTokenExpired(expiresAt: Date | null | undefined, marginSec = 6
 }
 
 function buildTokenRequest(tokenUrl: string, basicAuth: string, body: URLSearchParams) {
+  const isCustomTokenEndpoint = /index\/token/i.test(tokenUrl);
+  const headers: Record<string, string> = {
+    Authorization: `Basic ${basicAuth}`,
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+  if (isCustomTokenEndpoint) {
+    headers["Accept"] = "application/json";
+  }
   return fetch(tokenUrl, {
     method: "POST",
-    headers: { Authorization: `Basic ${basicAuth}`, "Content-Type": "application/x-www-form-urlencoded" },
+    headers,
     body: body.toString(),
     cache: "no-store",
   });
@@ -46,11 +64,12 @@ function handleTokenError(res: Response) {
 }
 
 function parseTokenResponse(data: OAuthTokenResponse) {
-  if (!data.access_token) {
+  const token = data.access_token || data.token || data.accessToken;
+  if (!token) {
     throw new ProtheusClientError("Resposta de token invalida do Protheus (access_token ausente)");
   }
   const durationSec = Number(data.expires_in) || 3600;
-  return { token: data.access_token, refreshToken: data.refresh_token, expiresAt: new Date(Date.now() + durationSec * 1000) };
+  return { token, refreshToken: data.refresh_token, expiresAt: new Date(Date.now() + durationSec * 1000) };
 }
 
 export async function executeOAuthRequest(

@@ -9,27 +9,43 @@ import { DashboardSidebarNav, type TabType } from "@/components/dashboard/Dashbo
 import { DashboardErrorState } from "@/components/dashboard/DashboardErrorState";
 import { DashboardTabPanel } from "@/components/dashboard/DashboardTabPanel";
 
+function buildClientesFiltro(
+  protheusClientes: { id?: string; nome?: string; codigoFilial?: string; cnpj?: string; cidade?: string; uf?: string }[] | undefined,
+  dataClientes: { id: string; codigo: string; nome: string; cidade?: string; estado?: string }[] | undefined
+): { id: string; codigo: string; nome: string; cidade: string; estado: string }[] {
+  const temProtheusCompleto = protheusClientes && (
+    protheusClientes.length > 1 ||
+    (protheusClientes.length === 1 && !protheusClientes[0].nome?.includes("MATRIZ"))
+  );
+  if (temProtheusCompleto) {
+    return protheusClientes.map((p) => ({
+      id: p.id || p.nome || "",
+      codigo: p.id || p.codigoFilial || "—",
+      nome: p.nome || "",
+      cidade: p.cnpj || p.cidade || "",
+      estado: p.uf || "",
+    }));
+  }
+  return (dataClientes || []).map((c) => ({
+    id: c.id,
+    codigo: c.codigo,
+    nome: c.nome,
+    cidade: c.cidade || "",
+    estado: c.estado || "",
+  }));
+}
+
 function DashboardContent() {
   const { data, loading, error, carregarDados } = useDashboard();
   const { filiais: protheusClientes } = useEmpresaProtheus();
   const [activeTab, setActiveTab] = useState<TabType>("faturamento");
 
-  const clientesFiltro = useMemo(() => {
-    if (protheusClientes && protheusClientes.length > 0) {
-      return protheusClientes.map((p) => ({
-        id: p.id || p.nome,
-        codigo: p.id || p.codigoFilial || "—",
-        nome: p.nome,
-        cidade: p.cnpj || p.cidade || "",
-        estado: p.uf || "",
-      }));
-    }
-    return data?.clientes || [];
-  }, [protheusClientes, data?.clientes]);
+  const clientesFiltro = useMemo(
+    () => buildClientesFiltro(protheusClientes, data?.clientes),
+    [protheusClientes, data?.clientes]
+  );
 
-  if (error) {
-    return <DashboardErrorState error={error} />;
-  }
+  if (error) return <DashboardErrorState error={error} />;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
@@ -38,8 +54,6 @@ function DashboardContent() {
 
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
         <DashboardSidebarNav activeTab={activeTab} onSelectTab={setActiveTab} />
-
-        {/* Main Content */}
         <DashboardTabPanel activeTab={activeTab} data={data} loading={loading} onRefresh={carregarDados} />
       </div>
     </div>

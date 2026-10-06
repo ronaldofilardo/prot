@@ -24,6 +24,21 @@ interface FilterFieldsProps {
   onDataFinalChange: (v: string) => void;
 }
 
+function ClienteDatalist({ clientes }: { clientes: ClienteItem[] }) {
+  return (
+    <datalist id="clientes-datalist">
+      {clientes.map((c) => {
+        const detalhe = c.cidade ? `— ${c.cidade}${c.estado ? `/${c.estado}` : ""}` : "";
+        return (
+          <option key={c.id} value={c.nome}>
+            {c.codigo ? `Cód: ${c.codigo} ` : ""}{detalhe}
+          </option>
+        );
+      })}
+    </datalist>
+  );
+}
+
 function ClienteField({ clientes, cliente, onClienteChange }: { clientes: ClienteItem[]; cliente: string; onClienteChange: (v: string) => void }) {
   const handleChange = (valor: string) => {
     const match = clientes.find((c) => c.nome.toLowerCase() === valor.toLowerCase() || c.codigo === valor);
@@ -43,16 +58,7 @@ function ClienteField({ clientes, cliente, onClienteChange }: { clientes: Client
           onChange={(e) => handleChange(e.target.value)}
           className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-all"
         />
-        <datalist id="clientes-datalist">
-          {clientes.map((c) => {
-            const detalhe = c.cidade ? `— ${c.cidade}${c.estado ? `/${c.estado}` : ""}` : "";
-            return (
-              <option key={c.id} value={c.nome}>
-                {c.codigo ? `Cód: ${c.codigo} ` : ""}{detalhe}
-              </option>
-            );
-          })}
-        </datalist>
+        <ClienteDatalist clientes={clientes} />
       </div>
     </div>
   );

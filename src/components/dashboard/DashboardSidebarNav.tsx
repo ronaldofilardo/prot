@@ -1,7 +1,7 @@
 import React from "react";
-import { BarChart3, TrendingUp, RefreshCw, Building2 } from "lucide-react";
+import { BarChart3, TrendingUp, RefreshCw, Building2, TableProperties } from "lucide-react";
 
-export type TabType = "faturamento" | "projecao" | "atualizacao" | "empresa";
+export type TabType = "faturamento" | "projecao" | "atualizacao" | "empresa" | "balancete";
 
 interface DashboardSidebarNavProps {
   activeTab: TabType;
@@ -13,6 +13,7 @@ const TABS = [
   { id: "projecao", label: "Projeção financeira", icon: <TrendingUp size={18} /> },
   { id: "atualizacao", label: "Atualização", icon: <RefreshCw size={18} /> },
   { id: "empresa", label: "Dados da Empresa", icon: <Building2 size={18} /> },
+  { id: "balancete", label: "Balancete Contábil", icon: <TableProperties size={18} /> },
 ] as const;
 
 export function DashboardSidebarNav({ activeTab, onSelectTab }: DashboardSidebarNavProps) {

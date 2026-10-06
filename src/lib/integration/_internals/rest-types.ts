@@ -16,5 +16,6 @@ export interface ProtheusRestConfig {
     faturamentos?: string;
     contasReceber?: string;
     baixas?: string;
+    saldosContabeis?: string;
   };
 }

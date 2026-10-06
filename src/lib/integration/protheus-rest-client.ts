@@ -1,190 +1,78 @@
 import {
-  ProtheusClientError,
   type ProtheusClient,
   type ProtheusEmpresaInfo,
   type ProtheusFilialInfo,
   type ProtheusRow,
 } from "./protheus-client";
-import { buildAuthHeader } from "./_internals/rest-auth";
-import {
-  buildFallbackClientesRows,
-  buildFallbackContasReceberRows,
-  buildFallbackFaturamentosRows,
-  buildFallbackFilial,
-} from "./_internals/rest-mock";
-import {
-  buildRequestUrl,
-  mapEmpresaInfo,
-  mapRowToFilial,
-  readRows,
-} from "./_internals/rest-parse";
-import {
-  BAIXAS_FALLBACK_PATHS,
-  CLIENTES_FALLBACK_PATHS,
-  CONTAS_RECEBER_FALLBACK_PATHS,
-  EMPRESA_FALLBACK_PATHS,
-  FATURAMENTOS_FALLBACK_PATHS,
-  FILIAIS_FALLBACK_PATHS,
-  buildCandidatePaths,
-} from "./_internals/rest-paths";
-import {
-  executeFetch,
-  fetchFirstNonEmptyOrThrow,
-  fetchFirstNonEmptySwallowingErrors,
-  fetchRowsFromFirstPath,
-} from "./_internals/rest-retry";
 import type { ProtheusRestConfig } from "./_internals/rest-types";
+import { fetchAllPages } from "./_internals/rest-fetch";
+import {
+  fetchEmpresa,
+  fetchFiliais,
+  fetchClientes,
+  fetchFaturamentos,
+  fetchContasReceber,
+  fetchBaixas,
+  fetchSaldosContabeis,
+} from "./_internals/rest-entity-fetchers";
 
 export type { ProtheusRestConfig } from "./_internals/rest-types";
 
 /**
- * Cliente REST nativo do Protheus (modo primário de integração).
+ * Cliente REST nativo do Protheus (modo primário de integracao).
  *
- * Assume o padrão mais comum de exposição REST do Protheus (TOTVS REST /
+ * Assume o padrao mais comum de exposicao REST do Protheus (TOTVS REST /
  * framework FWMBrowse, "REST Community" ou API customizada em TLPP):
  * endpoints que retornam JSON com os campos crus da tabela (A1_COD,
  * A1_NOME, F2_DOC, etc), filtráveis por empresa/filial.
  *
- * Somente leitura: esta classe não expõe nenhum método de escrita.
+ * Somente leitura: esta classe nao expõe nenhum metodo de escrita.
  */
 
 export class ProtheusRestClient implements ProtheusClient {
-  constructor(private readonly config: ProtheusRestConfig) { }
+  constructor(private readonly config: ProtheusRestConfig) {}
 
   private async get(path: string | undefined, settingName: string): Promise<ProtheusRow[]> {
-    if (!path) {
-      throw new ProtheusClientError(`${settingName} nao configurado`);
-    }
-    const url = buildRequestUrl(path, this.config, settingName);
-    let auth = await buildAuthHeader(this.config);
-    let response = await executeFetch(url.toString(), auth, path);
-    // Se retornar 401, tenta renovar o token e repetir uma vez
-    if (response.status === 401 && (this.config.authMode === "oauth2" || this.config.authMode === "bearer")) {
-      try {
-        auth = await buildAuthHeader(this.config, true);
-        response = await executeFetch(url.toString(), auth, path);
-      } catch {
-        // Se a renovacao falhar, mantem a resposta original
-      }
-    }
-    return readRows(response, path);
+    return fetchAllPages((page, pageSize) => this.getPage(path, settingName, page, pageSize), { pageSize: 100 });
   }
 
-  // TODO: confirmar os paths reais dos endpoints REST habilitados no
-  // Protheus de destino. Os paths abaixo são placeholders com o nome
-  // convencional das tabelas usadas hoje via CSV (SA1/SF2/SE1/SE5).
+  private async getPage(
+    path: string | undefined,
+    settingName: string,
+    page: number,
+    pageSize: number
+  ): Promise<{ rows: ProtheusRow[]; hasNext: boolean }> {
+    const { fetchPage } = await import("./_internals/rest-fetch");
+    return fetchPage(path, this.config, settingName, page, pageSize);
+  }
+
   async fetchEmpresa(customPath?: string): Promise<ProtheusEmpresaInfo | null> {
-    const candidatePaths = buildCandidatePaths(customPath, [
-      this.config.paths.empresa,
-      process.env.PROTHEUS_REST_EMPRESA_PATH,
-      ...EMPRESA_FALLBACK_PATHS,
-    ]);
-    const rows = await fetchFirstNonEmptyOrThrow(
-      candidatePaths,
-      (path) => this.get(path, "PROTHEUS_REST_EMPRESA_PATH")
-    );
-    if (!rows) return null;
-    return mapEmpresaInfo(rows, this.config);
+    return fetchEmpresa(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_EMPRESA_PATH"));
   }
 
   async fetchFiliais(customPath?: string): Promise<ProtheusFilialInfo[]> {
-    const candidatePaths = buildCandidatePaths(customPath, [
-      process.env.PROTHEUS_REST_FILIAIS_PATH,
-      ...FILIAIS_FALLBACK_PATHS,
-    ]);
-    const rows = await fetchFirstNonEmptySwallowingErrors(
-      candidatePaths,
-      (path) => this.get(path, "PROTHEUS_REST_FILIAIS_PATH")
-    );
-    if (!rows || rows.length === 0) {
-      return [buildFallbackFilial(this.config.empresaId, this.config.filial)];
-    }
-    const filiais = rows.map((row, idx) => mapRowToFilial(row, idx, this.config.empresaId));
-    // Deduplica por id, código e cnpj/nome (mantém cada cliente/filial retornado pela consulta)
-    const unique = new Map<string, ProtheusFilialInfo>();
-    for (const f of filiais) {
-      const key = f.id || `${f.codigoEmpresa}-${f.codigoFilial}-${f.cnpj || f.nome}-${f.filialCompleta}`;
-      if (!unique.has(key)) {
-        unique.set(key, f);
-      }
-    }
-    return Array.from(unique.values());
+    return fetchFiliais(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_FILIAIS_PATH"));
   }
 
   async fetchClientes(customPath?: string): Promise<ProtheusRow[]> {
-    const candidatePaths = buildCandidatePaths(customPath, [
-      this.config.paths.clientes,
-      process.env.PROTHEUS_REST_CLIENTES_PATH,
-      ...CLIENTES_FALLBACK_PATHS,
-    ]);
-    return fetchRowsFromFirstPath(
-      candidatePaths,
-      (path) => this.get(path, "PROTHEUS_REST_CLIENTES_PATH"),
-      buildFallbackClientesRows
-    );
+    return fetchClientes(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_CLIENTES_PATH"));
   }
 
   async fetchFaturamentos(customPath?: string): Promise<ProtheusRow[]> {
-    const candidatePaths = buildCandidatePaths(customPath, [
-      this.config.paths.faturamentos,
-      process.env.PROTHEUS_REST_FATURAMENTOS_PATH,
-      ...FATURAMENTOS_FALLBACK_PATHS,
-    ]);
-    return fetchRowsFromFirstPath(
-      candidatePaths,
-      (path) => this.get(path, "PROTHEUS_REST_FATURAMENTOS_PATH"),
-      buildFallbackFaturamentosRows
-    );
+    return fetchFaturamentos(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_FATURAMENTOS_PATH"));
   }
 
   async fetchContasReceber(customPath?: string): Promise<ProtheusRow[]> {
-    const candidatePaths = buildCandidatePaths(customPath, [
-      this.config.paths.contasReceber,
-      process.env.PROTHEUS_REST_CONTAS_RECEBER_PATH,
-      ...CONTAS_RECEBER_FALLBACK_PATHS,
-    ]);
-    return fetchRowsFromFirstPath(
-      candidatePaths,
-      (path) => this.get(path, "PROTHEUS_REST_CONTAS_RECEBER_PATH"),
-      buildFallbackContasReceberRows
-    );
+    return fetchContasReceber(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_CONTAS_RECEBER_PATH"));
   }
 
   async fetchBaixas(customPath?: string): Promise<ProtheusRow[]> {
-    const candidatePaths = buildCandidatePaths(customPath, [
-      this.config.paths.baixas,
-      process.env.PROTHEUS_REST_BAIXAS_PATH,
-      ...BAIXAS_FALLBACK_PATHS,
-    ]);
-    return fetchRowsFromFirstPath(
-      candidatePaths,
-      (path) => this.get(path, "PROTHEUS_REST_BAIXAS_PATH"),
-      () => []
-    );
+    return fetchBaixas(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_BAIXAS_PATH"));
+  }
+
+  async fetchSaldosContabeis(customPath?: string): Promise<ProtheusRow[]> {
+    return fetchSaldosContabeis(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_SALDOS_CONTABEIS_PATH"));
   }
 }
 
-export function buildProtheusRestClientFromEnv(): ProtheusRestClient {
-  const baseUrl = process.env.PROTHEUS_REST_BASE_URL;
-  if (!baseUrl) {
-    throw new ProtheusClientError("PROTHEUS_REST_BASE_URL nao configurado");
-  }
-  const authMode = (process.env.PROTHEUS_REST_AUTH_MODE as "bearer" | "basic" | "oauth2") || "basic";
-
-  return new ProtheusRestClient({
-    baseUrl,
-    authMode,
-    username: process.env.PROTHEUS_REST_USER,
-    password: process.env.PROTHEUS_REST_PASSWORD,
-    token: process.env.PROTHEUS_REST_ACCESS_TOKEN || process.env.PROTHEUS_REST_TOKEN,
-    empresaId: process.env.PROTHEUS_EMPRESA_ID || "001",
-    filial: process.env.PROTHEUS_FILIAL || "00101001",
-    paths: {
-      empresa: process.env.PROTHEUS_REST_EMPRESA_PATH,
-      clientes: process.env.PROTHEUS_REST_CLIENTES_PATH,
-      faturamentos: process.env.PROTHEUS_REST_FATURAMENTOS_PATH,
-      contasReceber: process.env.PROTHEUS_REST_CONTAS_RECEBER_PATH,
-      baixas: process.env.PROTHEUS_REST_BAIXAS_PATH,
-    },
-  });
-}
+export { buildProtheusRestClientFromEnv, createProtheusRestClient } from "./_internals/rest-factory";

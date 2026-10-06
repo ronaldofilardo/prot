@@ -48,6 +48,7 @@ export interface ProtheusClient {
   fetchFaturamentos(): Promise<ProtheusRow[]>;
   fetchContasReceber(): Promise<ProtheusRow[]>;
   fetchBaixas(): Promise<ProtheusRow[]>;
+  fetchSaldosContabeis(): Promise<ProtheusRow[]>;
 }
 
 export class ProtheusClientError extends Error {

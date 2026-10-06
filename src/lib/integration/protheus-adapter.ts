@@ -4,8 +4,8 @@
  * Referência: guia de integração §3 "modelo canônico interno".
  */
 
-import type { CanonicalParty, CanonicalInvoice, CanonicalTitle, CanonicalPayment } from "./canonical";
-import { parseProtheusDate, trimField, trimOr } from "./_internals/adapter-fields";
+import type { CanonicalParty, CanonicalInvoice, CanonicalTitle, CanonicalPayment, CanonicalSaldoContabil } from "./canonical";
+import { parseProtheusDate, trimField, trimOr, parseCompetencia } from "./_internals/adapter-fields";
 
 export function csvRowToCanonicalCliente(row: Record<string, string>, empresaId: string): CanonicalParty {
   return {
@@ -70,3 +70,30 @@ export function csvRowToCanonicalBaixa(row: Record<string, string>, empresaId: s
     updatedAt: new Date().toISOString(),
   };
 }
+
+export function csvRowToCanonicalSaldoContabil(row: Record<string, string>, empresaId: string): CanonicalSaldoContabil {
+  const branch = trimOr(row, "CQ_FILIAL", "01");
+  const account = trimOr(row, "CQ_CONTA", "");
+  const period = parseCompetencia(trimField(row, "CQ_MES"), trimField(row, "CQ_ANO"), trimField(row, "CQ_DATA"));
+  const fiscalYear = period.substring(0, 4);
+
+  const previousBalance = parseFloat(trimField(row, "CQ_SALANT") || trimField(row, "CQ_SALDOA")) || 0;
+  const debits = parseFloat(trimField(row, "CQ_DEB")) || 0;
+  const credits = parseFloat(trimField(row, "CQ_CRED")) || 0;
+  const currentBalance = parseFloat(trimField(row, "CQ_SALDO") || trimField(row, "CQ_SALDOF")) || 0;
+
+  return {
+    externalId: `${empresaId}-SC-${branch}-${account}-${period}`,
+    company: empresaId,
+    branch,
+    account,
+    period,
+    fiscalYear,
+    previousBalance,
+    debits,
+    credits,
+    currentBalance,
+    updatedAt: new Date().toISOString(),
+  };
+}
+

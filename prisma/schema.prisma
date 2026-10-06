@@ -33,6 +33,7 @@ model Empresa {
   baixas        Baixa[]
   usuarios      Usuario[]
   syncLogs      SyncLog[]
+  saldosContabeis SaldoContabil[]
   acessosExtras UsuarioEmpresaAcesso[]
   protheusCredencial ProtheusCredencial?
 
@@ -178,4 +179,22 @@ model SyncLog {
 
   @@index([empresaId, entidade, criadoEm])
   @@index([status, categoriaErro])
+}
+
+model SaldoContabil {
+  id             String   @id @default(cuid())
+  filial         String
+  conta          String
+  competencia    String   // "YYYY-MM"
+  exercicio      String   // "YYYY"
+  saldoAnterior  Decimal  @db.Decimal(15, 2)
+  debitos        Decimal  @db.Decimal(15, 2)
+  creditos       Decimal  @db.Decimal(15, 2)
+  saldoAtual     Decimal  @db.Decimal(15, 2)
+  empresaId      String
+  empresa        Empresa  @relation(fields: [empresaId], references: [id])
+  sincronizadoEm DateTime @default(now())
+
+  @@unique([filial, conta, competencia, empresaId])
+  @@index([empresaId, competencia])
 }

@@ -6,7 +6,7 @@
  * idempotente (empresa + filial + tipo + número + parcela).
  */
 
-export type EntidadeCanonica = "Cliente" | "Fornecedor" | "Faturamento" | "ContaReceber" | "ContaPagar" | "Baixa";
+export type EntidadeCanonica = "Cliente" | "Fornecedor" | "Faturamento" | "ContaReceber" | "ContaPagar" | "Baixa" | "SaldoContabil";
 
 export type StatusTitulo = "open" | "partial" | "paid" | "overdue" | "cancelled";
 
@@ -66,8 +66,22 @@ export interface CanonicalPayment {
   updatedAt: string;
 }
 
+export interface CanonicalSaldoContabil {
+  externalId: string;
+  company: string;
+  branch: string;
+  account: string;
+  period: string;
+  fiscalYear: string;
+  previousBalance: number;
+  debits: number;
+  credits: number;
+  currentBalance: number;
+  updatedAt: string;
+}
+
 export interface IngestPayload {
   empresaId: string;
   entidade: EntidadeCanonica;
-  registros: CanonicalParty[] | CanonicalInvoice[] | CanonicalTitle[] | CanonicalPayment[];
+  registros: CanonicalParty[] | CanonicalInvoice[] | CanonicalTitle[] | CanonicalPayment[] | CanonicalSaldoContabil[];
 }

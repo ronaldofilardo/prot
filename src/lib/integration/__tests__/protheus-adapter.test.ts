@@ -4,6 +4,7 @@ import {
   csvRowToCanonicalFaturamento,
   csvRowToCanonicalContaReceber,
   csvRowToCanonicalBaixa,
+  csvRowToCanonicalSaldoContabil,
 } from "../protheus-adapter";
 
 const AGORA = "2026-10-04T12:00:00.000Z";
@@ -196,6 +197,56 @@ describe("protheus-adapter — caracterização (linha Protheus → Canonical)",
       expect(result.paymentBranch).toBe("01");
       expect(result.paymentDate).toBe(AGORA);
       expect(result.amount).toBe(0);
+    });
+  });
+
+  describe("csvRowToCanonicalSaldoContabil", () => {
+    it("monta saldo contabil com chaves e fallback de campos", () => {
+      const result = csvRowToCanonicalSaldoContabil(
+        {
+          CQ_FILIAL: "01",
+          CQ_CONTA: "1101",
+          CQ_ANO: "2026",
+          CQ_MES: "01",
+          CQ_SALANT: "100.5",
+          CQ_DEB: "50",
+          CQ_CRED: "20.5",
+          CQ_SALDO: "130",
+        },
+        "empresa-01"
+      );
+
+      expect(result).toEqual({
+        externalId: "empresa-01-SC-01-1101-2026-01",
+        company: "empresa-01",
+        branch: "01",
+        account: "1101",
+        period: "2026-01",
+        fiscalYear: "2026",
+        previousBalance: 100.5,
+        debits: 50,
+        credits: 20.5,
+        currentBalance: 130,
+        updatedAt: AGORA,
+      });
+    });
+
+    it("usa fallback de campos alternativos (CQ_SALDOA, CQ_SALDOF)", () => {
+      const result = csvRowToCanonicalSaldoContabil(
+        {
+          CQ_SALDOA: "10",
+          CQ_SALDOF: "20",
+        },
+        "empresa-01"
+      );
+      expect(result.previousBalance).toBe(10);
+      expect(result.currentBalance).toBe(20);
+    });
+
+    it("formata competencia pela CQ_DATA se CQ_MES/ANO faltarem", () => {
+      const result = csvRowToCanonicalSaldoContabil({ CQ_DATA: "20260315" }, "empresa-01");
+      expect(result.period).toBe("2026-03");
+      expect(result.fiscalYear).toBe("2026");
     });
   });
 });

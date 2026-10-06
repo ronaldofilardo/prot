@@ -53,6 +53,12 @@ export const BAIXAS_FALLBACK_PATHS: string[] = [
   "/api/protheus/v1/baixas",
 ];
 
+export const SALDOS_CONTABEIS_FALLBACK_PATHS: string[] = [
+  "/rest/api/framework/v1/genericQuery?tables=CQ0&fields=CQ_FILIAL,CQ_CONTA,CQ_SALANT,CQ_DEB,CQ_CRED,CQ_SALDO,CQ_ANO,CQ_MES",
+  "/api/protheus/v1/contabilidade/saldos",
+  "/rest/api/protheus/v1/saldos-contabeis",
+];
+
 export function buildCandidatePaths(
   customPath: string | undefined,
   sources: Array<string | undefined>

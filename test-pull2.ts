@@ -1,0 +1,1 @@
+import { getProtheusClient } from "./src/lib/integration/protheus-client-factory"; async function main() { const client = await getProtheusClient("empresa-01"); const res = await (client as any).get("/rest/api/framework/v1/genericQuery?tables=CQ0&pageSize=1"); console.log("Sample:", await res.json()); } main().catch(console.error);

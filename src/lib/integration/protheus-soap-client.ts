@@ -98,6 +98,10 @@ export class ProtheusSoapClient implements ProtheusClient {
   fetchBaixas(): Promise<ProtheusRow[]> {
     return this.call("SE5");
   }
+
+  async fetchSaldosContabeis(): Promise<ProtheusRow[]> {
+    throw new ProtheusClientError("fetchSaldosContabeis nao implementado em SOAP");
+  }
 }
 
 export function buildProtheusSoapClientFromEnv(): ProtheusSoapClient {

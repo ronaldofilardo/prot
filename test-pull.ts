@@ -1,0 +1,1 @@
+import { getProtheusClient } from "./src/lib/integration/protheus-client-factory"; async function main() { const client = await getProtheusClient("empresa-01"); const res = await client.fetchSaldosContabeis(); console.log("Fetched:", res.length); console.log("Sample:", res[0]); } main().catch(console.error);

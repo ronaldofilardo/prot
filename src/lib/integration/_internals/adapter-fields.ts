@@ -17,3 +17,17 @@ export function parseProtheusDate(dateStr: string): string {
   const d = clean.substring(6, 8);
   return `${y}-${m}-${d}T00:00:00.000Z`;
 }
+
+export function parseCompetencia(mes?: string, ano?: string, data?: string): string {
+  if (ano && mes) {
+    return `${ano.trim()}-${mes.trim().padStart(2, "0")}`;
+  }
+  if (data) {
+    const clean = String(data).replace(/-/g, "").trim();
+    if (clean.length === 8) {
+      return `${clean.substring(0, 4)}-${clean.substring(4, 6)}`;
+    }
+  }
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}

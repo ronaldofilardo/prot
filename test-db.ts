@@ -1,0 +1,1 @@
+import { PrismaClient } from '@prisma/client'; const prisma = new PrismaClient(); async function main() { console.log('Count:', await prisma.saldoContabil.count()); console.log('Logs:', await prisma.syncLog.findMany({ orderBy: { data: 'desc' }, take: 5 })); } main().catch(console.error).finally(() => prisma.$disconnect());

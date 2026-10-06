@@ -32,7 +32,7 @@ export async function GET(req: Request) {
         empresaAtual: view.empresaAtual,
         empresaProtheus: view.empresaProtheus,
         tokenInfo: view.tokenInfo,
-        filiais: view.filiaisPadrao,
+        filiais: view.filiais && view.filiais.length > 0 ? view.filiais : view.filiaisPadrao,
         error: view.protheusError,
       });
     }

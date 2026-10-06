@@ -29,8 +29,8 @@ export function buildFiliaisPadrao(
 ): FilialView[] {
   return [
     {
-      codigoEmpresa: "01",
-      codigoFilial: "01",
+      codigoEmpresa: process.env.PROTHEUS_EMPRESA_ID || "001",
+      codigoFilial: process.env.PROTHEUS_FILIAL || "00101001",
       nome: tokenInfo?.clienteProtheus ? `${tokenInfo.clienteProtheus} - MATRIZ` : "LC1 CONTADORES - MATRIZ",
       cnpj: empresaAtual.cnpj || undefined,
       tipo: "Matriz" as const,

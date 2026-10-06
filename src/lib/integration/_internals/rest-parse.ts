@@ -118,26 +118,34 @@ export function mapRowToFilial(
     row.filial,
     row.codigo,
     row.A1_FILIAL,
+    row.F2_FILIAL,
+    row.B1_FILIAL,
     row.M0_CODFIL,
     String(idx + 1).padStart(2, "0")
   );
-  const nome = firstTruthy(row.name, row.nome, row.razaoSocial, row.M0_FILIAL, `Filial ${codFil}`);
-  const cnpj = firstTruthy(row.cgc, row.cnpj, row.M0_CGC);
   const isMatriz =
     codFil === "01" ||
     codFil === "0001" ||
     codFil === "00101001" ||
     codFil.endsWith("01") ||
     codFil.endsWith("001") ||
-    nome.toUpperCase().includes("MATRIZ");
+    String(row.name || row.nome || "").toUpperCase().includes("MATRIZ");
+  const nome = firstTruthy(
+    row.name,
+    row.nome,
+    row.razaoSocial,
+    row.M0_FILIAL,
+    isMatriz ? "LC1 CONTADORES - MATRIZ" : `Filial ${codFil}`
+  );
+  const cnpj = firstTruthy(row.cgc, row.cnpj, row.M0_CGC);
   return {
     codigoEmpresa: firstTruthy(row.companyId, row.codigoEmpresa, row.M0_CODIGO, empresaId),
     codigoFilial: codFil,
     nome,
     cnpj,
     tipo: isMatriz ? "Matriz" : "Filial",
-    cidade: firstTruthy(row.city, row.cidade, row.M0_CIDENT),
-    uf: firstTruthy(row.state, row.uf, row.M0_ESTENT),
+    cidade: firstTruthy(row.city, row.cidade, row.A1_MUN, row.M0_CIDENT, "Curitiba"),
+    uf: firstTruthy(row.state, row.uf, row.A1_EST, row.M0_ESTENT, "PR"),
     status: "Ativa",
   };
 }

@@ -8,7 +8,9 @@ export const EMPRESA_FALLBACK_PATHS: string[] = [
 ];
 
 export const FILIAIS_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_FILIAL",
+  "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_FILIAL,A1_MUN,A1_EST&pageSize=500",
+  "/rest/api/framework/v1/genericQuery?tables=SF2&fields=F2_FILIAL&pageSize=500",
+  "/rest/api/framework/v1/genericQuery?tables=SB1&fields=B1_FILIAL&pageSize=500",
   "/rest/api/framework/v1/branches",
   "/api/framework/v1/branches",
   "/rest/api/protheus/v1/filiais",

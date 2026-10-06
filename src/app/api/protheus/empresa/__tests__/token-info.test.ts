@@ -130,8 +130,8 @@ describe("empresaFromTokenInfo", () => {
     expect(empresa).toEqual({
       nome: "LC1 CONTADORES",
       cnpj: "Cliente ID: 141404 • Ambiente: AMBI_TESTE",
-      codigoEmpresa: "01",
-      codigoFilial: "01",
+      codigoEmpresa: "001",
+      codigoFilial: "00101001",
       clienteId: "141404",
       usuarioLogado: "joao.silva (admin)",
       ambiente: "AMBI_TESTE",

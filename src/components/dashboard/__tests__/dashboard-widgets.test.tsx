@@ -46,7 +46,7 @@ describe("componentes de cabecalho e KPIs do dashboard", () => {
     expect(
       screen.getByRole("heading", { name: "Dashboard Financeiro Protheus" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Protheus Mock Conectado")).toBeInTheDocument();
+    expect(screen.getByText("Protheus Conectado")).toBeInTheDocument();
   });
 
   it("ActiveFiltersBadge exibe os tres chips quando preenchidos", () => {

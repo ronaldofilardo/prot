@@ -33,8 +33,10 @@ interface CarregarProtheusCtx {
 
 async function carregarProtheus(ctx: CarregarProtheusCtx) {
   const client = await getProtheusClient(ctx.empresaId);
-  const empresaBruta = await client.fetchEmpresa(ctx.customPath);
-  const filiaisProtheus = await client.fetchFiliais(ctx.customPath).catch(() => []);
+  const [empresaBruta, filiaisProtheus] = await Promise.all([
+    client.fetchEmpresa(ctx.customPath).catch(() => null),
+    client.fetchFiliais(ctx.customPath).catch(() => []),
+  ]);
   const filiais = filiaisProtheus.length > 0 ? filiaisProtheus : ctx.filiaisPadrao;
   const empresaProtheus: EmpresaProtheusView = empresaBruta
     ? {

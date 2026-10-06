@@ -68,8 +68,8 @@ export function empresaFromTokenInfo(tokenInfo: TokenInfo | null): EmpresaFallba
   return {
     nome: tokenInfo.clienteProtheus,
     cnpj: `Cliente ID: ${tokenInfo.clienteId} • Ambiente: ${tokenInfo.ambiente}`,
-    codigoEmpresa: "01",
-    codigoFilial: "01",
+    codigoEmpresa: process.env.PROTHEUS_EMPRESA_ID || "001",
+    codigoFilial: process.env.PROTHEUS_FILIAL || "00101001",
     clienteId: tokenInfo.clienteId,
     usuarioLogado: tokenInfo.usuario,
     ambiente: tokenInfo.ambiente,

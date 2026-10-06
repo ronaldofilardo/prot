@@ -13,9 +13,13 @@ export function buildFallbackContasReceberRows(): ProtheusRow[] {
 }
 
 export function buildFallbackFilial(empresaId: string, filial: string): ProtheusFilialInfo {
+  const raw = (filial || "00101001").trim();
+  const is8 = raw.length === 8;
   return {
-    codigoEmpresa: empresaId || "001",
-    codigoFilial: filial || "00101001",
+    codigoEmpresa: is8 ? raw.substring(0, 3) : (empresaId || "001"),
+    codigoUnidade: is8 ? raw.substring(3, 5) : "01",
+    codigoFilial: is8 ? raw.substring(5, 8) : raw,
+    filialCompleta: raw,
     nome: "LC1 CONTADORES - MATRIZ",
     tipo: "Matriz",
     status: "Ativa",

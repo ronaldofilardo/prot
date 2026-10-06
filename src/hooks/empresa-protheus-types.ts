@@ -22,7 +22,9 @@ export interface TokenStatusInfo {
 export interface ProtheusFilialInfo {
   id?: string;
   codigoEmpresa: string;
+  codigoUnidade?: string;
   codigoFilial: string;
+  filialCompleta?: string;
   nome: string;
   cnpj?: string;
   tipo: "Matriz" | "Filial";
@@ -30,3 +32,4 @@ export interface ProtheusFilialInfo {
   uf?: string;
   status?: "Ativa" | "Inativa";
 }
+

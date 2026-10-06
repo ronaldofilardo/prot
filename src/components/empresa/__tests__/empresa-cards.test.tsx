@@ -56,8 +56,9 @@ describe("EmpresaFiliaisCard", () => {
     const { container } = render(<EmpresaFiliaisCard filiais={[filialMatriz, filialComum]} />);
 
     expect(screen.getByText("2 filiais cadastradas")).toBeInTheDocument();
-    expect(screen.getByText("01")).toBeInTheDocument();
+    expect(screen.getByText("Filial 01")).toBeInTheDocument();
     expect(screen.getByText("Empresa 01")).toBeInTheDocument();
+    expect(screen.getAllByText("Unidade 01").length).toBeGreaterThan(0);
     expect(screen.getByText("Mesmo da Matriz")).toBeInTheDocument();
     expect(screen.getByText("Inativa")).toBeInTheDocument();
     expect(container.querySelector(".text-indigo-700")).not.toBeNull();

@@ -4,9 +4,14 @@ import type { ProtheusFilialInfo } from "@/hooks/useEmpresaProtheus";
 
 export function FilialCodigoBadge({ f }: { f: ProtheusFilialInfo }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-mono font-bold text-xs border border-emerald-200 dark:border-emerald-800">
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-mono text-xs border border-emerald-200 dark:border-emerald-800">
       <Hash size={12} />
-      {f.codigoFilial}
+      <span className="font-bold">Filial {f.codigoFilial}</span>
+      {f.filialCompleta && f.filialCompleta !== f.codigoFilial && (
+        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
+          ({f.filialCompleta})
+        </span>
+      )}
     </span>
   );
 }

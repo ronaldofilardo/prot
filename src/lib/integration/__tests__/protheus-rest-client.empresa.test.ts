@@ -88,7 +88,9 @@ describe("Protheus REST client — empresa e filiais", () => {
     expect(filiais).toHaveLength(2);
     expect(filiais[0]).toEqual({
       codigoEmpresa: "01",
+      codigoUnidade: "01",
       codigoFilial: "01",
+      filialCompleta: "01",
       nome: "LC1 CONTADORES - MATRIZ",
       cnpj: "12.345.678/0001-90",
       tipo: "Matriz",
@@ -98,7 +100,9 @@ describe("Protheus REST client — empresa e filiais", () => {
     });
     expect(filiais[1]).toEqual({
       codigoEmpresa: "01",
+      codigoUnidade: "01",
       codigoFilial: "02",
+      filialCompleta: "02",
       nome: "LC1 CONTADORES - FILIAL RIO",
       cnpj: "12.345.678/0002-71",
       tipo: "Filial",

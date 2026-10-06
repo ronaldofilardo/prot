@@ -138,9 +138,22 @@ export function mapRowToFilial(
     isMatriz ? "LC1 CONTADORES - MATRIZ" : `Filial ${codFil}`
   );
   const cnpj = firstTruthy(row.cgc, row.cnpj, row.M0_CGC);
+  let codigoEmpresa = firstTruthy(row.companyId, row.codigoEmpresa, row.M0_CODIGO, empresaId);
+  let codigoUnidade = "01";
+  let codigoFilial = codFil;
+  const filialCompleta = codFil;
+
+  if (codFil.length === 8) {
+    codigoEmpresa = codFil.substring(0, 3);
+    codigoUnidade = codFil.substring(3, 5);
+    codigoFilial = codFil.substring(5, 8);
+  }
+
   return {
-    codigoEmpresa: firstTruthy(row.companyId, row.codigoEmpresa, row.M0_CODIGO, empresaId),
-    codigoFilial: codFil,
+    codigoEmpresa,
+    codigoUnidade,
+    codigoFilial,
+    filialCompleta,
     nome,
     cnpj,
     tipo: isMatriz ? "Matriz" : "Filial",

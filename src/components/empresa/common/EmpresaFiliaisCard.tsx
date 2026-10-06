@@ -27,8 +27,13 @@ function FiliaisCardHeader({ total }: { total: number }) {
 function FilialRow({ f }: { f: ProtheusFilialInfo }) {
   return (
     <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+      <td className="py-2.5 font-mono font-medium text-slate-700 dark:text-slate-300">
+        Empresa {f.codigoEmpresa || "001"}
+      </td>
+      <td className="py-2.5 font-mono text-slate-600 dark:text-slate-400">
+        Unidade {f.codigoUnidade || "01"}
+      </td>
       <td className="py-2.5"><FilialCodigoBadge f={f} /></td>
-      <td className="py-2.5 font-mono text-slate-600 dark:text-slate-400">Empresa {f.codigoEmpresa}</td>
       <td className="py-2.5"><FilialTipoBadge f={f} /></td>
       <td className="py-2.5 font-medium text-slate-800 dark:text-slate-100">{f.nome}</td>
       <td className="py-2.5 font-mono text-slate-600 dark:text-slate-400">{f.cnpj || "Mesmo da Matriz"}</td>
@@ -46,8 +51,9 @@ function FiliaisTableHeader() {
   return (
     <thead>
       <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400">
-        <th className="pb-2 font-medium">Cód. Filial (Protheus)</th>
-        <th className="pb-2 font-medium">Cód. Empresa</th>
+        <th className="pb-2 font-medium">Empresa</th>
+        <th className="pb-2 font-medium">Unidade</th>
+        <th className="pb-2 font-medium">Filial (Cód.)</th>
         <th className="pb-2 font-medium">Tipo</th>
         <th className="pb-2 font-medium">Nome / Razão Social</th>
         <th className="pb-2 font-medium">CNPJ / Identificação</th>

@@ -30,7 +30,9 @@ export interface ProtheusEmpresaInfo {
 export interface ProtheusFilialInfo {
   id?: string;
   codigoEmpresa: string;
+  codigoUnidade?: string;
   codigoFilial: string;
+  filialCompleta?: string;
   nome: string;
   cnpj?: string;
   tipo: "Matriz" | "Filial";

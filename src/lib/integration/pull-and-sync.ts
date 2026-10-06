@@ -78,23 +78,28 @@ const JOBS: EntityJob[] = [
   },
 ];
 
-async function executarJob(
-  job: EntityJob,
-  empresaId: string,
-  client: ProtheusClient,
-): Promise<PullEntityResult> {
-  const rows = await job.fetch(client);
-  const validRows = rows.filter((r) => r.D_E_L_E_T_ !== "*");
-  const canonical = validRows.map((r) => job.toCanonical(r, empresaId));
+function filterValidRows(rows: ProtheusRow[]): ProtheusRow[] {
+  return rows.filter((r) => r.D_E_L_E_T_ !== "*");
+}
 
-  const syncResult = await prisma.$transaction(async (tx) => {
-    const res = await job.sync(tx as PrismaClient, empresaId, canonical);
+function mapToCanonical(rows: ProtheusRow[], toCanonical: EntityJob["toCanonical"], empresaId: string) {
+  return rows.map((r) => toCanonical(r, empresaId));
+}
+
+async function runSyncInTransaction(
+  syncFn: SyncFn,
+  entidade: string,
+  empresaId: string,
+  canonical: unknown[],
+): Promise<SyncResult> {
+  return prisma.$transaction(async (tx) => {
+    const res = await syncFn(tx as PrismaClient, empresaId, canonical);
     await tx.syncLog.create({
       data: {
         empresaId,
-        entidade: job.entidade,
+        entidade,
         operacao: "manual_pull",
-        idempotencyKey: `pull-${job.entidade}-${Date.now()}`,
+        idempotencyKey: `pull-${entidade}-${Date.now()}`,
         status: res.erros > 0 ? "error" : "success",
         mensagem: `Atualizacao manual: ${res.processados} processados, ${res.criados} criados, ${res.atualizados} atualizados, ${res.erros} erros`,
         tentativas: 1,
@@ -102,6 +107,17 @@ async function executarJob(
     });
     return res;
   });
+}
+
+async function executarJob(
+  job: EntityJob,
+  empresaId: string,
+  client: ProtheusClient,
+): Promise<PullEntityResult> {
+  const rows = await job.fetch(client);
+  const validRows = filterValidRows(rows);
+  const canonical = mapToCanonical(validRows, job.toCanonical, empresaId);
+  const syncResult = await runSyncInTransaction(job.sync, job.entidade, empresaId, canonical);
 
   return {
     entidade: job.entidade,
@@ -110,32 +126,7 @@ async function executarJob(
   };
 }
 
-async function registrarFalha(
-  job: EntityJob,
-  empresaId: string,
-  error: unknown,
-): Promise<PullEntityResult> {
-  logApiError(`Erro ao puxar/sincronizar ${job.entidade} do Protheus`, error);
-  const mensagemErro = error instanceof Error ? error.message : String(error);
-
-  // Registra a falha no SyncLog mesmo sem ter chegado a sincronizar
-  // nada, para o erro ficar visível no histórico (mesmo padrão usado
-  // pelas outras entradas: upload de CSV e ingest via API key).
-  await prisma.syncLog
-    .create({
-      data: {
-        empresaId,
-        entidade: job.entidade,
-        operacao: "manual_pull",
-        idempotencyKey: `pull-${job.entidade}-${Date.now()}`,
-        status: "error",
-        categoriaErro: "protheus_unreachable",
-        mensagem: mensagemErro,
-        tentativas: 1,
-      },
-    })
-    .catch(() => undefined);
-
+function buildErrorSyncResult(job: EntityJob, mensagemErro: string): PullEntityResult {
   return {
     entidade: job.entidade,
     registros: 0,
@@ -148,6 +139,40 @@ async function registrarFalha(
     },
     erro: mensagemErro,
   };
+}
+
+async function logAndCreateSyncLog(
+  empresaId: string,
+  entidade: string,
+  mensagemErro: string,
+): Promise<void> {
+  await prisma.syncLog
+    .create({
+      data: {
+        empresaId,
+        entidade,
+        operacao: "manual_pull",
+        idempotencyKey: `pull-${entidade}-${Date.now()}`,
+        status: "error",
+        categoriaErro: "protheus_unreachable",
+        mensagem: mensagemErro,
+        tentativas: 1,
+      },
+    })
+    .catch(() => undefined);
+}
+
+async function registrarFalha(
+  job: EntityJob,
+  empresaId: string,
+  error: unknown,
+): Promise<PullEntityResult> {
+  logApiError(`Erro ao puxar/sincronizar ${job.entidade} do Protheus`, error);
+  const mensagemErro = error instanceof Error ? error.message : String(error);
+
+  await logAndCreateSyncLog(empresaId, job.entidade, mensagemErro);
+
+  return buildErrorSyncResult(job, mensagemErro);
 }
 
 export async function pullAndSyncFromProtheus(

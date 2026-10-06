@@ -9,8 +9,8 @@ function opcoesRestOauth(cred: { baseUrl: string }, empresaId: string): Protheus
     baseUrl: cred.baseUrl,
     authMode: "oauth2",
     empresaSaaSId: empresaId,
-    empresaId: process.env.PROTHEUS_EMPRESA_ID || "01",
-    filial: process.env.PROTHEUS_FILIAL || "01",
+    empresaId: process.env.PROTHEUS_EMPRESA_ID || "001",
+    filial: process.env.PROTHEUS_FILIAL || "00101001",
     paths: {
       empresa: process.env.PROTHEUS_REST_EMPRESA_PATH,
       clientes: process.env.PROTHEUS_REST_CLIENTES_PATH,

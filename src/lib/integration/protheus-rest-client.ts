@@ -92,10 +92,17 @@ export class ProtheusRestClient implements ProtheusClient {
       candidatePaths,
       (path) => this.get(path, "PROTHEUS_REST_FILIAIS_PATH")
     );
-    if (!rows) {
+    if (!rows || rows.length === 0) {
       return [buildFallbackFilial(this.config.empresaId, this.config.filial)];
     }
-    return rows.map((row, idx) => mapRowToFilial(row, idx, this.config.empresaId));
+    const filiais = rows.map((row, idx) => mapRowToFilial(row, idx, this.config.empresaId));
+    const unique = new Map<string, ProtheusFilialInfo>();
+    for (const f of filiais) {
+      if (!unique.has(f.codigoFilial)) {
+        unique.set(f.codigoFilial, f);
+      }
+    }
+    return Array.from(unique.values());
   }
 
   async fetchClientes(customPath?: string): Promise<ProtheusRow[]> {
@@ -164,8 +171,8 @@ export function buildProtheusRestClientFromEnv(): ProtheusRestClient {
     username: process.env.PROTHEUS_REST_USER,
     password: process.env.PROTHEUS_REST_PASSWORD,
     token: process.env.PROTHEUS_REST_ACCESS_TOKEN || process.env.PROTHEUS_REST_TOKEN,
-    empresaId: process.env.PROTHEUS_EMPRESA_ID || "01",
-    filial: process.env.PROTHEUS_FILIAL || "01",
+    empresaId: process.env.PROTHEUS_EMPRESA_ID || "001",
+    filial: process.env.PROTHEUS_FILIAL || "00101001",
     paths: {
       empresa: process.env.PROTHEUS_REST_EMPRESA_PATH,
       clientes: process.env.PROTHEUS_REST_CLIENTES_PATH,

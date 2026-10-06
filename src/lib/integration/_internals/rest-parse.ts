@@ -27,8 +27,10 @@ export function buildRequestUrl(
       `${settingName} deve ser um caminho iniciado por "/" ou URL completa (https://...)`
     );
   }
-  url.searchParams.set("empresa", config.empresaId);
-  url.searchParams.set("filial", config.filial);
+  if (!url.pathname.includes("genericQuery")) {
+    url.searchParams.set("empresa", config.empresaId);
+    url.searchParams.set("filial", config.filial);
+  }
   return url;
 }
 
@@ -54,10 +56,24 @@ function assertOk(response: Response, path: string): void {
   }
 }
 
+function normalizeRow(row: ProtheusRow): ProtheusRow {
+  const norm: ProtheusRow = {};
+  for (const [k, v] of Object.entries(row)) {
+    norm[k] = v;
+    norm[k.toUpperCase()] = v;
+    norm[k.toLowerCase()] = v;
+  }
+  return norm;
+}
+
 function extractRows(json: unknown): ProtheusRow[] {
-  if (Array.isArray(json)) return json as ProtheusRow[];
-  const obj = json as { items?: ProtheusRow[]; data?: ProtheusRow[] };
-  return obj.items ?? obj.data ?? [];
+  let raw: ProtheusRow[] = [];
+  if (Array.isArray(json)) raw = json as ProtheusRow[];
+  else {
+    const obj = json as { items?: ProtheusRow[]; data?: ProtheusRow[] };
+    raw = obj.items ?? obj.data ?? [];
+  }
+  return raw.map(normalizeRow);
 }
 
 function selectEmpresaRow(
@@ -101,19 +117,27 @@ export function mapRowToFilial(
     row.codigoFilial,
     row.filial,
     row.codigo,
+    row.A1_FILIAL,
+    row.M0_CODFIL,
     String(idx + 1).padStart(2, "0")
   );
-  const nome = firstTruthy(row.name, row.nome, row.razaoSocial, `Filial ${codFil}`);
-  const cnpj = firstTruthy(row.cgc, row.cnpj);
-  const isMatriz = codFil === "01" || codFil === "0001" || nome.toUpperCase().includes("MATRIZ");
+  const nome = firstTruthy(row.name, row.nome, row.razaoSocial, row.M0_FILIAL, `Filial ${codFil}`);
+  const cnpj = firstTruthy(row.cgc, row.cnpj, row.M0_CGC);
+  const isMatriz =
+    codFil === "01" ||
+    codFil === "0001" ||
+    codFil === "00101001" ||
+    codFil.endsWith("01") ||
+    codFil.endsWith("001") ||
+    nome.toUpperCase().includes("MATRIZ");
   return {
-    codigoEmpresa: firstTruthy(row.companyId, row.codigoEmpresa, empresaId),
+    codigoEmpresa: firstTruthy(row.companyId, row.codigoEmpresa, row.M0_CODIGO, empresaId),
     codigoFilial: codFil,
     nome,
     cnpj,
     tipo: isMatriz ? "Matriz" : "Filial",
-    cidade: firstTruthy(row.city, row.cidade),
-    uf: firstTruthy(row.state, row.uf),
+    cidade: firstTruthy(row.city, row.cidade, row.M0_CIDENT),
+    uf: firstTruthy(row.state, row.uf, row.M0_ESTENT),
     status: "Ativa",
   };
 }

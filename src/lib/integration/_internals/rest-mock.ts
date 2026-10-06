@@ -14,8 +14,8 @@ export function buildFallbackContasReceberRows(): ProtheusRow[] {
 
 export function buildFallbackFilial(empresaId: string, filial: string): ProtheusFilialInfo {
   return {
-    codigoEmpresa: empresaId,
-    codigoFilial: filial || "01",
+    codigoEmpresa: empresaId || "001",
+    codigoFilial: filial || "00101001",
     nome: "LC1 CONTADORES - MATRIZ",
     tipo: "Matriz",
     status: "Ativa",

@@ -21,14 +21,15 @@ export function csvRowToCanonicalCliente(row: Record<string, string>, empresaId:
 }
 
 export function csvRowToCanonicalFaturamento(row: Record<string, string>, empresaId: string): CanonicalInvoice {
+  const valorStr = trimField(row, "F2_VALOR") || trimField(row, "F2_VALMERC") || trimField(row, "F2_VALBRUT");
   return {
     externalId: `${empresaId}-NF-${trimField(row, "F2_FILIAL")}-${trimField(row, "F2_DOC")}`,
     company: empresaId,
     branch: trimOr(row, "F2_FILIAL", "01"),
     documentNumber: trimOr(row, "F2_DOC", ""),
     partyExternalId: `${empresaId}-CLI-${trimField(row, "F2_CLIENTE")}-${trimField(row, "F2_LOJA")}`,
-    issueDate: parseProtheusDate(row.F2_EMISSAO),
-    amount: parseFloat(row.F2_VALOR) || 0,
+    issueDate: parseProtheusDate(trimField(row, "F2_EMISSAO")),
+    amount: parseFloat(valorStr) || 0,
     currency: "BRL",
     updatedAt: new Date().toISOString(),
   };
@@ -44,9 +45,9 @@ export function csvRowToCanonicalContaReceber(row: Record<string, string>, empre
     installment: trimOr(row, "E1_PARCELA", ""),
     type: trimOr(row, "E1_TIPO", "DUP"),
     partyExternalId: `${empresaId}-CLI-${trimField(row, "E1_CLIENTE")}-${trimField(row, "E1_LOJA")}`,
-    issueDate: parseProtheusDate(row.E1_EMISSAO),
-    dueDate: parseProtheusDate(row.E1_VENCTO),
-    amount: parseFloat(row.E1_VALOR) || 0,
+    issueDate: parseProtheusDate(trimField(row, "E1_EMISSAO")),
+    dueDate: parseProtheusDate(trimField(row, "E1_VENCTO")),
+    amount: parseFloat(trimField(row, "E1_VALOR")) || 0,
     currency: "BRL",
     status: "open",
     updatedAt: new Date().toISOString(),
@@ -63,8 +64,8 @@ export function csvRowToCanonicalBaixa(row: Record<string, string>, empresaId: s
     number: trimOr(row, "E5_NUM", ""),
     installment: trimOr(row, "E5_PARCELA", ""),
     type: trimOr(row, "E5_TIPO", "DUP"),
-    amount: parseFloat(row.E5_VALOR) || 0,
-    paymentDate: parseProtheusDate(row.E5_BAIXA),
+    amount: parseFloat(trimField(row, "E5_VALOR")) || 0,
+    paymentDate: parseProtheusDate(trimField(row, "E5_BAIXA")),
     titleExternalId: `${empresaId}-CR-${trimField(row, "E5_FILIAL")}-${trimField(row, "E5_PREFIXO")}-${trimField(row, "E5_NUM")}-${trimField(row, "E5_PARCELA")}`,
     updatedAt: new Date().toISOString(),
   };

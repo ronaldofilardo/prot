@@ -18,6 +18,7 @@ vi.mock("@/lib/integration/sync-engine", () => ({
   syncFaturamentos: vi.fn(),
   syncContasReceber: vi.fn(),
   syncBaixas: vi.fn(),
+  syncSaldosContabeis: vi.fn(),
   parseClienteExternalId: vi.fn(),
   parseFaturamentoExternalId: vi.fn(),
   parseContaReceberExternalId: vi.fn(),

@@ -9,6 +9,7 @@ const {
   syncFaturamentosMock,
   syncContasReceberMock,
   syncBaixasMock,
+  syncSaldosContabeisMock,
   logApiErrorMock,
 } = vi.hoisted(() => ({
   getProtheusClientMock: vi.fn(),
@@ -18,6 +19,7 @@ const {
   syncFaturamentosMock: vi.fn(),
   syncContasReceberMock: vi.fn(),
   syncBaixasMock: vi.fn(),
+  syncSaldosContabeisMock: vi.fn(),
   logApiErrorMock: vi.fn(),
 }));
 
@@ -27,6 +29,7 @@ vi.mock("../sync-engine", () => ({
   syncFaturamentos: syncFaturamentosMock,
   syncContasReceber: syncContasReceberMock,
   syncBaixas: syncBaixasMock,
+  syncSaldosContabeis: syncSaldosContabeisMock,
 }));
 vi.mock("@/lib/db/prisma-client", () => ({
   prisma: {
@@ -38,12 +41,13 @@ vi.mock("@/lib/utils/logger", () => ({ logApiError: logApiErrorMock }));
 
 const RESULTADO_OK = { entidade: "Cliente", processados: 1, criados: 1, atualizados: 0, erros: 0 };
 
-function clientCom(rows: Partial<Record<"Clientes" | "Faturamentos" | "ContasReceber" | "Baixas", unknown[]>>) {
+function clientCom(rows: Partial<Record<"Clientes" | "Faturamentos" | "ContasReceber" | "Baixas" | "SaldosContabeis", unknown[]>>) {
   return {
     fetchClientes: vi.fn().mockResolvedValue(rows.Clientes ?? []),
     fetchFaturamentos: vi.fn().mockResolvedValue(rows.Faturamentos ?? []),
     fetchContasReceber: vi.fn().mockResolvedValue(rows.ContasReceber ?? []),
     fetchBaixas: vi.fn().mockResolvedValue(rows.Baixas ?? []),
+    fetchSaldosContabeis: vi.fn().mockResolvedValue(rows.SaldosContabeis ?? []),
   };
 }
 
@@ -54,6 +58,7 @@ describe("pullAndSyncFromProtheus (pull-and-sync.ts)", () => {
     syncFaturamentosMock.mockResolvedValue(RESULTADO_OK);
     syncContasReceberMock.mockResolvedValue(RESULTADO_OK);
     syncBaixasMock.mockResolvedValue(RESULTADO_OK);
+    syncSaldosContabeisMock.mockResolvedValue(RESULTADO_OK);
     syncLogCreateMock.mockResolvedValue({});
     transactionMock.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) =>
       callback({ syncLog: { create: syncLogCreateMock } })
@@ -70,13 +75,14 @@ describe("pullAndSyncFromProtheus (pull-and-sync.ts)", () => {
         Faturamentos: [{ F2_FILIAL: "01", F2_DOC: "000100", F2_CLIENTE: "000001", F2_LOJA: "01", F2_EMISSAO: "20260115", F2_VALOR: "1500.75" }],
         ContasReceber: [{ E1_FILIAL: "01", E1_PREFIXO: "FAT", E1_NUM: "000100", E1_PARCELA: "A", E1_CLIENTE: "000001", E1_LOJA: "01", E1_VENCTO: "20260210", E1_VALOR: "350.5" }],
         Baixas: [],
+        SaldosContabeis: [],
       })
     );
 
     const resultados = await pullAndSyncFromProtheus("emp-01");
 
     expect(getProtheusClientMock).toHaveBeenCalledWith("emp-01");
-    expect(resultados.map((r) => r.entidade)).toEqual(["Cliente", "Faturamento", "ContaReceber", "Baixa"]);
+    expect(resultados.map((r) => r.entidade)).toEqual(["Cliente", "Faturamento", "ContaReceber", "Baixa", "SaldoContabil"]);
     expect(resultados[0].registros).toBe(1);
     expect(resultados[2].registros).toBe(1);
 
@@ -95,10 +101,10 @@ describe("pullAndSyncFromProtheus (pull-and-sync.ts)", () => {
 
     await pullAndSyncFromProtheus("emp-01");
 
-    expect(syncLogCreateMock).toHaveBeenCalledTimes(4);
+    expect(syncLogCreateMock).toHaveBeenCalledTimes(5);
     expect(
       syncLogCreateMock.mock.calls.map(([args]) => (args as { data: { entidade: string } }).data.entidade)
-    ).toEqual(["Cliente", "Faturamento", "ContaReceber", "Baixa"]);
+    ).toEqual(["Cliente", "Faturamento", "ContaReceber", "Baixa", "SaldoContabil"]);
     expect(syncLogCreateMock).toHaveBeenCalledWith({
       data: {
         empresaId: "emp-01",
@@ -145,7 +151,7 @@ describe("pullAndSyncFromProtheus (pull-and-sync.ts)", () => {
 
     expect(client.fetchFaturamentos).toHaveBeenCalled();
     expect(syncFaturamentosMock).toHaveBeenCalledTimes(1);
-    expect(resultados).toHaveLength(4);
+    expect(resultados).toHaveLength(5);
     expect(resultados[1].erro).toBeUndefined();
   });
 
@@ -161,7 +167,7 @@ describe("pullAndSyncFromProtheus (pull-and-sync.ts)", () => {
 
     const resultados = await pullAndSyncFromProtheus("emp-01");
 
-    expect(resultados).toHaveLength(4);
+    expect(resultados).toHaveLength(5);
     expect(resultados[0].erro).toBe("conexao recusada");
     expect(resultados[1].erro).toBeUndefined();
   });

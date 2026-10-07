@@ -18,7 +18,7 @@ import {
 } from "./rest-retry";
 import type { ProtheusRestConfig } from "./rest-types";
 
-function mergeAndDedupe(rows: ProtheusRow[], keys: string[]): ProtheusRow[] {
+export function mergeAndDedupe(rows: ProtheusRow[], keys: string[]): ProtheusRow[] {
   const seen = new Set<string>();
   return rows.filter((row) => {
     const key = keys.map((k) => row[k] ?? "").join("|");

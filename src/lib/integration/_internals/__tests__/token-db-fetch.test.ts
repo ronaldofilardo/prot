@@ -36,12 +36,12 @@ describe("token-db-fetch.ts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.unstubAllEnvs();
-    delete process.env.PROTHEUS_REST_ACCESS_TOKEN;
+    vi.stubEnv("PROTHEUS_REST_ACCESS_TOKEN", "");
   });
 
   it("retorna token quando executeOAuthRequest funciona", async () => {
     const { executeOAuthRequest } = await import("../token-network");
-    (executeOAuthRequest as vi.Mock).mockResolvedValue({
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockResolvedValue({
       token: "new-token",
       refreshToken: "refresh-123",
       expiresAt: new Date(Date.now() + 3600000),
@@ -63,7 +63,7 @@ describe("token-db-fetch.ts", () => {
 
   it("lança erro de credenciais inválidas do ProtheusClientError", async () => {
     const { executeOAuthRequest } = await import("../token-network");
-    (executeOAuthRequest as vi.Mock).mockRejectedValue(
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockRejectedValue(
       new ProtheusClientError("Credenciais Protheus invalidas ou nao autorizadas")
     );
 
@@ -72,7 +72,7 @@ describe("token-db-fetch.ts", () => {
 
   it("usa accessToken existente quando não é JWT auto-renovado", async () => {
     const { executeOAuthRequest } = await import("../token-network");
-    (executeOAuthRequest as vi.Mock).mockRejectedValue(new Error("network error"));
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
 
     const credWithToken: ProtheusCredencialData = {
       ...mockCred,
@@ -88,7 +88,7 @@ describe("token-db-fetch.ts", () => {
 
   it("não usa accessToken existente quando é JWT auto-renovado", async () => {
     const { executeOAuthRequest } = await import("../token-network");
-    (executeOAuthRequest as vi.Mock).mockRejectedValue(new Error("network error"));
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
 
     const credWithJwt: ProtheusCredencialData = {
       ...mockCred,
@@ -102,13 +102,13 @@ describe("token-db-fetch.ts", () => {
 
   it("usa token de ambiente quando accessToken não disponível", async () => {
     const { executeOAuthRequest } = await import("../token-network");
-    (executeOAuthRequest as vi.Mock).mockRejectedValue(new Error("network error"));
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
 
     const credNoToken: ProtheusCredencialData = {
       ...mockCred,
       accessToken: "",
     };
-    process.env.PROTHEUS_REST_ACCESS_TOKEN = "env-token-123";
+    vi.stubEnv("PROTHEUS_REST_ACCESS_TOKEN", "env-token-123");
 
     const result = await fetchDbToken(credNoToken);
 
@@ -117,13 +117,13 @@ describe("token-db-fetch.ts", () => {
 
   it("não usa token de ambiente quando é JWT auto-renovado", async () => {
     const { executeOAuthRequest } = await import("../token-network");
-    (executeOAuthRequest as vi.Mock).mockRejectedValue(new Error("network error"));
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
 
     const credNoToken: ProtheusCredencialData = {
       ...mockCred,
       accessToken: "",
     };
-    process.env.PROTHEUS_REST_ACCESS_TOKEN = "sig_totvs_fwjwt_auto_renew_env";
+    vi.stubEnv("PROTHEUS_REST_ACCESS_TOKEN", "sig_totvs_fwjwt_auto_renew_env");
 
     const result = await fetchDbToken(credNoToken);
 
@@ -135,7 +135,7 @@ describe("token-db-fetch.ts", () => {
     const { logIntegration } = await import("@/lib/utils/logger");
     const { createProtheusJwt } = await import("../token-generator");
 
-    (executeOAuthRequest as vi.Mock).mockRejectedValue(new Error("network error"));
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
 
     const credNoToken: ProtheusCredencialData = {
       ...mockCred,
@@ -154,14 +154,14 @@ describe("token-db-fetch.ts", () => {
 
   it("usa clientId:clientId para basic auth", async () => {
     const { executeOAuthRequest } = await import("../token-network");
-    (executeOAuthRequest as vi.Mock).mockResolvedValue({
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockResolvedValue({
       token: "new-token",
       expiresAt: new Date(Date.now() + 3600000),
     });
 
     await fetchDbToken(mockCred);
 
-    const callArgs = (executeOAuthRequest as vi.Mock).mock.calls[0];
+    const callArgs = (executeOAuthRequest as ReturnType<typeof vi.fn>).mock.calls[0];
     const basicAuth = callArgs[1];
     // Buffer.from("client-1:client-1").toString("base64")
     expect(basicAuth).toBe("Y2xpZW50LTE6Y2xpZW50LTE=");
@@ -169,14 +169,14 @@ describe("token-db-fetch.ts", () => {
 
   it("usa grant_type password no body", async () => {
     const { executeOAuthRequest } = await import("../token-network");
-    (executeOAuthRequest as vi.Mock).mockResolvedValue({
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockResolvedValue({
       token: "new-token",
       expiresAt: new Date(Date.now() + 3600000),
     });
 
     await fetchDbToken(mockCred);
 
-    const callArgs = (executeOAuthRequest as vi.Mock).mock.calls[0];
+    const callArgs = (executeOAuthRequest as ReturnType<typeof vi.fn>).mock.calls[0];
     const body = callArgs[2];
     expect(body.get("grant_type")).toBe("password");
     expect(body.get("username")).toBe("user");
@@ -185,11 +185,11 @@ describe("token-db-fetch.ts", () => {
 
   it("usa resolveTokenUrl para construir URL", async () => {
     const { executeOAuthRequest, resolveTokenUrl } = await import("../token-network");
-    (executeOAuthRequest as vi.Mock).mockResolvedValue({
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockResolvedValue({
       token: "new-token",
       expiresAt: new Date(Date.now() + 3600000),
     });
-    (resolveTokenUrl as vi.Mock).mockReturnValue("https://custom/token");
+    (resolveTokenUrl as ReturnType<typeof vi.fn>).mockReturnValue("https://custom/token");
 
     await fetchDbToken(mockCred);
 

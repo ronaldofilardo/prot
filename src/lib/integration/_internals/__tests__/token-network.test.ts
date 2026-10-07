@@ -15,7 +15,7 @@ describe("token-network.ts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.unstubAllEnvs();
-    delete process.env.PROTHEUS_REST_TOKEN_PATH;
+    vi.stubEnv("PROTHEUS_REST_TOKEN_PATH", "");
   });
 
   describe("resolveTokenUrl", () => {
@@ -30,7 +30,7 @@ describe("token-network.ts", () => {
     });
 
     it("usa PROTHEUS_REST_TOKEN_PATH quando definido", () => {
-      process.env.PROTHEUS_REST_TOKEN_PATH = "/custom/token";
+      vi.stubEnv("PROTHEUS_REST_TOKEN_PATH", "/custom/token");
       expect(resolveTokenUrl("https://api.example.com")).toBe(
         "https://api.example.com/custom/token"
       );
@@ -114,7 +114,7 @@ describe("token-network.ts", () => {
 
   describe("executeOAuthRequest", () => {
     it("retorna token quando resposta é ok", async () => {
-      (global.fetch as vi.Mock).mockResolvedValue({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ access_token: "token123", expires_in: 3600 }),
       });
@@ -126,7 +126,7 @@ describe("token-network.ts", () => {
     });
 
     it("usa token alternativo quando access_token não existe", async () => {
-      (global.fetch as vi.Mock).mockResolvedValue({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ token: "alt-token", expires_in: 3600 }),
       });
@@ -137,7 +137,7 @@ describe("token-network.ts", () => {
     });
 
     it("usa accessToken alternativo", async () => {
-      (global.fetch as vi.Mock).mockResolvedValue({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ accessToken: "alt-token2", expires_in: 3600 }),
       });
@@ -148,7 +148,7 @@ describe("token-network.ts", () => {
     });
 
     it("lança erro quando token ausente na resposta", async () => {
-      (global.fetch as vi.Mock).mockResolvedValue({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ expires_in: 3600 }),
       });
@@ -159,7 +159,7 @@ describe("token-network.ts", () => {
     });
 
     it("lança ProtheusClientError para status 400", async () => {
-      (global.fetch as vi.Mock).mockResolvedValue({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: false,
         status: 400,
       });
@@ -170,7 +170,7 @@ describe("token-network.ts", () => {
     });
 
     it("lança ProtheusClientError para status 401", async () => {
-      (global.fetch as vi.Mock).mockResolvedValue({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: false,
         status: 401,
       });
@@ -181,7 +181,7 @@ describe("token-network.ts", () => {
     });
 
     it("lança ProtheusClientError para outros status", async () => {
-      (global.fetch as vi.Mock).mockResolvedValue({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: false,
         status: 500,
       });
@@ -192,7 +192,7 @@ describe("token-network.ts", () => {
     });
 
     it("envolve erro de rede em ProtheusClientError", async () => {
-      (global.fetch as vi.Mock).mockRejectedValue(new Error("network error"));
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
 
       await expect(
         executeOAuthRequest("https://api.example.com/token", "basicAuth", new URLSearchParams())
@@ -200,14 +200,14 @@ describe("token-network.ts", () => {
     });
 
     it("adiciona Accept header para endpoint customizado", async () => {
-      (global.fetch as vi.Mock).mockResolvedValue({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ access_token: "token123", expires_in: 3600 }),
       });
 
       await executeOAuthRequest("https://api.example.com/index/token", "basicAuth", new URLSearchParams());
 
-      const call = (global.fetch as vi.Mock).mock.calls[0];
+      const call = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(call[1].headers.Accept).toBe("application/json");
     });
   });

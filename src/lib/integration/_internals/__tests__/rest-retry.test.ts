@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   exponentialBackoffWithJitter,
   fetchRowsFromFirstPath,
@@ -54,7 +54,7 @@ describe("rest-retry.ts", () => {
         .mockResolvedValueOnce([{ id: "1" }])
         .mockResolvedValueOnce([{ id: "2" }]);
 
-      const result = await fetchRowsFromFirstPath(["/a", "/b", "/c"], get, () => [{ fallback: true }]);
+      const result = await fetchRowsFromFirstPath(["/a", "/b", "/c"], get, () => [{ fallback: "true" }]);
 
       expect(result).toEqual([{ id: "1" }]);
       expect(get).toHaveBeenCalledTimes(2);
@@ -66,9 +66,9 @@ describe("rest-retry.ts", () => {
         .mockRejectedValueOnce(error404)
         .mockRejectedValueOnce(error404);
 
-      const result = await fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: true }]);
+      const result = await fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: "true" }]);
 
-      expect(result).toEqual([{ fallback: true }]);
+      expect(result).toEqual([{ fallback: "true" }]);
     });
 
     it("propaga erro não-404", async () => {
@@ -76,7 +76,7 @@ describe("rest-retry.ts", () => {
       const get = vi.fn().mockRejectedValueOnce(error500);
 
       await expect(
-        fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: true }])
+        fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: "true" }])
       ).rejects.toThrow("500 Internal Server Error");
     });
 
@@ -85,7 +85,7 @@ describe("rest-retry.ts", () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
-      const result = await fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: true }]);
+      const result = await fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: "true" }]);
 
       expect(result).toEqual([]);
     });
@@ -96,7 +96,7 @@ describe("rest-retry.ts", () => {
         .mockRejectedValueOnce(error404)
         .mockResolvedValueOnce([{ id: "1" }]);
 
-      const result = await fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: true }]);
+      const result = await fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: "true" }]);
 
       expect(result).toEqual([{ id: "1" }]);
     });
@@ -109,7 +109,7 @@ describe("rest-retry.ts", () => {
         .mockRejectedValueOnce(error500);
 
       await expect(
-        fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: true }])
+        fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: "true" }])
       ).rejects.toThrow("500 Internal Server Error");
     });
   });
@@ -216,7 +216,7 @@ describe("rest-retry.ts", () => {
   describe("executeFetch", () => {
     it("faz fetch com headers corretos", async () => {
       const mockResponse = { ok: true, json: () => Promise.resolve({}) };
-      (global.fetch as vi.Mock).mockResolvedValue(mockResponse);
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       const result = await executeFetch("https://api.example.com", "Bearer token", "/test");
 
@@ -234,7 +234,7 @@ describe("rest-retry.ts", () => {
     });
 
     it("lança ProtheusClientError quando fetch falha", async () => {
-      (global.fetch as vi.Mock).mockRejectedValue(new Error("network error"));
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
 
       await expect(
         executeFetch("https://api.example.com", "Bearer token", "/test")
@@ -242,7 +242,7 @@ describe("rest-retry.ts", () => {
     });
 
     it("lança ProtheusClientError quando resposta é undefined", async () => {
-      (global.fetch as vi.Mock).mockResolvedValue(undefined);
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
       await expect(
         executeFetch("https://api.example.com", "Bearer token", "/test")

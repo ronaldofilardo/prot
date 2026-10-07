@@ -59,6 +59,7 @@ const mockConfig: ProtheusRestConfig = {
   baseUrl: "https://api.example.com",
   empresaId: "emp-01",
   filial: "01",
+  authMode: "basic",
   paths: {
     empresa: "/api/empresa",
     clientes: "/api/clientes",
@@ -66,7 +67,6 @@ const mockConfig: ProtheusRestConfig = {
     contasReceber: "/api/contas-receber",
     baixas: "/api/baixas",
     saldosContabeis: "/api/saldos",
-    filiais: "/api/filiais",
   },
 };
 
@@ -113,7 +113,7 @@ describe("rest-entity-fetchers.ts", () => {
     it("usa string vazia para chaves ausentes", () => {
       const rows = [
         { A1_COD: "001", A1_LOJA: "01" },
-        { A1_COD: "001" }, // sem A1_LOJA
+        { A1_COD: "001", A1_LOJA: "" }, // sem A1_LOJA
       ];
       const result = mergeAndDedupe(rows, ["A1_COD", "A1_LOJA"]);
       expect(result).toHaveLength(2); // chaves diferentes: "001|01" vs "001|"
@@ -123,7 +123,7 @@ describe("rest-entity-fetchers.ts", () => {
   describe("fetchEmpresa", () => {
     it("retorna empresa mapeada quando encontra linhas", async () => {
       const { fetchFirstNonEmptyOrThrow } = await import("../rest-retry");
-      (fetchFirstNonEmptyOrThrow as vi.Mock).mockResolvedValue([{ id: "1" }]);
+      (fetchFirstNonEmptyOrThrow as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: "1" }]);
 
       const result = await fetchEmpresa(mockConfig, undefined, vi.fn());
 
@@ -133,7 +133,7 @@ describe("rest-entity-fetchers.ts", () => {
 
     it("retorna null quando não encontra linhas", async () => {
       const { fetchFirstNonEmptyOrThrow } = await import("../rest-retry");
-      (fetchFirstNonEmptyOrThrow as vi.Mock).mockResolvedValue(null);
+      (fetchFirstNonEmptyOrThrow as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
       const result = await fetchEmpresa(mockConfig, undefined, vi.fn());
 
@@ -142,7 +142,7 @@ describe("rest-entity-fetchers.ts", () => {
 
     it("usa customPath quando fornecido", async () => {
       const { fetchFirstNonEmptyOrThrow } = await import("../rest-retry");
-      (fetchFirstNonEmptyOrThrow as vi.Mock).mockResolvedValue([{ id: "1" }]);
+      (fetchFirstNonEmptyOrThrow as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: "1" }]);
       const { buildCandidatePaths } = await import("../rest-paths");
 
       await fetchEmpresa(mockConfig, "/custom/empresa", vi.fn());
@@ -153,7 +153,7 @@ describe("rest-entity-fetchers.ts", () => {
     it("inclui path do env quando disponível", async () => {
       process.env.PROTHEUS_REST_EMPRESA_PATH = "/env/empresa";
       const { fetchFirstNonEmptyOrThrow } = await import("../rest-retry");
-      (fetchFirstNonEmptyOrThrow as vi.Mock).mockResolvedValue([{ id: "1" }]);
+      (fetchFirstNonEmptyOrThrow as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: "1" }]);
       const { buildCandidatePaths } = await import("../rest-paths");
 
       await fetchEmpresa(mockConfig, undefined, vi.fn());
@@ -165,7 +165,7 @@ describe("rest-entity-fetchers.ts", () => {
   describe("fetchFiliais", () => {
     it("retorna filiais mapeadas quando encontra linhas", async () => {
       const { fetchFirstNonEmptySwallowingErrors } = await import("../rest-retry");
-      (fetchFirstNonEmptySwallowingErrors as vi.Mock).mockResolvedValue([{ id: "1" }, { id: "2" }]);
+      (fetchFirstNonEmptySwallowingErrors as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: "1" }, { id: "2" }]);
 
       const result = await fetchFiliais(mockConfig, undefined, vi.fn());
 
@@ -176,7 +176,7 @@ describe("rest-entity-fetchers.ts", () => {
 
     it("retorna fallback quando não encontra linhas", async () => {
       const { fetchFirstNonEmptySwallowingErrors } = await import("../rest-retry");
-      (fetchFirstNonEmptySwallowingErrors as vi.Mock).mockResolvedValue(null);
+      (fetchFirstNonEmptySwallowingErrors as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
       const result = await fetchFiliais(mockConfig, undefined, vi.fn());
 
@@ -186,7 +186,7 @@ describe("rest-entity-fetchers.ts", () => {
 
     it("retorna fallback quando array vazio", async () => {
       const { fetchFirstNonEmptySwallowingErrors } = await import("../rest-retry");
-      (fetchFirstNonEmptySwallowingErrors as vi.Mock).mockResolvedValue([]);
+      (fetchFirstNonEmptySwallowingErrors as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
       const result = await fetchFiliais(mockConfig, undefined, vi.fn());
 
@@ -195,7 +195,7 @@ describe("rest-entity-fetchers.ts", () => {
 
     it("remove duplicatas de filiais", async () => {
       const { fetchFirstNonEmptySwallowingErrors } = await import("../rest-retry");
-      (fetchFirstNonEmptySwallowingErrors as vi.Mock).mockResolvedValue([{ id: "1" }, { id: "1" }]);
+      (fetchFirstNonEmptySwallowingErrors as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: "1" }, { id: "1" }]);
 
       const result = await fetchFiliais(mockConfig, undefined, vi.fn());
 
@@ -205,7 +205,7 @@ describe("rest-entity-fetchers.ts", () => {
     it("usa customPath quando fornecido", async () => {
       const { buildCandidatePaths } = await import("../rest-paths");
       const { fetchFirstNonEmptySwallowingErrors } = await import("../rest-retry");
-      (fetchFirstNonEmptySwallowingErrors as vi.Mock).mockResolvedValue([{ id: "1" }]);
+      (fetchFirstNonEmptySwallowingErrors as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: "1" }]);
 
       await fetchFiliais(mockConfig, "/custom/filiais", vi.fn());
 
@@ -216,7 +216,7 @@ describe("rest-entity-fetchers.ts", () => {
   describe("fetchClientes", () => {
     it("retorna clientes deduplicados", async () => {
       const { fetchRowsFromFirstPath } = await import("../rest-retry");
-      (fetchRowsFromFirstPath as vi.Mock).mockResolvedValue([
+      (fetchRowsFromFirstPath as ReturnType<typeof vi.fn>).mockResolvedValue([
         { A1_COD: "001", A1_LOJA: "01", A1_NOME: "A" },
         { A1_COD: "001", A1_LOJA: "01", A1_NOME: "B" }, // duplicata
       ]);
@@ -229,7 +229,7 @@ describe("rest-entity-fetchers.ts", () => {
 
     it("usa fallback quando todas paths falham", async () => {
       const { fetchRowsFromFirstPath } = await import("../rest-retry");
-      (fetchRowsFromFirstPath as vi.Mock).mockResolvedValue([{ A1_COD: "001", A1_LOJA: "01" }]);
+      (fetchRowsFromFirstPath as ReturnType<typeof vi.fn>).mockResolvedValue([{ A1_COD: "001", A1_LOJA: "01" }]);
 
       const result = await fetchClientes(mockConfig, undefined, vi.fn());
 
@@ -239,7 +239,7 @@ describe("rest-entity-fetchers.ts", () => {
     it("usa customPath quando fornecido", async () => {
       const { buildCandidatePaths } = await import("../rest-paths");
       const { fetchRowsFromFirstPath } = await import("../rest-retry");
-      (fetchRowsFromFirstPath as vi.Mock).mockResolvedValue([{ A1_COD: "001", A1_LOJA: "01" }]);
+      (fetchRowsFromFirstPath as ReturnType<typeof vi.fn>).mockResolvedValue([{ A1_COD: "001", A1_LOJA: "01" }]);
 
       await fetchClientes(mockConfig, "/custom/clientes", vi.fn());
 
@@ -250,7 +250,7 @@ describe("rest-entity-fetchers.ts", () => {
   describe("fetchFaturamentos", () => {
     it("retorna faturamentos deduplicados", async () => {
       const { fetchRowsFromFirstPath } = await import("../rest-retry");
-      (fetchRowsFromFirstPath as vi.Mock).mockResolvedValue([
+      (fetchRowsFromFirstPath as ReturnType<typeof vi.fn>).mockResolvedValue([
         { F2_DOC: "001", F2_SERIE: "1", F2_CLIENTE: "001", F2_LOJA: "01" },
         { F2_DOC: "001", F2_SERIE: "1", F2_CLIENTE: "001", F2_LOJA: "01" }, // duplicata
       ]);
@@ -263,7 +263,7 @@ describe("rest-entity-fetchers.ts", () => {
     it("usa customPath quando fornecido", async () => {
       const { buildCandidatePaths } = await import("../rest-paths");
       const { fetchRowsFromFirstPath } = await import("../rest-retry");
-      (fetchRowsFromFirstPath as vi.Mock).mockResolvedValue([{ F2_DOC: "001", F2_SERIE: "1", F2_CLIENTE: "001", F2_LOJA: "01" }]);
+      (fetchRowsFromFirstPath as ReturnType<typeof vi.fn>).mockResolvedValue([{ F2_DOC: "001", F2_SERIE: "1", F2_CLIENTE: "001", F2_LOJA: "01" }]);
 
       await fetchFaturamentos(mockConfig, "/custom/faturamentos", vi.fn());
 
@@ -274,7 +274,7 @@ describe("rest-entity-fetchers.ts", () => {
   describe("fetchContasReceber", () => {
     it("retorna contas a receber deduplicadas", async () => {
       const { fetchRowsFromFirstPath } = await import("../rest-retry");
-      (fetchRowsFromFirstPath as vi.Mock).mockResolvedValue([
+      (fetchRowsFromFirstPath as ReturnType<typeof vi.fn>).mockResolvedValue([
         { E1_PREFIXO: "1", E1_NUM: "001", E1_PARCELA: "1", E1_CLIENTE: "001", E1_LOJA: "01" },
         { E1_PREFIXO: "1", E1_NUM: "001", E1_PARCELA: "1", E1_CLIENTE: "001", E1_LOJA: "01" }, // duplicata
       ]);
@@ -287,7 +287,7 @@ describe("rest-entity-fetchers.ts", () => {
     it("usa customPath quando fornecido", async () => {
       const { buildCandidatePaths } = await import("../rest-paths");
       const { fetchRowsFromFirstPath } = await import("../rest-retry");
-      (fetchRowsFromFirstPath as vi.Mock).mockResolvedValue([{ E1_PREFIXO: "1", E1_NUM: "001", E1_PARCELA: "1", E1_CLIENTE: "001", E1_LOJA: "01" }]);
+      (fetchRowsFromFirstPath as ReturnType<typeof vi.fn>).mockResolvedValue([{ E1_PREFIXO: "1", E1_NUM: "001", E1_PARCELA: "1", E1_CLIENTE: "001", E1_LOJA: "01" }]);
 
       await fetchContasReceber(mockConfig, "/custom/contas-receber", vi.fn());
 
@@ -298,7 +298,7 @@ describe("rest-entity-fetchers.ts", () => {
   describe("fetchBaixas", () => {
     it("retorna baixas deduplicadas", async () => {
       const { fetchRowsFromFirstPath } = await import("../rest-retry");
-      (fetchRowsFromFirstPath as vi.Mock).mockResolvedValue([
+      (fetchRowsFromFirstPath as ReturnType<typeof vi.fn>).mockResolvedValue([
         { E5_PREFIXO: "1", E5_NUM: "001", E5_PARCELA: "1", E5_CLIENTE: "001", E5_LOJA: "01", E5_SEQ: "1" },
         { E5_PREFIXO: "1", E5_NUM: "001", E5_PARCELA: "1", E5_CLIENTE: "001", E5_LOJA: "01", E5_SEQ: "1" }, // duplicata
       ]);
@@ -310,7 +310,7 @@ describe("rest-entity-fetchers.ts", () => {
 
     it("usa fallback vazio quando todas paths falham", async () => {
       const { fetchRowsFromFirstPath } = await import("../rest-retry");
-      (fetchRowsFromFirstPath as vi.Mock).mockResolvedValue([]);
+      (fetchRowsFromFirstPath as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
       const result = await fetchBaixas(mockConfig, undefined, vi.fn());
 
@@ -321,7 +321,7 @@ describe("rest-entity-fetchers.ts", () => {
   describe("fetchSaldosContabeis", () => {
     it("retorna saldos contábeis deduplicados", async () => {
       const { fetchRowsFromFirstPath } = await import("../rest-retry");
-      (fetchRowsFromFirstPath as vi.Mock).mockResolvedValue([
+      (fetchRowsFromFirstPath as ReturnType<typeof vi.fn>).mockResolvedValue([
         { CQ_FILIAL: "01", CQ_CONTA: "1000", CQ_MES: "01", CQ_ANO: "2024", CQ_DATA: "20240131" },
         { CQ_FILIAL: "01", CQ_CONTA: "1000", CQ_MES: "01", CQ_ANO: "2024", CQ_DATA: "20240131" }, // duplicata
       ]);
@@ -333,7 +333,7 @@ describe("rest-entity-fetchers.ts", () => {
 
     it("usa fallback vazio quando todas paths falham", async () => {
       const { fetchRowsFromFirstPath } = await import("../rest-retry");
-      (fetchRowsFromFirstPath as vi.Mock).mockResolvedValue([]);
+      (fetchRowsFromFirstPath as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
       const result = await fetchSaldosContabeis(mockConfig, undefined, vi.fn());
 

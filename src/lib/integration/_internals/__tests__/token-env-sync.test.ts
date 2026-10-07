@@ -25,10 +25,10 @@ describe("token-env-sync.ts", () => {
     vi.clearAllMocks();
     clearMemoryToken();
     vi.unstubAllEnvs();
-    delete process.env.NODE_ENV;
-    delete process.env.VITEST;
-    delete process.env.PROTHEUS_REST_ACCESS_TOKEN;
-    delete process.env.PROTHEUS_REST_REFRESH_TOKEN;
+    vi.stubEnv("NODE_ENV", "");
+    vi.stubEnv("VITEST", "");
+    vi.stubEnv("PROTHEUS_REST_ACCESS_TOKEN", "");
+    vi.stubEnv("PROTHEUS_REST_REFRESH_TOKEN", "");
   });
 
   afterEach(() => {
@@ -107,7 +107,7 @@ describe("token-env-sync.ts", () => {
     });
 
     it("não sincroniza .env em ambiente de teste (NODE_ENV=test)", () => {
-      process.env.NODE_ENV = "test";
+      vi.stubEnv("NODE_ENV", "test");
       const expiresAt = new Date(Date.now() + 3600000);
       setMemoryToken("test-token", expiresAt);
 
@@ -116,7 +116,7 @@ describe("token-env-sync.ts", () => {
     });
 
     it("não sincroniza .env em ambiente de teste (VITEST)", () => {
-      process.env.VITEST = "true";
+      vi.stubEnv("VITEST", "true");
       const expiresAt = new Date(Date.now() + 3600000);
       setMemoryToken("test-token", expiresAt);
 
@@ -125,7 +125,7 @@ describe("token-env-sync.ts", () => {
     });
 
     it("não sincroniza .env quando accessToken é vazio", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       const expiresAt = new Date(Date.now() + 3600000);
       setMemoryToken("", expiresAt);
 
@@ -134,7 +134,7 @@ describe("token-env-sync.ts", () => {
     });
 
     it("não sincroniza .env quando accessToken contém JWT auto-renovado", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       const expiresAt = new Date(Date.now() + 3600000);
       setMemoryToken("sig_totvs_fwjwt_auto_renew_abc", expiresAt);
 
@@ -143,7 +143,7 @@ describe("token-env-sync.ts", () => {
     });
 
     it("sincroniza .env em produção com token válido", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       const { existsSync } = require("fs");
       const { readFileSync } = require("fs");
       const { writeFileSync } = require("fs");
@@ -162,7 +162,7 @@ describe("token-env-sync.ts", () => {
     });
 
     it("sincroniza .env sem refreshToken", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       const { existsSync } = require("fs");
       const { readFileSync } = require("fs");
       const { writeFileSync } = require("fs");
@@ -181,7 +181,7 @@ describe("token-env-sync.ts", () => {
     });
 
     it("não falha quando .env não existe", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       const { existsSync } = require("fs");
       existsSync.mockReturnValue(false);
 
@@ -190,7 +190,7 @@ describe("token-env-sync.ts", () => {
     });
 
     it("não falha quando fs.writeFileSync lança erro", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       const { existsSync } = require("fs");
       const { readFileSync } = require("fs");
       const { writeFileSync } = require("fs");
@@ -204,7 +204,7 @@ describe("token-env-sync.ts", () => {
     });
 
     it("loga sucesso ao atualizar .env", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       const { existsSync } = require("fs");
       const { readFileSync } = require("fs");
       const { writeFileSync } = require("fs");

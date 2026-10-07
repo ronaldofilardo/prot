@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildAuthHeader } from "../rest-auth";
 import { ProtheusClientError } from "../../protheus-client";
-import type { ProtheusRestConfig } from "../../rest-types";
+import type { ProtheusRestConfig } from "../rest-types";
 
 vi.mock("../../protheus-token-provider", () => ({
   protheusTokenProvider: {
@@ -17,6 +17,7 @@ describe("rest-auth.ts", () => {
     authMode: "basic",
     username: "user",
     password: "pass",
+    paths: {},
   };
 
   describe("buildAuthHeader", () => {

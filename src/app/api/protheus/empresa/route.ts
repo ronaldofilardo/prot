@@ -33,6 +33,7 @@ export async function GET(req: Request) {
         empresaProtheus: view.empresaProtheus,
         tokenInfo: view.tokenInfo,
         filiais: view.filiais && view.filiais.length > 0 ? view.filiais : view.filiaisPadrao,
+        filiaisInfo: view.filiaisInfo,
         error: view.protheusError,
       });
     }
@@ -42,6 +43,7 @@ export async function GET(req: Request) {
       empresaProtheus: view.empresaProtheus,
       tokenInfo: view.tokenInfo,
       filiais: view.filiais,
+      filiaisInfo: view.filiaisInfo,
     });
   } catch (error) {
     logApiError("Erro interno no endpoint de dados da empresa", error);

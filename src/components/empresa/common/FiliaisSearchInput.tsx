@@ -20,7 +20,7 @@ export function FiliaisSearchInput({ busca, setBusca, filiais, filtrados }: Fili
           type="text"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder="Filtrar clientes por nome, código ou CNPJ..."
+          placeholder="Filtrar filiais por nome, código, cidade ou CNPJ..."
           className="w-full text-xs pl-8 pr-8 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
         {busca && (
@@ -30,7 +30,7 @@ export function FiliaisSearchInput({ busca, setBusca, filiais, filtrados }: Fili
         )}
       </div>
       <span className="text-[11px] text-slate-400">
-        Exibindo {filtrados.length} de {filiais.length} clientes
+        Exibindo {filtrados.length} de {filiais.length} filiais
       </span>
     </div>
   );

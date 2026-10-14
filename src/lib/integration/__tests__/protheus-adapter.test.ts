@@ -193,7 +193,6 @@ describe("protheus-adapter — caracterização (linha Protheus → Canonical)",
 
     it("usa paymentBranch '01' e data atual quando campos de baixa estão ausentes", () => {
       const result = csvRowToCanonicalBaixa({ E5_BAIXA: "20261" }, "empresa-01");
-
       expect(result.paymentBranch).toBe("01");
       expect(result.paymentDate).toBe(AGORA);
       expect(result.amount).toBe(0);
@@ -215,7 +214,6 @@ describe("protheus-adapter — caracterização (linha Protheus → Canonical)",
         },
         "empresa-01"
       );
-
       expect(result).toEqual({
         externalId: "empresa-01-SC-01-1101-2026-01",
         company: "empresa-01",

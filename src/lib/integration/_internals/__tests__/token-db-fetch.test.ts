@@ -11,10 +11,14 @@ vi.mock("@/lib/utils/logger", () => ({
   logIntegration: vi.fn(),
 }));
 
-vi.mock("../token-network", () => ({
-  executeOAuthRequest: vi.fn(),
-  resolveTokenUrl: vi.fn((url) => `${url}/token`),
-}));
+vi.mock("../token-network", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../token-network")>();
+  return {
+    ...actual,
+    executeOAuthRequest: vi.fn(),
+    resolveTokenUrl: vi.fn((url) => `${url}/token`),
+  };
+});
 
 vi.mock("../token-generator", () => ({
   createProtheusJwt: vi.fn(() => ({

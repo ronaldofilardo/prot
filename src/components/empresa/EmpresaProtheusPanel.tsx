@@ -56,6 +56,7 @@ export function EmpresaProtheusPanel() {
     empresaProtheus,
     tokenInfo,
     filiais,
+    filiaisInfo,
     loading,
     salvando,
     error,
@@ -74,7 +75,7 @@ export function EmpresaProtheusPanel() {
       <ProtheusCredenciaisCard onSuccess={buscarDadosProtheus} />
       <MensagensPainel success={success} error={error} temProtheus={Boolean(empresaProtheus)} />
       <DadosEmpresa dadosExibicao={dadosExibicao} filiais={filiais} tokenInfo={tokenInfo} />
-      <EmpresaFiliaisCard filiais={filiais} loading={loading} />
+      <EmpresaFiliaisCard filiais={filiais} filiaisInfo={filiaisInfo} loading={loading} />
       <SyncBannerConditional temDivergencia={temDivergencia} salvando={salvando} onSalvar={sincronizarComProtheus} empresaProtheusNome={empresaProtheus?.nome} />
     </div>
   );

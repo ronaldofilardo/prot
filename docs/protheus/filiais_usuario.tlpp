@@ -1,0 +1,103 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+/*
+ * ESQUELETO - NAO VALIDADO NO AMBIENTE. Revisar/compilar por quem administra o Protheus.
+ *
+ * Endpoint: GET /rest/api/lc1/v1/filiais        (rota publicada: /api/lc1/v1/filiais)
+ * Objetivo : devolver as filiais (SM0) que o USUARIO LOGADO (dono do token OAuth2) pode acessar.
+ * Consumidor: sistema OMNI (somente leitura). Autenticacao: Bearer JWT padrao do REST Protheus.
+ *
+ * Contrato de resposta (JSON):
+ * {
+ *   "hasNext": false,                       <- OBRIGATORIO e false (o consumidor pagina enquanto true)
+ *   "items": [
+ *     { "M0_CODIGO":"01", "M0_CODFIL":"0101", "M0_FILIAL":"MATRIZ",
+ *       "M0_NOME":"LC1", "M0_NOMECOM":"LC1 CONTADORES LTDA", "M0_CGC":"11222333000181",
+ *       "M0_CIDENT":"CURITIBA", "M0_ESTENT":"PR" }
+ *   ]
+ * }
+ *
+ * O consumidor tambem envia (e pode ignorar): page, pagesize, empresa, filial, login.
+ *
+ * PONTOS A VALIDAR PELO DESENVOLVEDOR (marcados com [VALIDAR]):
+ *  - assinatura/retorno de FWAllGrpCompany, FWAllFilial e FWSM0Util():GetSM0Data na release em uso;
+ *  - como obter o codigo do usuario logado no contexto REST;
+ *  - a regra real de acesso do usuario a empresas/filiais (UserPodeAcessar).
+ */
+
+@Get("/api/lc1/v1/filiais")
+function u_lc1FiliaisUsuario()
+    local jResp    := JsonObject():New()
+    local aItems   := {}
+    local cUserId  := ""
+    local aGrupos  := {}
+    local aFiliais := {}
+    local cGrupo   := ""
+    local cFilial  := ""
+    local nG       := 0
+    local nF       := 0
+
+    oRest:setKeyHeaderResponse("Content-Type", "application/json; charset=utf-8")
+
+    begin sequence
+        cUserId := RetCodUsr()                  // [VALIDAR] usuario do token no contexto REST
+
+        if Empty(cUserId)
+            oRest:setStatusCode(401)
+            jResp["message"] := "Usuario nao identificado"
+            oRest:setResponse(jResp:toJson())
+            break
+        endif
+
+        aGrupos := FWAllGrpCompany()            // [VALIDAR] grupos de empresa cadastrados
+
+        for nG := 1 to Len(aGrupos)
+            cGrupo   := aGrupos[nG]
+            aFiliais := FWAllFilial(cGrupo)     // [VALIDAR] filiais do grupo
+
+            for nF := 1 to Len(aFiliais)
+                cFilial := aFiliais[nF]
+
+                if UserPodeAcessar(cUserId, cGrupo, cFilial)
+                    aAdd(aItems, MontaItem(cGrupo, cFilial))
+                endif
+            next nF
+        next nG
+
+        jResp["hasNext"] := .F.
+        jResp["items"]   := aItems
+        oRest:setStatusCode(200)
+        oRest:setResponse(jResp:toJson())
+    recover
+        oRest:setStatusCode(500)
+        jResp["message"] := "Erro ao consultar filiais"
+        oRest:setResponse(jResp:toJson())
+    end sequence
+return .T.
+
+/* Regra de acesso. Falha FECHADA: sem regra implementada, so o administrador ve tudo. */
+static function UserPodeAcessar(cUserId, cGrupo, cFilial)
+    // Administrador (000000) tem acesso a todas as empresas/filiais.
+    if cUserId == "000000"
+        return .T.
+    endif
+
+    // [VALIDAR] Implementar com a API oficial da release para os acessos de empresa/filial
+    // do usuario (cadastro de usuarios, SIGACFG). Enquanto nao implementado, NEGA por seguranca.
+return .F.
+
+static function MontaItem(cGrupo, cFilial)
+    local jItem   := JsonObject():New()
+    local aCampos := {"M0_FILIAL", "M0_NOME", "M0_NOMECOM", "M0_CGC", "M0_CIDENT", "M0_ESTENT"}
+    local aDados  := {}
+    local nI      := 0
+
+    aDados := FWSM0Util():GetSM0Data(cGrupo, cFilial, aCampos)   // [VALIDAR] retorno {{campo, valor}, ...}
+
+    jItem["M0_CODIGO"] := cGrupo
+    jItem["M0_CODFIL"] := cFilial
+    for nI := 1 to Len(aDados)
+        jItem[aDados[nI][1]] := AllTrim(cValToChar(aDados[nI][2]))
+    next nI
+return jItem

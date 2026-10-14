@@ -9,8 +9,10 @@ import {
   syncFaturamentos,
   syncContasReceber,
   syncBaixas,
+  syncItensVenda,
   type SyncResult,
 } from "@/lib/integration/sync-engine";
+import { csvRowToCanonicalItemVenda } from "@/lib/integration/_internals/adapter-itens-venda";
 import type { PrismaClient } from "@prisma/client";
 
 type SyncFn = (tx: PrismaClient, empresaId: string, registros: unknown[]) => Promise<SyncResult>;
@@ -46,6 +48,12 @@ const ENTITY_DETECTORS: EntityDetector[] = [
     detect: (h) => h.includes("E5_PREFIXO") && h.includes("E5_VALOR"),
     toCanonical: (r, e) => csvRowToCanonicalBaixa(r, e),
     sync: syncBaixas as SyncFn,
+  },
+  {
+    entidade: "ItemVenda",
+    detect: (h) => h.includes("D2_DOC") && (h.includes("D2_CUSTO1") || h.includes("D2_TOTAL")),
+    toCanonical: (r, e) => csvRowToCanonicalItemVenda(r, e),
+    sync: syncItensVenda as SyncFn,
   },
 ];
 

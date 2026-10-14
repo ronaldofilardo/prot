@@ -27,10 +27,10 @@ interface FilterFieldsProps {
 function ClienteDatalist({ clientes }: { clientes: ClienteItem[] }) {
   return (
     <datalist id="clientes-datalist">
-      {clientes.map((c) => {
+      {clientes.map((c, idx) => {
         const detalhe = c.cidade ? `— ${c.cidade}${c.estado ? `/${c.estado}` : ""}` : "";
         return (
-          <option key={c.id} value={c.nome}>
+          <option key={`${c.id}-${idx}`} value={c.nome}>
             {c.codigo ? `Cód: ${c.codigo} ` : ""}{detalhe}
           </option>
         );

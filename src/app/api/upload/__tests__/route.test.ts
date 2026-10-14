@@ -10,6 +10,7 @@ const {
   syncFaturamentosMock,
   syncContasReceberMock,
   syncBaixasMock,
+  syncItensVendaMock,
   logApiErrorMock,
 } = vi.hoisted(() => ({
   getServerSessionMock: vi.fn(),
@@ -19,6 +20,7 @@ const {
   syncFaturamentosMock: vi.fn(),
   syncContasReceberMock: vi.fn(),
   syncBaixasMock: vi.fn(),
+  syncItensVendaMock: vi.fn(),
   logApiErrorMock: vi.fn(),
 }));
 
@@ -32,6 +34,7 @@ vi.mock("@/lib/integration/sync-engine", () => ({
   syncFaturamentos: syncFaturamentosMock,
   syncContasReceber: syncContasReceberMock,
   syncBaixas: syncBaixasMock,
+  syncItensVenda: syncItensVendaMock,
 }));
 vi.mock("@/lib/utils/logger", () => ({ logApiError: logApiErrorMock }));
 

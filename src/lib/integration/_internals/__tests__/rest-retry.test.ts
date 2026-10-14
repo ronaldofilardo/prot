@@ -235,7 +235,6 @@ describe("rest-retry.ts", () => {
 
     it("lança ProtheusClientError quando fetch falha", async () => {
       (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
-
       await expect(
         executeFetch("https://api.example.com", "Bearer token", "/test")
       ).rejects.toThrow(ProtheusClientError);
@@ -243,7 +242,6 @@ describe("rest-retry.ts", () => {
 
     it("lança ProtheusClientError quando resposta é undefined", async () => {
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
-
       await expect(
         executeFetch("https://api.example.com", "Bearer token", "/test")
       ).rejects.toThrow(ProtheusClientError);

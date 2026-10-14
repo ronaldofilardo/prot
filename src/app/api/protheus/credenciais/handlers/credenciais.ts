@@ -92,7 +92,7 @@ export async function getCredenciaisStatus(empresaId: string) {
 
 async function salvarTokenManual(empresaId: string, token: string, baseUrl: string) {
   const expDate = parseJwtExpiry(token);
-  const expiresAt = expDate && expDate.getTime() > Date.now() ? expDate : new Date(Date.now() + 86400 * 1000);
+  const expiresAt = expDate ?? new Date(Date.now() + 86400 * 1000);
 
   await prisma.protheusCredencial.update({
     where: { empresaId },

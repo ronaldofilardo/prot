@@ -35,6 +35,15 @@ export function setMemoryToken(accessToken: string, expiresAt: Date, refreshToke
   syncLocalEnvFile(accessToken, refreshToken);
 }
 
+/** Substitui a variavel se ja existir no .env; senao, acrescenta ao final. */
+function upsertEnvVar(content: string, nome: string, valor: string): string {
+  const linha = `${nome}="${valor}"`;
+  const regex = new RegExp(`^${nome}=.*$`, "m");
+  if (regex.test(content)) return content.replace(regex, () => linha);
+  const separador = content.length === 0 || content.endsWith("\n") ? "" : "\n";
+  return `${content}${separador}${linha}\n`;
+}
+
 function syncLocalEnvFile(accessToken: string, refreshToken?: string): void {
   try {
     if (process.env.NODE_ENV === "test" || process.env.VITEST) return;
@@ -43,10 +52,8 @@ function syncLocalEnvFile(accessToken: string, refreshToken?: string): void {
     if (!fs.existsSync(envPath)) return;
     let content = fs.readFileSync(envPath, "utf-8");
 
-    content = content.replace(/^PROTHEUS_REST_ACCESS_TOKEN=.*$/m, `PROTHEUS_REST_ACCESS_TOKEN="${accessToken}"`);
-    if (refreshToken) {
-      content = content.replace(/^PROTHEUS_REST_REFRESH_TOKEN=.*$/m, `PROTHEUS_REST_REFRESH_TOKEN="${refreshToken}"`);
-    }
+    content = upsertEnvVar(content, "PROTHEUS_REST_ACCESS_TOKEN", accessToken);
+    if (refreshToken) content = upsertEnvVar(content, "PROTHEUS_REST_REFRESH_TOKEN", refreshToken);
     fs.writeFileSync(envPath, content, "utf-8");
     logIntegration("Arquivo .env atualizado com novos tokens Protheus", { expiraEm: memoryState.expiresAt });
   } catch {

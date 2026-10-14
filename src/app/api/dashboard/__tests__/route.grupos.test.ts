@@ -243,9 +243,7 @@ describe("API /api/dashboard GET (route.ts) — escopo de empresas e grupos", ()
       filiais: [],
       matriz: null,
     });
-
     await GET(new Request("http://localhost/api/dashboard"));
-
     expect(buildGruposEmpresaMock).toHaveBeenCalledWith([]);
   });
 });

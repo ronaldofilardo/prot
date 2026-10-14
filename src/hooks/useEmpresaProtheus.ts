@@ -1,14 +1,15 @@
 import { useState, useCallback, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { EmpresaDados, TokenStatusInfo, ProtheusFilialInfo } from "./empresa-protheus-types";
+import type { EmpresaDados, TokenStatusInfo, ProtheusFilialInfo, FiliaisInfo } from "./empresa-protheus-types";
 
-export type { EmpresaDados, TokenStatusInfo, ProtheusFilialInfo } from "./empresa-protheus-types";
+export type { EmpresaDados, TokenStatusInfo, ProtheusFilialInfo, FiliaisInfo } from "./empresa-protheus-types";
 
 type EmpresaCarga = {
   setEmpresaAtual: Dispatch<SetStateAction<EmpresaDados | null>>;
   setEmpresaProtheus: Dispatch<SetStateAction<EmpresaDados | null>>;
   setTokenInfo: Dispatch<SetStateAction<TokenStatusInfo | null>>;
   setFiliais: Dispatch<SetStateAction<ProtheusFilialInfo[]>>;
+  setFiliaisInfo: Dispatch<SetStateAction<FiliaisInfo | null>>;
   setError: Dispatch<SetStateAction<string | null>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
 };
@@ -33,6 +34,7 @@ async function carregarEmpresaApi(s: EmpresaCarga, customPath?: string): Promise
     if (json.empresaProtheus) s.setEmpresaProtheus(json.empresaProtheus);
     if (json.tokenInfo) s.setTokenInfo(json.tokenInfo);
     if (json.filiais) s.setFiliais(json.filiais);
+    if (json.filiaisInfo) s.setFiliaisInfo(json.filiaisInfo);
     if (!json.success && json.error) s.setError(json.error);
   } catch {
     s.setError("Falha de comunicacao com o servidor");
@@ -71,14 +73,15 @@ export function useEmpresaProtheus() {
   const [empresaProtheus, setEmpresaProtheus] = useState<EmpresaDados | null>(null);
   const [tokenInfo, setTokenInfo] = useState<TokenStatusInfo | null>(null);
   const [filiais, setFiliais] = useState<ProtheusFilialInfo[]>([]);
+  const [filiaisInfo, setFiliaisInfo] = useState<FiliaisInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const buscarDadosProtheus = useCallback(
-    (customPath?: string) => carregarEmpresaApi({ setEmpresaAtual, setEmpresaProtheus, setTokenInfo, setFiliais, setError, setLoading }, customPath),
-    [setEmpresaAtual, setEmpresaProtheus, setTokenInfo, setFiliais, setError, setLoading]
+    (customPath?: string) => carregarEmpresaApi({ setEmpresaAtual, setEmpresaProtheus, setTokenInfo, setFiliais, setFiliaisInfo, setError, setLoading }, customPath),
+    [setEmpresaAtual, setEmpresaProtheus, setTokenInfo, setFiliais, setFiliaisInfo, setError, setLoading]
   );
 
   useEffect(() => {
@@ -92,7 +95,7 @@ export function useEmpresaProtheus() {
     sincronizarEmpresaApi({ setSalvando, setError, setSuccess, setEmpresaAtual }, empresaProtheus);
 
   return {
-    empresaAtual, empresaProtheus, tokenInfo, filiais, loading, salvando, error, success,
+    empresaAtual, empresaProtheus, tokenInfo, filiais, filiaisInfo, loading, salvando, error, success,
     buscarDadosProtheus, sincronizarComProtheus,
   };
 }

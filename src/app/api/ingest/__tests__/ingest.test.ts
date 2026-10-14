@@ -19,10 +19,12 @@ vi.mock("@/lib/integration/sync-engine", () => ({
   syncContasReceber: vi.fn(),
   syncBaixas: vi.fn(),
   syncSaldosContabeis: vi.fn(),
+  syncItensVenda: vi.fn(),
   parseClienteExternalId: vi.fn(),
   parseFaturamentoExternalId: vi.fn(),
   parseContaReceberExternalId: vi.fn(),
   parseBaixaExternalId: vi.fn(),
+  parseItemVendaExternalId: vi.fn(),
 }));
 
 describe("API /api/ingest Security & Transaction (route.ts)", () => {

@@ -21,5 +21,5 @@ export function FiliaisLoadingState() {
 }
 
 export function FiliaisEmptyState() {
-  return <p className="text-xs text-slate-400 italic py-2">Nenhuma filial encontrada para este cliente.</p>;
+  return <p className="text-xs text-slate-400 italic py-2">Nenhuma filial encontrada para este usuário.</p>;
 }

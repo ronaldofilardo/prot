@@ -31,5 +31,17 @@ export interface ProtheusFilialInfo {
   cidade?: string;
   uf?: string;
   status?: "Ativa" | "Inativa";
+  nomeFilial?: string;
+  empresaVinculadaId?: string;
+}
+
+export interface FiliaisInfo {
+  /** Login Protheus (ProtheusCredencial.username) cujas filiais estão listadas. */
+  usuario: string | null;
+  /** true = lista limitada às filiais que o usuário pode acessar. */
+  restricaoAplicada: boolean;
+  aviso?: string;
+  /** Empresa matriz do grupo no SaaS (usada para filtrar o dashboard). */
+  matrizId: string | null;
 }
 

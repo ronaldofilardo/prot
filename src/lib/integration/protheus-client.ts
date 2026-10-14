@@ -39,16 +39,36 @@ export interface ProtheusFilialInfo {
   cidade?: string;
   uf?: string;
   status?: "Ativa" | "Inativa";
+  /** Nome da filial (SM0.M0_FILIAL), quando diferente da razão social. */
+  nomeFilial?: string;
+  /** Empresa do SaaS (tabela Empresa) vinculada a esta filial, quando existir. */
+  empresaVinculadaId?: string;
+}
+
+/**
+ * Resultado da consulta "filiais do usuário Protheus".
+ * `restricaoAplicada` = true quando a lista foi efetivamente limitada às
+ * filiais que o usuário pode acessar; false quando só foi possível obter o
+ * cadastro completo de filiais (SM0) do ambiente.
+ */
+export interface ProtheusFiliaisUsuario {
+  filiais: ProtheusFilialInfo[];
+  usuario: string | null;
+  restricaoAplicada: boolean;
+  aviso?: string;
 }
 
 export interface ProtheusClient {
   fetchEmpresa(customPath?: string): Promise<ProtheusEmpresaInfo | null>;
   fetchFiliais(customPath?: string): Promise<ProtheusFilialInfo[]>;
+  /** Filiais (SM0) que o usuário Protheus informado pode acessar. Opcional: o SOAP não implementa. */
+  fetchFiliaisUsuario?(usuario: string | null): Promise<ProtheusFiliaisUsuario>;
   fetchClientes(): Promise<ProtheusRow[]>;
   fetchFaturamentos(): Promise<ProtheusRow[]>;
   fetchContasReceber(): Promise<ProtheusRow[]>;
   fetchBaixas(): Promise<ProtheusRow[]>;
   fetchSaldosContabeis(): Promise<ProtheusRow[]>;
+  fetchItensVenda?(customPath?: string): Promise<ProtheusRow[]>;
 }
 
 export class ProtheusClientError extends Error {

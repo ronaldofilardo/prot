@@ -34,6 +34,7 @@ model Empresa {
   usuarios      Usuario[]
   syncLogs      SyncLog[]
   saldosContabeis SaldoContabil[]
+  itensVenda    ItemVenda[]
   acessosExtras UsuarioEmpresaAcesso[]
   protheusCredencial ProtheusCredencial?
 
@@ -105,6 +106,7 @@ model Cliente {
   empresa        Empresa        @relation(fields: [empresaId], references: [id])
   faturamentos   Faturamento[]
   contasReceber  ContaReceber[]
+  itensVenda     ItemVenda[]
   sincronizadoEm DateTime       @default(now()) // usado pelo Agente de Sincronização (CDC)
 
   @@unique([codigo, loja, empresaId])
@@ -197,4 +199,31 @@ model SaldoContabil {
 
   @@unique([filial, conta, competencia, empresaId])
   @@index([empresaId, competencia])
+}
+
+model ItemVenda {
+  id             String   @id @default(cuid())
+  filial         String
+  numeroNota     String
+  serie          String
+  item           String
+  produto        String
+  dataEmissao    DateTime
+  quantidade     Decimal  @db.Decimal(15, 4)
+  valorTotal     Decimal  @db.Decimal(15, 2)
+  custo          Decimal  @db.Decimal(15, 2)
+  cfop           String
+  tes            String
+  tipo           String
+  qtdDevolvida   Decimal  @default(0) @db.Decimal(15, 4)
+  valorDevolvido Decimal  @default(0) @db.Decimal(15, 2)
+  clienteId      String
+  cliente        Cliente  @relation(fields: [clienteId], references: [id])
+  empresaId      String
+  empresa        Empresa  @relation(fields: [empresaId], references: [id])
+  sincronizadoEm DateTime @default(now())
+
+  @@unique([filial, numeroNota, serie, clienteId, item, empresaId])
+  @@index([empresaId, dataEmissao])
+  @@index([empresaId, clienteId])
 }

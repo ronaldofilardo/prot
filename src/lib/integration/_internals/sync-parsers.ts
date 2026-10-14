@@ -68,3 +68,24 @@ export function parseSaldoContabilExternalId(externalId: string): { filial: stri
 
   return { filial, conta, competencia };
 }
+
+export function parseItemVendaExternalId(externalId: string): {
+  filial: string;
+  numeroNota: string;
+  serie: string;
+  clienteCodigo: string;
+  clienteLoja: string;
+  item: string;
+} {
+  const idx = externalId.indexOf("-IT-");
+  const suffix = idx === -1 ? externalId : externalId.substring(idx + 4);
+  const [filial, numeroNota, serie, clienteCodigo, clienteLoja, item] = suffix.split("-");
+  return {
+    filial: filial || "01",
+    numeroNota: numeroNota || "",
+    serie: serie || "",
+    clienteCodigo: clienteCodigo || "",
+    clienteLoja: clienteLoja || "01",
+    item: item || "01",
+  };
+}

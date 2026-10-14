@@ -2,6 +2,7 @@ import {
   type ProtheusClient,
   type ProtheusEmpresaInfo,
   type ProtheusFilialInfo,
+  type ProtheusFiliaisUsuario,
   type ProtheusRow,
 } from "./protheus-client";
 import type { ProtheusRestConfig } from "./_internals/rest-types";
@@ -15,6 +16,8 @@ import {
   fetchBaixas,
   fetchSaldosContabeis,
 } from "./_internals/rest-entity-fetchers";
+import { fetchFiliaisUsuario } from "./_internals/rest-filiais-usuario";
+import { fetchItensVenda as fetchItensVendaInternal } from "./_internals/rest-itens-venda-fetcher";
 
 export type { ProtheusRestConfig } from "./_internals/rest-types";
 
@@ -54,6 +57,10 @@ export class ProtheusRestClient implements ProtheusClient {
     return fetchFiliais(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_FILIAIS_PATH"));
   }
 
+  async fetchFiliaisUsuario(usuario: string | null): Promise<ProtheusFiliaisUsuario> {
+    return fetchFiliaisUsuario(this.config, usuario, (path) => this.get(path, "PROTHEUS_REST_SM0_PATH"));
+  }
+
   async fetchClientes(customPath?: string): Promise<ProtheusRow[]> {
     return fetchClientes(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_CLIENTES_PATH"));
   }
@@ -72,6 +79,10 @@ export class ProtheusRestClient implements ProtheusClient {
 
   async fetchSaldosContabeis(customPath?: string): Promise<ProtheusRow[]> {
     return fetchSaldosContabeis(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_SALDOS_CONTABEIS_PATH"));
+  }
+
+  async fetchItensVenda(customPath?: string): Promise<ProtheusRow[]> {
+    return fetchItensVendaInternal(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_ITENS_VENDA_PATH"));
   }
 }
 

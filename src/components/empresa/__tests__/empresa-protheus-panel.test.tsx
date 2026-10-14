@@ -56,7 +56,7 @@ describe("EmpresaProtheusPanel", () => {
     expect(screen.getByText(/Conexão e Token Protheus/)).toBeInTheDocument();
     expect(screen.getByText("ACME Protheus")).toBeInTheDocument();
     expect(screen.getByText("Conectado")).toBeInTheDocument();
-    expect(screen.getByText("1 cliente cadastrado")).toBeInTheDocument();
+    expect(screen.getByText("1 filial")).toBeInTheDocument();
     expect(screen.getByText(/Deseja atualizar a razão social/)).toBeInTheDocument();
     expect(screen.getAllByText("admin").length).toBeGreaterThan(0);
     expect(screen.queryByText(/Status da consulta/)).toBeNull();

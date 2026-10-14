@@ -11,6 +11,7 @@ export interface FilialView {
   cnpj?: string;
   tipo: "Matriz" | "Filial";
   status: "Ativa";
+  empresaVinculadaId?: string;
 }
 
 function decomporFilial(raw: string, fallbackEmpresa: string = "001") {
@@ -36,6 +37,7 @@ export function buildFiliaisLocais(filiais: EmpresaAtual["filiais"]): FilialView
     const cod = String(idx + 2).padStart(3, "0");
     return {
       id: f.id,
+      empresaVinculadaId: f.id,
       codigoEmpresa: "001",
       codigoUnidade: "01",
       codigoFilial: cod,

@@ -10,16 +10,16 @@ interface FiliaisTableProps {
   filiais: ProtheusFilialInfo[];
   filtrados: ProtheusFilialInfo[];
   loading?: boolean;
-  clienteAtivo: string;
-  onSelecionarCliente: (nome: string) => void;
+  empresaIdsAtivos: string[];
+  onSelecionarFilial: (f: ProtheusFilialInfo) => void;
 }
 
 export function FiliaisTable({
   filiais,
   filtrados,
   loading,
-  clienteAtivo,
-  onSelecionarCliente,
+  empresaIdsAtivos,
+  onSelecionarFilial,
 }: FiliaisTableProps) {
   if (loading) return <FiliaisLoadingState />;
   if (filiais.length === 0) return <FiliaisEmptyState />;
@@ -31,10 +31,10 @@ export function FiliaisTable({
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {filtrados.map((f, i) => (
             <FilialTableRow
-              key={f.id || `${f.codigoEmpresa}-${f.codigoFilial}-${i}`}
+              key={`${f.codigoEmpresa}-${f.filialCompleta || f.codigoFilial}-${i}`}
               f={f}
-              isFiltroAtivo={clienteAtivo === f.nome}
-              onSelecionarCliente={onSelecionarCliente}
+              isFiltroAtivo={Boolean(f.empresaVinculadaId) && empresaIdsAtivos.length === 1 && empresaIdsAtivos[0] === f.empresaVinculadaId}
+              onSelecionarFilial={onSelecionarFilial}
             />
           ))}
         </tbody>

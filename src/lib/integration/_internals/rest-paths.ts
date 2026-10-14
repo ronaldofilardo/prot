@@ -19,6 +19,23 @@ export const FILIAIS_FALLBACK_PATHS: string[] = [
   "/rest/api/v1/branches",
 ];
 
+// Filiais do usuario: SM0 (cadastro de empresas/filiais). NUNCA a SA1 (clientes).
+export const SM0_FILIAIS_PATHS: string[] = [
+  "/rest/api/framework/v1/genericQuery?tables=SM0&fields=M0_CODIGO,M0_CODFIL,M0_FILIAL,M0_NOME,M0_NOMECOM,M0_CGC,M0_CIDENT,M0_ESTENT&pageSize=500",
+  // Em releases recentes a SM0 e fisicamente a tabela SYS_COMPANY (mesmos campos M0_*).
+  "/rest/api/framework/v1/genericQuery?tables=SYS_COMPANY&fields=M0_CODIGO,M0_CODFIL,M0_FILIAL,M0_NOME,M0_NOMECOM,M0_CGC,M0_CIDENT,M0_ESTENT&pageSize=500",
+  "/rest/api/framework/v1/branches",
+  "/api/framework/v1/branches",
+];
+
+// Cadastro de usuarios e de acesso a filiais (configurador do Protheus).
+// Os nomes de tabela/campo podem variar por release: sobrescreva por .env
+// (PROTHEUS_REST_USUARIOS_PATH / PROTHEUS_REST_FILIAIS_ACESSO_PATH).
+export const USUARIOS_PATH =
+  "/rest/api/framework/v1/genericQuery?tables=SYS_USR&fields=USR_ID,USR_CODIGO,USR_NOME&pageSize=500";
+export const ACESSO_FILIAIS_PATH =
+  "/rest/api/framework/v1/genericQuery?tables=SYS_USR_FILIAL&fields=USR_ID,USR_GRUPEMP,USR_FILIAL&pageSize=500";
+
 export const CLIENTES_FALLBACK_PATHS: string[] = [
   "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_COD,A1_LOJA,A1_NOME,A1_CGC,A1_PESSOA,A1_TIPO,A1_MUN,A1_EST,A1_FILIAL",
   "/api/protheus/v1/comercial/clientes",
@@ -57,6 +74,12 @@ export const SALDOS_CONTABEIS_FALLBACK_PATHS: string[] = [
   "/rest/api/framework/v1/genericQuery?tables=CQ0&fields=CQ_FILIAL,CQ_CONTA,CQ_SALANT,CQ_DEB,CQ_CRED,CQ_SALDO,CQ_ANO,CQ_MES",
   "/api/protheus/v1/contabilidade/saldos",
   "/rest/api/protheus/v1/saldos-contabeis",
+];
+
+export const ITENS_VENDA_FALLBACK_PATHS: string[] = [
+  "/rest/api/framework/v1/genericQuery?tables=SD2&fields=D2_FILIAL,D2_DOC,D2_SERIE,D2_CLIENTE,D2_LOJA,D2_ITEM,D2_COD,D2_EMISSAO,D2_QUANT,D2_TOTAL,D2_CUSTO1,D2_CF,D2_TES,D2_TIPO,D2_QTDEDEV,D2_VALDEV",
+  "/api/protheus/v1/faturamento/itens",
+  "/rest/api/protheus/v1/itens-venda",
 ];
 
 export function buildCandidatePaths(

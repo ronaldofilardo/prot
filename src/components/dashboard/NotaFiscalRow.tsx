@@ -36,10 +36,11 @@ function NotaCell({ nf }: { nf: DashboardNotaFiscal }) {
 }
 
 function FilialCell({ nf }: { nf: DashboardNotaFiscal }) {
+  const displayFilial = !nf.filial || nf.filial === "undefined" ? "—" : nf.filial;
   return (
     <td className="py-3.5 px-6">
       <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-        {nf.filial}
+        {displayFilial}
       </span>
     </td>
   );
@@ -85,19 +86,4 @@ export function NotaFiscalRow({ nf }: { nf: DashboardNotaFiscal }) {
   );
 }
 
-export function TableSkeleton() {
-  return (
-    <>
-      {Array.from({ length: 5 }).map((_, idx) => (
-        <tr key={idx} className="animate-pulse">
-          <td className="py-4 px-6"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-16" /></td>
-          <td className="py-4 px-6"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-12" /></td>
-          <td className="py-4 px-6"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-48" /></td>
-          <td className="py-4 px-6"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-24" /></td>
-          <td className="py-4 px-6 text-right"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-28 ml-auto" /></td>
-          <td className="py-4 px-6 text-center"><div className="h-5 bg-slate-200 dark:bg-slate-800 rounded-full w-16 mx-auto" /></td>
-        </tr>
-      ))}
-    </>
-  );
-}
+export { TableSkeleton } from "./NotaFiscalSkeleton";

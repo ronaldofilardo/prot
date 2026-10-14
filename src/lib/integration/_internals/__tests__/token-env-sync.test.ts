@@ -4,17 +4,22 @@ import {
   clearMemoryToken,
   setMemoryToken,
 } from "../token-env-sync";
+import * as fs from "fs";
 import { logIntegration } from "@/lib/utils/logger";
 
-vi.mock("fs", () => ({
-  existsSync: vi.fn(),
-  readFileSync: vi.fn(),
-  writeFileSync: vi.fn(),
-}));
+// O modulo usa `import fs from "fs"` (default), entao o mock precisa expor
+// as mesmas funcoes tambem em `default`.
+vi.mock("fs", () => {
+  const mock = { existsSync: vi.fn(), readFileSync: vi.fn(), writeFileSync: vi.fn() };
+  return { ...mock, default: mock };
+});
 
-vi.mock("path", () => ({
-  resolve: vi.fn((cwd, file) => `${cwd}/${file}`),
-}));
+vi.mock("path", () => {
+  const mock = { resolve: vi.fn((cwd: string, file: string) => `${cwd}/${file}`) };
+  return { ...mock, default: mock };
+});
+
+const { existsSync, readFileSync, writeFileSync } = vi.mocked(fs);
 
 vi.mock("@/lib/utils/logger", () => ({
   logIntegration: vi.fn(),
@@ -23,12 +28,16 @@ vi.mock("@/lib/utils/logger", () => ({
 describe("token-env-sync.ts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // clearAllMocks nao limpa implementacoes: evita vazar mockReturnValue/throw entre testes.
+    existsSync.mockReset();
+    readFileSync.mockReset();
+    writeFileSync.mockReset();
     clearMemoryToken();
     vi.unstubAllEnvs();
     vi.stubEnv("NODE_ENV", "");
     vi.stubEnv("VITEST", "");
-    vi.stubEnv("PROTHEUS_REST_ACCESS_TOKEN", "");
-    vi.stubEnv("PROTHEUS_REST_REFRESH_TOKEN", "");
+    vi.stubEnv("PROTHEUS_REST_ACCESS_TOKEN", undefined);
+    vi.stubEnv("PROTHEUS_REST_REFRESH_TOKEN", undefined);
   });
 
   afterEach(() => {
@@ -111,7 +120,6 @@ describe("token-env-sync.ts", () => {
       const expiresAt = new Date(Date.now() + 3600000);
       setMemoryToken("test-token", expiresAt);
 
-      const { writeFileSync } = require("fs");
       expect(writeFileSync).not.toHaveBeenCalled();
     });
 
@@ -120,7 +128,6 @@ describe("token-env-sync.ts", () => {
       const expiresAt = new Date(Date.now() + 3600000);
       setMemoryToken("test-token", expiresAt);
 
-      const { writeFileSync } = require("fs");
       expect(writeFileSync).not.toHaveBeenCalled();
     });
 
@@ -129,7 +136,6 @@ describe("token-env-sync.ts", () => {
       const expiresAt = new Date(Date.now() + 3600000);
       setMemoryToken("", expiresAt);
 
-      const { writeFileSync } = require("fs");
       expect(writeFileSync).not.toHaveBeenCalled();
     });
 
@@ -138,15 +144,11 @@ describe("token-env-sync.ts", () => {
       const expiresAt = new Date(Date.now() + 3600000);
       setMemoryToken("sig_totvs_fwjwt_auto_renew_abc", expiresAt);
 
-      const { writeFileSync } = require("fs");
       expect(writeFileSync).not.toHaveBeenCalled();
     });
 
     it("sincroniza .env em produção com token válido", () => {
       vi.stubEnv("NODE_ENV", "production");
-      const { existsSync } = require("fs");
-      const { readFileSync } = require("fs");
-      const { writeFileSync } = require("fs");
 
       existsSync.mockReturnValue(true);
       readFileSync.mockReturnValue('PROTHEUS_REST_ACCESS_TOKEN="old"\nOTHER="value"');
@@ -163,9 +165,6 @@ describe("token-env-sync.ts", () => {
 
     it("sincroniza .env sem refreshToken", () => {
       vi.stubEnv("NODE_ENV", "production");
-      const { existsSync } = require("fs");
-      const { readFileSync } = require("fs");
-      const { writeFileSync } = require("fs");
 
       existsSync.mockReturnValue(true);
       readFileSync.mockReturnValue('PROTHEUS_REST_ACCESS_TOKEN="old"\nPROTHEUS_REST_REFRESH_TOKEN="old-refresh"');
@@ -182,7 +181,6 @@ describe("token-env-sync.ts", () => {
 
     it("não falha quando .env não existe", () => {
       vi.stubEnv("NODE_ENV", "production");
-      const { existsSync } = require("fs");
       existsSync.mockReturnValue(false);
 
       const expiresAt = new Date(Date.now() + 3600000);
@@ -191,9 +189,6 @@ describe("token-env-sync.ts", () => {
 
     it("não falha quando fs.writeFileSync lança erro", () => {
       vi.stubEnv("NODE_ENV", "production");
-      const { existsSync } = require("fs");
-      const { readFileSync } = require("fs");
-      const { writeFileSync } = require("fs");
 
       existsSync.mockReturnValue(true);
       readFileSync.mockReturnValue('PROTHEUS_REST_ACCESS_TOKEN="old"');
@@ -205,9 +200,6 @@ describe("token-env-sync.ts", () => {
 
     it("loga sucesso ao atualizar .env", () => {
       vi.stubEnv("NODE_ENV", "production");
-      const { existsSync } = require("fs");
-      const { readFileSync } = require("fs");
-      const { writeFileSync } = require("fs");
 
       existsSync.mockReturnValue(true);
       readFileSync.mockReturnValue('PROTHEUS_REST_ACCESS_TOKEN="old"');

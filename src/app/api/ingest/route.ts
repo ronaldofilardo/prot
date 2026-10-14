@@ -20,6 +20,7 @@ import {
   syncContasReceber,
   syncBaixas,
   syncSaldosContabeis,
+  syncItensVenda,
   type SyncResult,
 } from "@/lib/integration/sync-engine";
 import { logApiError } from "@/lib/utils/logger";
@@ -38,6 +39,7 @@ const SYNC_MAP: Record<EntidadeCanonica, SyncFunction> = {
   ContaPagar: async () => ({ entidade: "ContaPagar", processados: 0, criados: 0, atualizados: 0, erros: 0 }),
   Baixa: syncBaixas as unknown as SyncFunction,
   SaldoContabil: syncSaldosContabeis as unknown as SyncFunction,
+  ItemVenda: syncItensVenda as unknown as SyncFunction,
 };
 
 function validarApiKey(request: Request): NextResponse | null {

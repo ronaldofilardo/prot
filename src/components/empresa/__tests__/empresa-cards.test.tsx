@@ -60,10 +60,10 @@ describe("EmpresaFiliaisCard", () => {
     status: "Inativa",
   } as const;
 
-  it("lista clientes com fallbacks de cnpj, status e acoes", () => {
+  it("lista filiais com fallbacks de cnpj, status e acoes", () => {
     render(<EmpresaFiliaisCard filiais={[filialMatriz, filialComum]} />);
 
-    expect(screen.getByText("2 clientes cadastrados")).toBeInTheDocument();
+    expect(screen.getByText("2 filiais")).toBeInTheDocument();
     expect(screen.getByText("Matriz LC1")).toBeInTheDocument();
     expect(screen.getByText("Filial SP")).toBeInTheDocument();
     expect(screen.getByText("Mesmo da Matriz")).toBeInTheDocument();
@@ -71,10 +71,10 @@ describe("EmpresaFiliaisCard", () => {
     expect(screen.getAllByRole("button", { name: /Filtrar/ }).length).toBe(2);
   });
 
-  it("um unico cliente usa o rotulo singular", () => {
+  it("uma unica filial usa o rotulo singular", () => {
     render(<EmpresaFiliaisCard filiais={[filialMatriz]} />);
 
-    expect(screen.getByText("1 cliente cadastrado")).toBeInTheDocument();
+    expect(screen.getByText("1 filial")).toBeInTheDocument();
     expect(screen.getByText("Ativa")).toBeInTheDocument();
     expect(screen.queryByText("22.222.222/0001-22")).toBeNull();
   });
@@ -83,13 +83,13 @@ describe("EmpresaFiliaisCard", () => {
     render(<EmpresaFiliaisCard filiais={[]} loading />);
 
     expect(screen.getByText("Carregando filiais...")).toBeInTheDocument();
-    expect(screen.getByText("0 clientes cadastrados")).toBeInTheDocument();
+    expect(screen.getByText("0 filiais")).toBeInTheDocument();
   });
 
   it("sem filiais parado mostra a mensagem de vazio", () => {
     render(<EmpresaFiliaisCard filiais={[]} />);
 
-    expect(screen.getByText("Nenhuma filial encontrada para este cliente.")).toBeInTheDocument();
+    expect(screen.getByText("Nenhuma filial encontrada para este usuário.")).toBeInTheDocument();
   });
 });
 

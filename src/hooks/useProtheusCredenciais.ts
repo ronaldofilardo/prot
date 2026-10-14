@@ -1,48 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
+import {
+  carregarCredenciaisSalvas,
+  salvarCredenciaisApi,
+  buildPayload,
+} from "@/hooks/_internals/credenciais-api";
 
 interface Feedback {
   tipo: "ok" | "erro";
   msg: string;
-}
-
-interface CredenciaisPayload {
-  username?: string;
-  password?: string;
-  accessToken?: string;
-  baseUrl?: string;
-}
-
-async function carregarCredenciaisSalvas(setSavedUser: (v: string | null) => void, setUsername: (v: string) => void) {
-  try {
-    const res = await fetch("/api/protheus/credenciais");
-    if (!res?.ok) return;
-    const d = await res.json();
-    if (d?.configurado && d?.username) {
-      setSavedUser(d.username);
-      setUsername(d.username);
-    }
-  } catch {
-    // Silencioso se fetch nao configurado ou em ambiente de teste
-  }
-}
-
-async function salvarCredenciaisApi(payload: CredenciaisPayload) {
-  const res = await fetch("/api/protheus/credenciais", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Erro ao conectar ao Protheus com as credenciais informadas.");
-  return data;
-}
-
-function buildPayload(username: string, password: string, accessToken: string): CredenciaisPayload {
-  const p: CredenciaisPayload = {};
-  if (username.trim()) p.username = username.trim();
-  if (password?.trim()) p.password = password.trim();
-  if (accessToken?.trim()) p.accessToken = accessToken.trim();
-  return p;
 }
 
 function validateInputs(username: string, accessToken: string, setFeedback: (v: Feedback | null) => void): boolean {

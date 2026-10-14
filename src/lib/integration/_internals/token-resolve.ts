@@ -1,11 +1,14 @@
-import { isTokenExpired } from "./token-network";
+import { isTokenExpired, parseJwtExpiry } from "./token-network";
 import { getMemoryToken, setMemoryToken } from "./token-env-sync";
 import { logIntegration } from "@/lib/utils/logger";
 import type { ProtheusCredencialData, ProtheusCredencialDelegate, ProtheusCredencialStore, MemoryTokenState } from "./token-types";
 import { fetchDbToken } from "./token-db-fetch";
 
 export function isTokenValid(token: string | null | undefined, expiresAt: Date | null | undefined): boolean {
-  return Boolean(token && !isTokenExpired(expiresAt));
+  if (!token) return false;
+  const jwtExpiry = parseJwtExpiry(token);
+  if (jwtExpiry && isTokenExpired(jwtExpiry)) return false;
+  return !isTokenExpired(expiresAt);
 }
 
 export function resolveCredencial(store: ProtheusCredencialStore, empresaId: string) {
@@ -41,7 +44,6 @@ export async function resolveCachedOrEnvToken(empresaId: string, forceRefresh: b
   }
 
   const envToken = process.env.PROTHEUS_REST_ACCESS_TOKEN;
-  const { parseJwtExpiry } = await import("./token-network");
   const envExpiry = envToken ? parseJwtExpiry(envToken) : null;
   if (!forceRefresh && envToken && isTokenValid(envToken, envExpiry)) {
     return envToken;

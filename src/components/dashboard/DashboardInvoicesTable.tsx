@@ -52,10 +52,22 @@ function InvoicesActions({ totalNotas, loading, onRefresh }: { totalNotas: numbe
 }
 
 function InvoicesBody({ faturamentos, loading, totalNotas }: { faturamentos: DashboardNotaFiscal[]; loading: boolean; totalNotas: number }) {
-  if (loading) return <TableSkeleton />;
+  if (loading) {
+    return (
+      <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
+        <TableSkeleton />
+      </tbody>
+    );
+  }
   if (totalNotas === 0) {
     return (
-      <tr><td colSpan={6} className="py-10 text-center text-slate-400 dark:text-slate-500 text-sm">Nenhuma nota fiscal encontrada.</td></tr>
+      <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
+        <tr>
+          <td colSpan={6} className="py-10 text-center text-slate-400 dark:text-slate-500 text-sm">
+            Nenhuma nota fiscal encontrada.
+          </td>
+        </tr>
+      </tbody>
     );
   }
   return <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">{faturamentos.map((nf) => <NotaFiscalRow key={nf.id} nf={nf} />)}</tbody>;

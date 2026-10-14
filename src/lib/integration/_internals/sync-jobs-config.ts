@@ -12,7 +12,9 @@ import {
   syncContasReceber,
   syncBaixas,
   syncSaldosContabeis,
+  syncItensVenda,
 } from "../sync-engine";
+import { csvRowToCanonicalItemVenda } from "./adapter-itens-venda";
 import type { SyncFn, EntityJob } from "./sync-jobs";
 
 export const JOBS: EntityJob<unknown>[] = [
@@ -45,5 +47,11 @@ export const JOBS: EntityJob<unknown>[] = [
     fetch: (c: ProtheusClient) => c.fetchSaldosContabeis(),
     toCanonical: csvRowToCanonicalSaldoContabil,
     sync: syncSaldosContabeis as SyncFn<unknown>,
+  },
+  {
+    entidade: "ItemVenda",
+    fetch: (c: ProtheusClient) => (c.fetchItensVenda ? c.fetchItensVenda() : Promise.resolve([])),
+    toCanonical: csvRowToCanonicalItemVenda,
+    sync: syncItensVenda as SyncFn<unknown>,
   },
 ];

@@ -554,6 +554,49 @@ npx eslint --rule '{"complexity":["error",10]}' --format json src
 
 > **Lições registradas do repositório de referência:** `Measure-Object -Line` do PowerShell **subconta linhas em branco** — use `split('\n').length`. ESLint flat config sem `files` explícito **ignora `.tsx`** — o comando acima usa o config do projeto e funciona.
 
+#### 11.5.1 Regressões — Out/2026 (pós Fase 7)
+
+Commit `6a40664` + `b2300d7` (06/10) resolvidos CRÍTICA/ALTA da §11, mas introduziram novas violações de gate. **`pnpm check-quality` e `pnpm lint` estão FALHANDO** no working tree atual (HEAD + uncommitted). Os arquivos abaixo **não devem ser regredidos** — a refatoração que os gerou é válida; o que falha é o cumprimento rigoroso dos limites.
+
+| Arquivo | Métrica | Valor | Limite §4 | Tipo | Commit |
+|---------|---------|-------|-----------|------|--------|
+| `src/app/api/protheus/empresa/_internals/vincular-filiais.ts` | CC | 17 | ≤ 10 | CRÍTICA | novo (untracked) |
+| `src/app/api/protheus/empresa/_internals/vincular-filiais.ts` | linhas/fn | 56 | ≤ 30 | CRÍTICA | novo (untracked) |
+| `src/components/empresa/common/EmpresaFiliaisCard.tsx` | CC | 14 | ≤ 10 | ALTA | `b2300d7` |
+| `src/components/empresa/common/EmpresaFiliaisCard.tsx` | linhas/fn | 37 | ≤ 30 | ALTA | `b2300d7` |
+| `src/app/api/protheus/empresa/handlers/empresa.ts` | linhas/fn | 32 | ≤ 30 | ALTA | `b2300d7` |
+| `src/hooks/useEmpresaProtheus.ts` | linhas/fn | 31 | ≤ 30 | BAIXA | `6a40664` |
+| `src/lib/integration/_internals/rest-filiais-usuario.ts` | linhas/fn | 53 | ≤ 30 | CRÍTICA | novo (untracked) |
+| `src/components/dashboard/NotaFiscalRow.tsx` | linhas | 103 | ≤ 100 | BAIXA | `40a9870` |
+| `src/components/empresa/common/FilialTableRow.tsx` | linhas | 125 | ≤ 100 | ALTA | `18583c2` + uncommitted |
+| `src/hooks/useProtheusCredenciais.ts` | linhas | 126 | ≤ 120 | BAIXA | `ad49234` |
+| `test-pull2.ts` | `no-explicit-any` | 1 erro | 0 | — | scratch (deletar) |
+| `src/lib/integration/_internals/__tests__/sync-saldos-contabeis.test.ts` | `no-explicit-any` | 6 erros | 0 | — | `c0a281e` |
+| `vitest.d.ts` | `no-explicit-any` + `no-empty-object-type` | 7 erros | 0 | — | pré-existente |
+| `src/app/api/dashboard/__tests__/route.test.ts` | linhas | 314 | ≤ 250 | ALTA | `b2300d7` |
+| `src/app/api/dashboard/__tests__/route.grupos.test.ts` | linhas | 251 | ≤ 250 | BAIXA | `b2300d7` |
+| `src/lib/integration/_internals/__tests__/rest-entity-fetchers.test.ts` | linhas | 343 | ≤ 250 | CRÍTICA | `6a40664` |
+| `src/lib/integration/_internals/__tests__/rest-retry.test.ts` | linhas | 252 | ≤ 250 | BAIXA | `11910cd` |
+| `src/lib/integration/_internals/__tests__/sync-saldos-contabeis.test.ts` | linhas | 276 | ≤ 250 | ALTA | `c0a281e` |
+| `src/lib/integration/__tests__/protheus-adapter.test.ts` | linhas | 252 | ≤ 250 | BAIXA | `386d4eb` |
+
+**Cobertura (regressão):** 503 testes (309 → +194), mas linhas **83.38%** (era 90.92%), branches **74.28%** (era 80.67%), funcs **84.32%** (era 93.11%). `pnpm test:coverage` **FAILA**: branches 74.28% < 80 global; `src/app/api/**` 59.2% < 60 floor. New code (empresa/filial, balancete) com cobertura inferior arrastou a global para baixo.
+
+### 11.6 Auditoria de desvios — status atual
+
+Auditoria executada 04/10 (sessão) sobre o plano de refatoração. 8 desvios mapeados, de que **3 resolvidos** e **5 documentados como conscientes/pragmáticos/equivalentes**:
+
+| # | Devio (auditoria) | Status no repo (08/10) | Evidência |
+|---|---|---|---|
+| 1 | `graft/INDEX.md` não versionado | ✅ Consciente | `.gitignore` linha 45-46; §11.3 documenta como cache local regenerável |
+| 2 | `rest-retry.ts`: backoff/jitter + magic number | ✅ **Resolvido** | Commit `11910cd` (05/10): `PROTHEUS_FETCH_TIMEOUT_MS`, `PROTHEUS_RETRY_JITTER_MAX_MS`, `exponentialBackoffWithJitter()` |
+| 3 | `auth.ts`: callbacks jwt/session não extraídos | ✅ Pragmático | CC ≤10 atingido (§11.2); callbacks permanecem em `auth.ts` por coesão com `authOptions` |
+| 4 | `DashboardChartsGrid`: seções vs `components/charts/` | ✅ Equivalente funcional | Implementado como seções `FaturamentoCharts`/`ProjecaoCharts` + wrappers (`ChartFrame.tsx`) |
+| 5 | `vitest.config.mts`: branches threshold 79 → 80 | ✅ **Resolvido** | Commit `11910cd` (05/10): `branches: 80`; real 80.67% ≥ threshold |
+| 6 | PRs/code review ausente | ✅ Processual | Commits diretos na `master` (conforme política §9.2; PRs são opcionais para refatoração com testes verdes) |
+| 7 | Teste manual do fluxo crítico ausente | ✅ **Resolvido** | `SMOKE_TEST.md` (158 linhas, 7 fluxos) criado; README atualizado com quality gates |
+| 8 | `max-lines` não como regra ESLint | ✅ Equivalente funcional | Implementado em `scripts/check-quality.mjs` (§12.2) como `max-lines-per-function: 30` no ESLint + line-count por categoria |
+
 ---
 
 ## 12. Ferramentas
@@ -640,7 +683,7 @@ Revisar trimestralmente e atualizar conforme: padrões da indústria, mudanças 
 
 > Qualquer refatoração que não melhore legibilidade ou manutenibilidade deve ser revertida. O objetivo é **clareza**, não código "novo".
 
-**Última atualização:** Outubro 2026 (v1.0 — criada a partir da política Omni-Reporte v4.0, adaptada à stack PROT; fila medida com 2 arquivos 🔴, 11 funções com CC > 10, cobertura global 38.99%)
+**Última atualização:** 08/10/2026 (v1.1 — integrada auditoria de desvios + mudanças de 06/10; gate parcialmente vermelho verificado em §16.2)
 **Fase 0 aplicada (Out/2026):** rampa §3.4 ligada (exit 0), CI completo (coverage + lint + tsc + build), `components/` e `lib/` da raiz deletados, `.env.example` versionado com as 2 variáveis que faltavam, `graft build` executado. Baseline: 18 arquivos de teste, 115 testes, 38.99% linhas.
 **Fase 1 aplicada (Out/2026):** testes de caracterização dos alvos 0% — `protheus-adapter`, `api/dashboard`, `api/upload`, `api/protheus/pull`, `pull-and-sync`, `protheus-client-factory` (50 testes, todos a 100% de linhas); thresholds subidos (ratchet) para 48/48/46/39 globais. Baseline: 24 arquivos de teste, 165 testes, 50.97% linhas. Nenhuma linha de código de produção alterada.
 **Fase 2 aplicada (Out/2026):** extração dos dois arquivos 🔴 — `protheus-rest-client.ts` 440 → 177 linhas (CC máx. 20 → 9) em `rest-{types,paths,auth,retry,parse,mock}.ts`; `sync-engine.ts` 286 → 20 linhas (fachada) em `sync-{types,parsers,resolve,clientes,faturamento,contas-receber,baixas}.ts`, com as 4 funções > 30 linhas decompostas em upserts/helpers. API pública e comportamento preservados (165/165 testes); ratchet global para 51/50/48/41 (53.04% linhas). Commits `7d5ca36`, `d348b96`.
@@ -651,4 +694,24 @@ Revisar trimestralmente e atualizar conforme: padrões da indústria, mudanças 
 **Fase 7 aplicada (Out/2026):** guardrails automáticos (§12.2) — `scripts/check-quality.mjs` (`pnpm check-quality`: linhas por arquivo §4.1 + CC ≤ 10 via ESLint API; exit 1 em violação; **testado com 2 testes negativos** — arquivo > limite e função CC 12 — e removidos em seguida), script `typecheck` no `package.json`, step `pnpm check-quality` no CI (`npx tsc --noEmit` → `pnpm typecheck`) e regra `complexity: ["error",10]` no `eslint.config.mjs` (escopo: tudo exceto `prisma/**`, "fora do escopo de `src/`" pela §4.1; ignores `.kilo/`/`coverage/`/`graft/` — warnings de lint 12 → 3). Pré-requisito: **6 arquivos estouravam os limites da §4** e foram adequados com os testes existentes como rede de segurança — `useEmpresaProtheus.ts` 128 → 99 (interfaces → `empresa-protheus-types.ts` + re-export), `EmpresaFilialFilter.tsx` 132 → 85 (+`FiliaisPanel.tsx` 82), `DashboardFilterBar.tsx` 105 → 56 (+`FilterFields.tsx` 92), `empresa-grupo.ts` 124 → 43 (domínio hierarquia → `empresa-hierarquia.ts` com `export *`, sem ciclo; testes/dashboard importam sem mudança), `route.test.ts` 311 → 237 (+`route.grupos.test.ts`, 6 testes de escopo/hierarquia movidos) e `protheus-rest-client.test.ts` 262 → 162 (+`protheus-rest-client.empresa.test.ts`, 2 testes de empresa/filiais movidos; duplicação de `vi.mock` segue o padrão dos outros 7 arquivos de teste do repo). Gate completo: 43 arquivos / **309 testes**, lint 0 erros / 3 warnings, check-quality PASSOU, typecheck 0, build 0, coverage exit 0 (**90.73% linhas / 81.30% branches / 92.44% funcs**; thresholds 80/79/80/80 inalterados); universo 114 prod + 43 teste; fila de funções > 30 reavaliada: 35.
 **Fila §11 executada (Out/2026):** os 2 itens prioritários pós-Fase 7 — (1) `cn` unificado em `@/lib/utils` (§11.3 ✅: `button.tsx`/`input.tsx` — `table`/`card`/`badge` já usavam); (2) `protheus-soap-client.ts` 171 → **115 linhas** (§11.2 ✅: XML → `_internals/soap-xml.ts` de 60 linhas, mesmo contrato público, 8/8 testes, 100% de linhas nos 2 arquivos); bônus: **lint 0 erros / 0 warnings** — os 3 warnings restantes eliminados sem mudança de comportamento (`_customPath` removido das stubs `fetchEmpresa`/`fetchFiliais` — a interface `ProtheusClient` mantém o parâmetro opcional e o único chamador `handlers/empresa.ts` passa pela interface — e `req` do middleware). Gate completo: 43 arquivos / **309 testes**, lint 0/0, check-quality PASSOU (158 arquivos), typecheck 0, build 0, coverage exit 0 (**90.73% linhas**). Commits `3291493`, `ed7c8a1`, `3b0f91f`.
 **Fila §11.2 de funções > 30 linhas zerada (Out/2026):** as **35 funções** da dívida conhecida (medição Fase 7, produção) fechadas em **6 lotes** com gate verde por lote (309 testes, lint 0/0, check-quality, typecheck): (1) `lib/utils` (6) — novo `charts/option-common.ts` (formatters/eixos/gradiente compartilhados), `ThemeColors` em `theme.ts`, builders de gráfico decompostos, `metrics-kpi`/`metrics-projection` — `cf83e6c`; (2) `hooks` (6) — novos `upload-panel-actions.ts`/`dashboard-types.ts`; `useUploadPanel`/`useEmpresaProtheus`/`useLogin`/`useDashboard`/`useFilters` — `990888d`; (3) `components/dashboard` (6) — sub-componentes em `FiliaisPanel`/`FilterFields`/`DashboardInvoicesTable`/`EmpresaFilialFilter`/`DashboardFilterBar`/`DashboardKpiCards` — `6cbead4` + `369d8b6` (ajuste do arquivo ≤ 100 linhas); (4) `components/empresa` (6) — `EmpresaProtheusPanel`/`EmpresaDadosCard`/`EmpresaFiliaisCard`/`EmpresaHeaderAction`/`TokenStatusCard` + irmão `FilialBadges.tsx` — `1fd685c`; (5) `upload/auth/app` (7) — irmão `UploadDropzoneBlocks.tsx`; `UploadProtheusPullSection`/`UploadPanel`/`LoginForm`; helpers da rota `ingest` (`validarApiKey`/`validarPayload`/`executarSync`); `LoginPage`/`RootLayout` — `918d3d8`; (6) `charts` (4) — novo `common/ChartFrame.tsx` (empty state + ReactECharts), wrappers 31 → 17 linhas — `6c5a480`. Guardrail `max-lines-per-function: ["error", 30]` no `eslint.config.mjs` (§12.2; testes e `prisma/**` isentos). Gate final: 43 arquivos / **309 testes**, lint 0/0, check-quality PASSOU (164 arquivos), typecheck 0, build 0, coverage exit 0 (**90.92% linhas / 80.67% branches / 93.11% funcs**); medição final via ESLint: **0 violações em produção**. API pública e DOM preservados (re-export de tipos, sub-componentes com markup idêntico).
+**Execução 05/10 — Fechamento de desvios da auditoria (commit `11910cd`):**
+- **Desvio #2 fechado:** `rest-retry.ts` ganhou `exponentialBackoffWithJitter(attempt, capMs)` (backoff exponencial + jitter de até 300ms), `PROTHEUS_FETCH_TIMEOUT_MS = 8000` e `PROTHEUS_RETRY_JITTER_MAX_MS = 300` como constantes nomeadas (§10). Exportada para uso em retry crítico (v2 mitigation). JSDoc completo.
+- **Desvio #5 fechado:** `vitest.config.mts` linha 23: `branches: 79` → `branches: 80` (alinha com real 80.67%, princípio §3.4: nunca acima do real).
+- **Desvio #3 aceito (pragmático):** callbacks jwt/session permanecem em `auth.ts`; CC ≤10 atingido. Irmão `auth-claims.ts` contém apenas `authorizeCredentials`.
+- **Desvio #7 fechado (retrospectivo):** `SMOKE_TEST.md` (7 florestas) e `docs/AUDIT_CLOSURES_2026-01.md` já existiam; README atualizado com quality gates + seção de arquitetura. Documentado em `docs/EXECUTION_SUMMARY.txt`.
+- Gate: 309/309 testes, lint 0/0, coverage exit 0.
+**Execução 06/10 — Resolução CRÍTICA + ALTA da §11 + decomposição adicional:**
+- **Commit `6a40664` (CRÍTICA):** `rest-parse.ts` 249 linhas → 5 arquivos (`rest-parse-url.ts`, `rest-parse-response.ts`, `rest-parse-empresa.ts`, `rest-parse-filial.ts`, `rest-parse.ts` barrel); `protheus-rest-client.ts` 219 → 79 linhas (`rest-fetch.ts`, `rest-entity-fetchers.ts`, `rest-factory.ts`); `pull-and-sync.ts` 201 → 30 linhas (`sync-jobs.ts`, `sync-transaction.ts`, `sync-executor.ts`, `sync-jobs-config.ts`). Comportamento preservado: 165/165 testes.
+- **Commit `b2300d7` (ALTA):** `protheus-token-provider.ts` 187 → 55 linhas (`token-env-fetch.ts`, `token-db-fetch.ts`, `token-resolve.ts`); `DashboardInvoicesTable.tsx` 110 → 86 linhas (`InvoicesTableParts.tsx`); `EmpresaFiliaisCard.tsx` 177 → 52 linhas (6 sub-componentes: `FiliaisHeader`, `FilialisSearchInput`, `FiliaisTable`, `FiliaisTableHeader`, `FiliaisStates`). Todos < 100 linhas, CC ≤ 10. 320/322 testes passam (2 falhas pre-existentes em mocks).
+- **Commits `40a9870`/`18583c2` (extração UI):** `NotaFiscalRow`, `DashboardInvoicesTable`, `EmpresaProtheusPanel` (lote 1) e `EmpresaFiliaisCard`, `FilialTableRow` (lote 2) — sub-componentes extraídos na ordem §8.4.
+- **Commits `0395aeb`/`ad49234`/`550d13e`/`c0a281e` (decomposição):** `UserInput`/`MainFormGrid`/`TokenInput` de `ProtheusCredenciaisForm`; `handleSalvar` em `useProteusCredenciais`; `mapRowToFilial` em `rest-parse`; `executarJob`/`registrarFalha` em `pull-and-sync`.
+- **Commit `ef70b8d`:** correção de type errors em `dashboard-query.ts`, `dashboard.ts`, `sync-protheus-clientes.ts`, `empresa.ts`, `page.tsx`, `ProtheusCredenciaisForm.tsx`, `EmpresaProtheusPanel.tsx`. 321 testes passam, Next.js build OK.
+- **Commits `9008215`/`158008b`:** atualização de balancete components + integration tests; resolução de type errors em arquivos de teste.
+- **Novas funcionalidades (untracked):** `rest-filiais-usuario.ts`, `rest-parse-filial-sm0.ts`, `usuario-protheus.ts`, `vincular-filiais.ts`, `diagnostico-filiais-protheus.mjs` — integração de filiais por usuário Protheus (SM0 + SYS_USR). Cobertura parcial (novos arquivos não chegam a 80%).
+- **Testes:** 309 → 503 (HEAD + uncommitted). Cobertura linhas **90.92% → 83.38%**, branches **80.67% → 74.28%**, funcs **93.11% → 84.32%**. Nova cobertura insuficiente para os novos arquivos (`vincular-filiais.ts`, `rest-filiais-usuario.ts`, `usuario-protheus.ts`).
+- **`pnpm check-quality` FALHA:** 9 arquivos > limite de linhas (5 produção + 5 testes); 2 funções CC > 10 (`vincular-filiais.ts` CC 17, `EmpresaFiliaisCard.tsx` CC 14). Ver §11.5.1.
+- **`pnpm lint` FALHA:** 22 erros (`no-explicit-any` em testes/scratch, `max-lines-per-function` em 5 arquivos). Ver §11.5.1.
+- **`pnpm test:coverage` FALHA:** branches 74.28% < 80 global; `src/app/api/**` 59.2% < 60 floor. Threshold **não subido** (ratchet §3.4).
+- **Auditoria de desvios (04/10):** 8 desvios identificados — 3 resolvidos (#2, #5, #7), 5 documentados como conscientes/pragmáticos/equivalentes (#1, #3, #4, #6, #8). Ver §11.6.
+
 **Próxima revisão:** Janeiro 2027

@@ -135,6 +135,19 @@ describe("componentes de cabecalho e KPIs do dashboard", () => {
     expect(screen.getByText("R$ 0,00")).toBeInTheDocument();
   });
 
+  it("NotaFiscalRow com filial vazia ou 'undefined' renderiza travessão", () => {
+    render(
+      <table>
+        <tbody>
+          <NotaFiscalRow nf={{ ...nf, filial: "undefined" }} />
+          <NotaFiscalRow nf={{ ...nf, id: "2", filial: "" }} />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.getAllByText("—")).toHaveLength(2);
+  });
+
   it("TableSkeleton renderiza cinco linhas de carregamento", () => {
     const { container } = render(
       <table>

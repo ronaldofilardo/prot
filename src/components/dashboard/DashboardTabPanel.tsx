@@ -18,36 +18,50 @@ interface DashboardTabPanelProps {
   onRefresh: () => Promise<void>;
 }
 
-export function DashboardTabPanel({ activeTab, data, loading, onRefresh }: DashboardTabPanelProps) {
+function FaturamentoTabContent({ data, loading }: { data: DashboardData | null; loading: boolean }) {
   const chartsData = buildChartsData(data);
+  return (
+    <>
+      <DashboardKpiCards data={buildKpiData(data)} loading={loading} />
+      <DashboardChartsGrid type="faturamento" data={chartsData} loading={loading} />
+    </>
+  );
+}
 
+function AtualizacaoTabContent({
+  data,
+  loading,
+  onRefresh,
+}: {
+  data: DashboardData | null;
+  loading: boolean;
+  onRefresh: () => Promise<void>;
+}) {
+  const faturamentos = data?.faturamentos ?? [];
+  const empresaNome = data?.grupos?.[0]?.nome;
+  return (
+    <DashboardAtualizacaoTab
+      faturamentos={faturamentos}
+      loading={loading}
+      onRefresh={onRefresh}
+      empresaNome={empresaNome}
+    />
+  );
+}
+
+export function DashboardTabPanel({ activeTab, data, loading, onRefresh }: DashboardTabPanelProps) {
   return (
     <main className="flex-1 min-w-0">
-      {activeTab === "faturamento" && (
-        <>
-          <DashboardKpiCards data={buildKpiData(data)} loading={loading} />
-          <DashboardChartsGrid type="faturamento" data={chartsData} loading={loading} />
-        </>
-      )}
-
+      {activeTab === "faturamento" && <FaturamentoTabContent data={data} loading={loading} />}
       {activeTab === "margem" && <MargemComponent />}
-
       {activeTab === "prazo-medio" && <PrazoMedioComponent />}
-
       {activeTab === "projecao" && (
-        <DashboardChartsGrid type="projecao" data={chartsData} loading={loading} />
+        <DashboardChartsGrid type="projecao" data={buildChartsData(data)} loading={loading} />
       )}
-
       {activeTab === "atualizacao" && (
-        <DashboardAtualizacaoTab
-          faturamentos={data?.faturamentos || []}
-          loading={loading}
-          onRefresh={onRefresh}
-        />
+        <AtualizacaoTabContent data={data} loading={loading} onRefresh={onRefresh} />
       )}
-
       {activeTab === "empresa" && <EmpresaProtheusPanel />}
-
       {activeTab === "balancete" && <Balancete />}
     </main>
   );

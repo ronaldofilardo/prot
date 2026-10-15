@@ -11,23 +11,24 @@ interface DashboardInvoicesTableProps {
   faturamentos: DashboardNotaFiscal[];
   loading: boolean;
   onRefresh?: () => void;
+  empresaNome?: string;
+  filialNome?: string;
 }
 
-function InvoicesTitleBlock() {
+function InvoicesTitleBlock({ empresaNome, filialNome }: { empresaNome?: string; filialNome?: string }) {
+  const titulo = empresaNome ? `Últimas Notas Fiscais — ${empresaNome}` : "Últimas Notas Fiscais";
+  const badge = filialNome || "SF2 Protheus";
   return (
     <div>
       <div className="flex items-center gap-2">
-        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-          Últimas Notas Fiscais — LC1 CONTADORES - MATRIZ
-        </h3>
+        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{titulo}</h3>
         <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300">
           <Building2 size={11} />
-          Filial 01 (Matriz)
+          {badge}
         </span>
       </div>
       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-        Notas fiscais faturadas (SF2) da Filial 01 integradas e sincronizadas
-        via Protheus ERP
+        Notas fiscais faturadas (SF2) integradas e sincronizadas via Protheus ERP
       </p>
     </div>
   );
@@ -73,21 +74,21 @@ function InvoicesBody({ faturamentos, loading, totalNotas }: { faturamentos: Das
   return <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">{faturamentos.map((nf) => <NotaFiscalRow key={nf.id} nf={nf} />)}</tbody>;
 }
 
-function HeaderSection({ totalNotas, loading, onRefresh }: { totalNotas: number; loading: boolean; onRefresh?: () => void }) {
+function HeaderSection({ totalNotas, loading, onRefresh, empresaNome, filialNome }: { totalNotas: number; loading: boolean; onRefresh?: () => void; empresaNome?: string; filialNome?: string }) {
   return (
     <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
-      <InvoicesTitleBlock />
+      <InvoicesTitleBlock empresaNome={empresaNome} filialNome={filialNome} />
       <InvoicesActions totalNotas={totalNotas} loading={loading} onRefresh={onRefresh} />
     </div>
   );
 }
 
-export function DashboardInvoicesTable({ faturamentos, loading, onRefresh }: DashboardInvoicesTableProps) {
+export function DashboardInvoicesTable({ faturamentos, loading, onRefresh, empresaNome, filialNome }: DashboardInvoicesTableProps) {
   const totalNotas = faturamentos?.length || 0;
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden mb-8">
-      <HeaderSection totalNotas={totalNotas} loading={loading} onRefresh={onRefresh} />
+      <HeaderSection totalNotas={totalNotas} loading={loading} onRefresh={onRefresh} empresaNome={empresaNome} filialNome={filialNome} />
       <TableWrapper>
         <InvoicesThead />
         <InvoicesBody faturamentos={faturamentos} loading={loading} totalNotas={totalNotas} />

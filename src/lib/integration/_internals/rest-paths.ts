@@ -12,6 +12,8 @@ export const FILIAIS_FALLBACK_PATHS: string[] = [
   "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_COD,A1_NOME,A1_FILIAL,A1_CGC&pageSize=500",
   // SM0 = tabela oficial de cadastro de empresas/filiais no Protheus
   "/rest/api/framework/v1/genericQuery?tables=SM0&fields=M0_CODIGO,M0_CODFIL,M0_NOME,M0_NOMECOM,M0_CGC,M0_CIDENT,M0_FILIAL&pageSize=500",
+  // Monitor NG / RH do Protheus Cloud (devolve CDFILIAL e CDFILDESC de todas as filiais ativas)
+  "/rest/api/rh/v1/monitor-ng/filiais",
   "/rest/api/framework/v1/branches",
   "/api/framework/v1/branches",
   "/rest/api/protheus/v1/filiais",
@@ -24,6 +26,8 @@ export const SM0_FILIAIS_PATHS: string[] = [
   "/rest/api/framework/v1/genericQuery?tables=SM0&fields=M0_CODIGO,M0_CODFIL,M0_FILIAL,M0_NOME,M0_NOMECOM,M0_CGC,M0_CIDENT,M0_ESTENT&pageSize=500",
   // Em releases recentes a SM0 e fisicamente a tabela SYS_COMPANY (mesmos campos M0_*).
   "/rest/api/framework/v1/genericQuery?tables=SYS_COMPANY&fields=M0_CODIGO,M0_CODFIL,M0_FILIAL,M0_NOME,M0_NOMECOM,M0_CGC,M0_CIDENT,M0_ESTENT&pageSize=500",
+  // Monitor NG / RH do Protheus Cloud (devolve CDFILIAL e CDFILDESC de todas as filiais ativas)
+  "/rest/api/rh/v1/monitor-ng/filiais",
   "/rest/api/framework/v1/branches",
   "/api/framework/v1/branches",
 ];

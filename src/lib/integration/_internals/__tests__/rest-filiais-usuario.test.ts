@@ -102,4 +102,13 @@ describe("fetchFiliaisUsuario", () => {
     expect(r.restricaoAplicada).toBe(true);
     expect(r.filiais).toHaveLength(1);
   });
+
+  it("usuario admin tem acesso irrestrito a todas as filiais sem consultar tabelas de sistema", async () => {
+    const getRows = criarGetRows([]);
+    const r = await fetchFiliaisUsuario(config, "admin", getRows);
+
+    expect(r.restricaoAplicada).toBe(true);
+    expect(r.filiais).toHaveLength(3);
+    expect(r.aviso).toBeUndefined();
+  });
 });

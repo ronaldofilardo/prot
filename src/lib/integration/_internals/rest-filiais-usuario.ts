@@ -153,6 +153,11 @@ export async function fetchFiliaisUsuario(
 
   if (!usuario) return buildSemUsuarioResult(rowsSm0, config.empresaId);
 
+  const uNorm = usuario.trim().toLowerCase();
+  if (uNorm === "admin" || uNorm === "administrador") {
+    return { filiais: mapSm0Rows(rowsSm0, config.empresaId), usuario, restricaoAplicada: true };
+  }
+
   const { acesso, motivo } = await resolvePermissoes(usuario, getRows);
   if (acesso.length === 0) return buildAcessoVazioResult(rowsSm0, config.empresaId, usuario, motivo);
 

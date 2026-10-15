@@ -231,13 +231,7 @@ describe("protheus-adapter — caracterização (linha Protheus → Canonical)",
     });
 
     it("usa fallback de campos alternativos (CQ_SALDOA, CQ_SALDOF)", () => {
-      const result = csvRowToCanonicalSaldoContabil(
-        {
-          CQ_SALDOA: "10",
-          CQ_SALDOF: "20",
-        },
-        "empresa-01"
-      );
+      const result = csvRowToCanonicalSaldoContabil({ CQ_SALDOA: "10", CQ_SALDOF: "20" }, "empresa-01");
       expect(result.previousBalance).toBe(10);
       expect(result.currentBalance).toBe(20);
     });

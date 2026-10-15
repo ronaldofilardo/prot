@@ -109,6 +109,27 @@ export async function fetchContasReceber(
   return mergeAndDedupe(rows, ["E1_PREFIXO", "E1_NUM", "E1_PARCELA", "E1_CLIENTE", "E1_LOJA"]);
 }
 
+function fallbackStr(a?: string, b?: string): string {
+  return a || b || "";
+}
+
+function getBaixaRowKey(row: ProtheusRow): string {
+  const numero = fallbackStr(row.E5_NUMERO, row.E5_NUM);
+  const data = fallbackStr(row.E5_DATA, row.E5_BAIXA);
+  const clifor = fallbackStr(row.E5_CLIFOR, row.E5_CLIENTE);
+  return `${row.E5_FILIAL ?? ""}|${row.E5_PREFIXO ?? ""}|${numero}|${row.E5_PARCELA ?? ""}|${data}|${row.E5_SEQ ?? ""}|${clifor}`;
+}
+
+export function mergeAndDedupeBaixas(rows: ProtheusRow[]): ProtheusRow[] {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const key = getBaixaRowKey(row);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export async function fetchBaixas(
   config: ProtheusRestConfig,
   customPath: string | undefined,
@@ -120,7 +141,7 @@ export async function fetchBaixas(
     ...BAIXAS_FALLBACK_PATHS,
   ]);
   const rows = await fetchRowsFromFirstPath(candidatePaths, getRows, () => []);
-  return mergeAndDedupe(rows, ["E5_PREFIXO", "E5_NUM", "E5_PARCELA", "E5_CLIENTE", "E5_LOJA", "E5_SEQ"]);
+  return mergeAndDedupeBaixas(rows);
 }
 
 export async function fetchSaldosContabeis(

@@ -3,17 +3,23 @@ import {
   csvRowToCanonicalCliente,
   csvRowToCanonicalFaturamento,
   csvRowToCanonicalContaReceber,
+  csvRowToCanonicalContaPagar,
   csvRowToCanonicalBaixa,
+  csvRowToCanonicalBaixaPagar,
   csvRowToCanonicalSaldoContabil,
+  filterBaixasPagar,
 } from "../protheus-adapter";
 import {
   syncClientes,
   syncFaturamentos,
   syncContasReceber,
+  syncContasPagar,
   syncBaixas,
+  syncBaixasPagar,
   syncSaldosContabeis,
   syncItensVenda,
 } from "../sync-engine";
+import { filterBaixasReceber } from "./adapter-baixas-filter";
 import { csvRowToCanonicalItemVenda } from "./adapter-itens-venda";
 import type { SyncFn, EntityJob } from "./sync-jobs";
 
@@ -37,10 +43,28 @@ export const JOBS: EntityJob<unknown>[] = [
     sync: syncContasReceber as SyncFn<unknown>,
   },
   {
+    entidade: "ContaPagar",
+    fetch: (c: ProtheusClient) => (c.fetchContasPagar ? c.fetchContasPagar() : Promise.resolve([])),
+    toCanonical: csvRowToCanonicalContaPagar,
+    sync: syncContasPagar as SyncFn<unknown>,
+  },
+  {
     entidade: "Baixa",
-    fetch: (c: ProtheusClient) => c.fetchBaixas(),
+    fetch: async (c: ProtheusClient) => {
+      const rows = await c.fetchBaixas();
+      return filterBaixasReceber(rows);
+    },
     toCanonical: csvRowToCanonicalBaixa,
     sync: syncBaixas as SyncFn<unknown>,
+  },
+  {
+    entidade: "BaixaPagar",
+    fetch: async (c: ProtheusClient) => {
+      const rows = await c.fetchBaixas();
+      return filterBaixasPagar(rows);
+    },
+    toCanonical: csvRowToCanonicalBaixaPagar,
+    sync: syncBaixasPagar as SyncFn<unknown>,
   },
   {
     entidade: "SaldoContabil",

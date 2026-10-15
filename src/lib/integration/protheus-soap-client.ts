@@ -95,6 +95,9 @@ export class ProtheusSoapClient implements ProtheusClient {
   fetchContasReceber(): Promise<ProtheusRow[]> {
     return this.call("SE1");
   }
+  fetchContasPagar(): Promise<ProtheusRow[]> {
+    return this.call("SE2");
+  }
   fetchBaixas(): Promise<ProtheusRow[]> {
     return this.call("SE5");
   }

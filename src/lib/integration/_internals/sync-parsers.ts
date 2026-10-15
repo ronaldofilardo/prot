@@ -89,3 +89,49 @@ export function parseItemVendaExternalId(externalId: string): {
     item: item || "01",
   };
 }
+
+export function parseContaPagarExternalId(externalId: string): {
+  filial: string;
+  prefixo: string;
+  numero: string;
+  parcela: string;
+  tipo: string;
+  fornecedorCodigo: string;
+  fornecedorLoja: string;
+} {
+  const idx = externalId.indexOf("-CP-");
+  const suffix = idx === -1 ? externalId : externalId.substring(idx + 4);
+  const [filial, prefixo, numero, parcela, tipo, fornecedorCodigo, fornecedorLoja] = suffix.split("-");
+  return {
+    filial: filial || "01",
+    prefixo: prefixo || "",
+    numero: numero || "",
+    parcela: parcela || "",
+    tipo: tipo || "NF",
+    fornecedorCodigo: fornecedorCodigo || "",
+    fornecedorLoja: fornecedorLoja || "01",
+  };
+}
+
+export function parseBaixaPagarExternalId(externalId: string): {
+  filial: string;
+  prefixo: string;
+  numero: string;
+  parcela: string;
+  tipo: string;
+  fornecedorCodigo: string;
+  fornecedorLoja: string;
+} {
+  const idx = externalId.indexOf("-BXP-");
+  const suffix = idx === -1 ? externalId : externalId.substring(idx + 5);
+  const [filial, prefixo, numero, parcela, tipo, fornecedorCodigo, fornecedorLoja] = suffix.split("-");
+  return {
+    filial: filial || "01",
+    prefixo: prefixo || "",
+    numero: numero || "",
+    parcela: parcela || "",
+    tipo: tipo || "NF",
+    fornecedorCodigo: fornecedorCodigo || "",
+    fornecedorLoja: fornecedorLoja || "01",
+  };
+}

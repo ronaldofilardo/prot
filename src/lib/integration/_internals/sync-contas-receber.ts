@@ -14,7 +14,10 @@ async function upsertContaReceber(
   const existing = await tx.contaReceber.findUnique({ where: { filial_prefixo_numero_parcela_empresaId: { filial, prefixo, numero, parcela, empresaId } } });
 
   if (existing) {
-    await tx.contaReceber.update({ where: { id: existing.id }, data: { valor: reg.amount, vencimento: new Date(reg.dueDate) } });
+    await tx.contaReceber.update({
+      where: { id: existing.id },
+      data: { valor: reg.amount, saldo: reg.balance ?? reg.amount, vencimento: new Date(reg.dueDate) },
+    });
     return "update";
   }
 
@@ -28,7 +31,7 @@ async function upsertContaReceber(
     data: {
       filial, prefixo, numero, parcela, tipo: reg.type,
       dataEmissao: new Date(reg.issueDate), vencimento: new Date(reg.dueDate),
-      valor: reg.amount, clienteId: cliente.id, empresaId,
+      valor: reg.amount, saldo: reg.balance ?? reg.amount, clienteId: cliente.id, empresaId,
     },
   });
   return "insert";

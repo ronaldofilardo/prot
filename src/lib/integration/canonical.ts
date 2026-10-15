@@ -6,7 +6,7 @@
  * idempotente (empresa + filial + tipo + número + parcela).
  */
 
-export type EntidadeCanonica = "Cliente" | "Fornecedor" | "Faturamento" | "ContaReceber" | "ContaPagar" | "Baixa" | "SaldoContabil" | "ItemVenda";
+export type EntidadeCanonica = "Cliente" | "Fornecedor" | "Faturamento" | "ContaReceber" | "ContaPagar" | "Baixa" | "BaixaPagar" | "SaldoContabil" | "ItemVenda";
 
 export type StatusTitulo = "open" | "partial" | "paid" | "overdue" | "cancelled";
 
@@ -48,6 +48,7 @@ export interface CanonicalTitle {
   currency: string;
   status: StatusTitulo;
   costCenter?: string;
+  balance?: number;
   updatedAt: string;
 }
 
@@ -62,7 +63,10 @@ export interface CanonicalPayment {
   type: string;
   amount: number;
   paymentDate: string;
+  sequence?: string;
   titleExternalId: string;
+  supplierCode?: string;
+  supplierStore?: string;
   updatedAt: string;
 }
 
@@ -101,8 +105,27 @@ export interface CanonicalSaleItem {
   updatedAt: string;
 }
 
+export interface CanonicalPayable {
+  externalId: string;
+  company: string;
+  branch: string;
+  prefix: string;
+  number: string;
+  installment: string;
+  type: string;
+  supplierCode: string;
+  supplierStore: string;
+  supplierName: string;
+  issueDate: string;
+  dueDate: string;
+  amount: number;
+  balance?: number;
+  currency: string;
+  updatedAt: string;
+}
+
 export interface IngestPayload {
   empresaId: string;
   entidade: EntidadeCanonica;
-  registros: CanonicalParty[] | CanonicalInvoice[] | CanonicalTitle[] | CanonicalPayment[] | CanonicalSaldoContabil[] | CanonicalSaleItem[];
+  registros: CanonicalParty[] | CanonicalInvoice[] | CanonicalTitle[] | CanonicalPayment[] | CanonicalSaldoContabil[] | CanonicalSaleItem[] | CanonicalPayable[];
 }

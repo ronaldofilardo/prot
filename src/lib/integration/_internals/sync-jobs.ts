@@ -16,10 +16,19 @@ export type SyncFn<T = unknown> = (
 ) => Promise<SyncResult>;
 
 export interface EntityJob<T = unknown> {
-  entidade: "Cliente" | "Faturamento" | "ContaReceber" | "Baixa" | "SaldoContabil" | "ItemVenda";
+  entidade: "Cliente" | "Faturamento" | "ContaReceber" | "ContaPagar" | "Baixa" | "BaixaPagar" | "SaldoContabil" | "ItemVenda";
   fetch: (client: ProtheusClient) => Promise<ProtheusRow[]>;
   toCanonical: (row: ProtheusRow, empresaId: string) => T;
   sync: SyncFn<T>;
 }
 
-export const ENTITY_ORDER = ["Cliente", "Faturamento", "ContaReceber", "Baixa", "SaldoContabil", "ItemVenda"] as const;
+export const ENTITY_ORDER = [
+  "Cliente",
+  "Faturamento",
+  "ContaReceber",
+  "ContaPagar",
+  "Baixa",
+  "BaixaPagar",
+  "SaldoContabil",
+  "ItemVenda",
+] as const;

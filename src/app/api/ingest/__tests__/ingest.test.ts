@@ -17,13 +17,17 @@ vi.mock("@/lib/integration/sync-engine", () => ({
   syncClientes: mockSyncClientes,
   syncFaturamentos: vi.fn(),
   syncContasReceber: vi.fn(),
+  syncContasPagar: vi.fn(),
   syncBaixas: vi.fn(),
+  syncBaixasPagar: vi.fn(),
   syncSaldosContabeis: vi.fn(),
   syncItensVenda: vi.fn(),
   parseClienteExternalId: vi.fn(),
   parseFaturamentoExternalId: vi.fn(),
   parseContaReceberExternalId: vi.fn(),
+  parseContaPagarExternalId: vi.fn(),
   parseBaixaExternalId: vi.fn(),
+  parseBaixaPagarExternalId: vi.fn(),
   parseItemVendaExternalId: vi.fn(),
 }));
 

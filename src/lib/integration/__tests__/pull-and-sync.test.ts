@@ -8,7 +8,9 @@ const {
   syncClientesMock,
   syncFaturamentosMock,
   syncContasReceberMock,
+  syncContasPagarMock,
   syncBaixasMock,
+  syncBaixasPagarMock,
   syncSaldosContabeisMock,
   syncItensVendaMock,
   logApiErrorMock,
@@ -19,7 +21,9 @@ const {
   syncClientesMock: vi.fn(),
   syncFaturamentosMock: vi.fn(),
   syncContasReceberMock: vi.fn(),
+  syncContasPagarMock: vi.fn(),
   syncBaixasMock: vi.fn(),
+  syncBaixasPagarMock: vi.fn(),
   syncSaldosContabeisMock: vi.fn(),
   syncItensVendaMock: vi.fn(),
   logApiErrorMock: vi.fn(),
@@ -30,7 +34,9 @@ vi.mock("../sync-engine", () => ({
   syncClientes: syncClientesMock,
   syncFaturamentos: syncFaturamentosMock,
   syncContasReceber: syncContasReceberMock,
+  syncContasPagar: syncContasPagarMock,
   syncBaixas: syncBaixasMock,
+  syncBaixasPagar: syncBaixasPagarMock,
   syncSaldosContabeis: syncSaldosContabeisMock,
   syncItensVenda: syncItensVendaMock,
 }));
@@ -44,11 +50,12 @@ vi.mock("@/lib/utils/logger", () => ({ logApiError: logApiErrorMock }));
 
 const RESULTADO_OK = { entidade: "Cliente", processados: 1, criados: 1, atualizados: 0, erros: 0 };
 
-function clientCom(rows: Partial<Record<"Clientes" | "Faturamentos" | "ContasReceber" | "Baixas" | "SaldosContabeis" | "ItensVenda", unknown[]>>) {
+function clientCom(rows: Partial<Record<"Clientes" | "Faturamentos" | "ContasReceber" | "ContasPagar" | "Baixas" | "SaldosContabeis" | "ItensVenda", unknown[]>>) {
   return {
     fetchClientes: vi.fn().mockResolvedValue(rows.Clientes ?? []),
     fetchFaturamentos: vi.fn().mockResolvedValue(rows.Faturamentos ?? []),
     fetchContasReceber: vi.fn().mockResolvedValue(rows.ContasReceber ?? []),
+    fetchContasPagar: vi.fn().mockResolvedValue(rows.ContasPagar ?? []),
     fetchBaixas: vi.fn().mockResolvedValue(rows.Baixas ?? []),
     fetchSaldosContabeis: vi.fn().mockResolvedValue(rows.SaldosContabeis ?? []),
     fetchItensVenda: vi.fn().mockResolvedValue(rows.ItensVenda ?? []),
@@ -61,7 +68,9 @@ describe("pullAndSyncFromProtheus (pull-and-sync.ts)", () => {
     syncClientesMock.mockResolvedValue(RESULTADO_OK);
     syncFaturamentosMock.mockResolvedValue(RESULTADO_OK);
     syncContasReceberMock.mockResolvedValue(RESULTADO_OK);
+    syncContasPagarMock.mockResolvedValue(RESULTADO_OK);
     syncBaixasMock.mockResolvedValue(RESULTADO_OK);
+    syncBaixasPagarMock.mockResolvedValue(RESULTADO_OK);
     syncSaldosContabeisMock.mockResolvedValue(RESULTADO_OK);
     syncItensVendaMock.mockResolvedValue(RESULTADO_OK);
     syncLogCreateMock.mockResolvedValue({});
@@ -87,7 +96,16 @@ describe("pullAndSyncFromProtheus (pull-and-sync.ts)", () => {
     const resultados = await pullAndSyncFromProtheus("emp-01");
 
     expect(getProtheusClientMock).toHaveBeenCalledWith("emp-01");
-    expect(resultados.map((r) => r.entidade)).toEqual(["Cliente", "Faturamento", "ContaReceber", "Baixa", "SaldoContabil", "ItemVenda"]);
+    expect(resultados.map((r) => r.entidade)).toEqual([
+      "Cliente",
+      "Faturamento",
+      "ContaReceber",
+      "ContaPagar",
+      "Baixa",
+      "BaixaPagar",
+      "SaldoContabil",
+      "ItemVenda",
+    ]);
     expect(resultados[0].registros).toBe(1);
     expect(resultados[2].registros).toBe(1);
 
@@ -106,10 +124,19 @@ describe("pullAndSyncFromProtheus (pull-and-sync.ts)", () => {
 
     await pullAndSyncFromProtheus("emp-01");
 
-    expect(syncLogCreateMock).toHaveBeenCalledTimes(6);
+    expect(syncLogCreateMock).toHaveBeenCalledTimes(8);
     expect(
       syncLogCreateMock.mock.calls.map(([args]) => (args as { data: { entidade: string } }).data.entidade)
-    ).toEqual(["Cliente", "Faturamento", "ContaReceber", "Baixa", "SaldoContabil", "ItemVenda"]);
+    ).toEqual([
+      "Cliente",
+      "Faturamento",
+      "ContaReceber",
+      "ContaPagar",
+      "Baixa",
+      "BaixaPagar",
+      "SaldoContabil",
+      "ItemVenda",
+    ]);
     expect(syncLogCreateMock).toHaveBeenCalledWith({
       data: {
         empresaId: "emp-01",
@@ -156,7 +183,7 @@ describe("pullAndSyncFromProtheus (pull-and-sync.ts)", () => {
 
     expect(client.fetchFaturamentos).toHaveBeenCalled();
     expect(syncFaturamentosMock).toHaveBeenCalledTimes(1);
-    expect(resultados).toHaveLength(6);
+    expect(resultados).toHaveLength(8);
     expect(resultados[1].erro).toBeUndefined();
   });
 
@@ -172,7 +199,7 @@ describe("pullAndSyncFromProtheus (pull-and-sync.ts)", () => {
 
     const resultados = await pullAndSyncFromProtheus("emp-01");
 
-    expect(resultados).toHaveLength(6);
+    expect(resultados).toHaveLength(8);
     expect(resultados[0].erro).toBe("conexao recusada");
     expect(resultados[1].erro).toBeUndefined();
   });

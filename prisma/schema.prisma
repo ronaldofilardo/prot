@@ -35,6 +35,8 @@ model Empresa {
   syncLogs      SyncLog[]
   saldosContabeis SaldoContabil[]
   itensVenda    ItemVenda[]
+  contasPagar   ContaPagar[]
+  baixasPagar   BaixaPagar[]
   acessosExtras UsuarioEmpresaAcesso[]
   protheusCredencial ProtheusCredencial?
 
@@ -137,6 +139,7 @@ model ContaReceber {
   dataEmissao DateTime
   vencimento  DateTime
   valor       Decimal   @db.Decimal(15, 2)
+  saldo       Decimal   @default(0) @db.Decimal(15, 2)
   clienteId   String
   cliente     Cliente   @relation(fields: [clienteId], references: [id])
   empresaId   String
@@ -155,6 +158,7 @@ model Baixa {
   numero          String
   parcela         String
   tipo            String
+  sequencia       String?
   valorBaixa      Decimal  @db.Decimal(15, 2)
   dataBaixa       DateTime
   contaReceberId  String
@@ -162,6 +166,8 @@ model Baixa {
   empresaId       String
   empresa         Empresa  @relation(fields: [empresaId], references: [id])
   sincronizadoEm  DateTime @default(now())
+
+  @@unique([contaReceberId, sequencia, dataBaixa])
 }
 
 // Fila de exceções de sincronização (guia de integração §6)
@@ -226,4 +232,50 @@ model ItemVenda {
   @@unique([filial, numeroNota, serie, clienteId, item, empresaId])
   @@index([empresaId, dataEmissao])
   @@index([empresaId, clienteId])
+}
+
+model ContaPagar {
+  id               String   @id @default(cuid())
+  filial           String
+  prefixo          String
+  numero           String
+  parcela          String
+  tipo             String
+  fornecedorCodigo String
+  fornecedorLoja   String
+  fornecedorNome   String
+  dataEmissao      DateTime
+  vencimento       DateTime
+  valor            Decimal  @db.Decimal(15, 2)
+  saldo            Decimal  @default(0) @db.Decimal(15, 2)
+  empresaId        String
+  empresa          Empresa  @relation(fields: [empresaId], references: [id])
+  sincronizadoEm   DateTime @default(now())
+  baixas           BaixaPagar[]
+
+  @@unique([filial, prefixo, numero, parcela, tipo, fornecedorCodigo, fornecedorLoja, empresaId])
+  @@index([empresaId, dataEmissao])
+  @@index([empresaId, vencimento])
+}
+
+model BaixaPagar {
+  id             String      @id @default(cuid())
+  filial         String
+  filialBaixa    String
+  prefixo        String
+  numero         String
+  parcela        String
+  tipo           String
+  sequencia      String?
+  valorBaixa     Decimal     @db.Decimal(15, 2)
+  dataBaixa      DateTime
+  contaPagarId   String
+  contaPagar     ContaPagar  @relation(fields: [contaPagarId], references: [id])
+  empresaId      String
+  empresa        Empresa     @relation(fields: [empresaId], references: [id])
+  sincronizadoEm DateTime    @default(now())
+
+  @@unique([contaPagarId, sequencia, dataBaixa])
+  @@index([empresaId, dataBaixa])
+  @@index([filial, numero])
 }

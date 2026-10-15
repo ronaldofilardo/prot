@@ -62,8 +62,16 @@ export const CONTAS_RECEBER_FALLBACK_PATHS: string[] = [
   "/rest/api/v1/bills-to-receive",
 ];
 
+export const CONTAS_PAGAR_FALLBACK_PATHS: string[] = [
+  "/rest/api/framework/v1/genericQuery?tables=SE2&fields=E2_FILIAL,E2_PREFIXO,E2_NUM,E2_PARCELA,E2_TIPO,E2_FORNECE,E2_LOJA,E2_NOMFOR,E2_EMISSAO,E2_VENCTO,E2_VALOR",
+  "/api/protheus/v1/financeiro/contasapagar",
+  "/rest/api/protheus/v1/contas-pagar",
+  "/api/protheus/v1/contas-pagar",
+  "/rest/api/v1/bills-to-pay",
+];
+
 export const BAIXAS_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SE5&fields=E5_FILIAL,E5_PREFIXO,E5_NUM,E5_PARCELA,E5_TIPO,E5_VALOR,E5_BAIXA,E5_FILBAI",
+  "/rest/api/framework/v1/genericQuery?tables=SE5&fields=E5_FILIAL,E5_PREFIXO,E5_NUMERO,E5_PARCELA,E5_TIPO,E5_VALOR,E5_DATA,E5_RECPAG,E5_SEQ,E5_CLIFOR",
   "/api/protheus/v1/financeiro/baixas",
   "/api/protheus/v1/financeiro/movimentos",
   "/rest/api/protheus/v1/baixas",

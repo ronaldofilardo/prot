@@ -66,6 +66,7 @@ export interface ProtheusClient {
   fetchClientes(): Promise<ProtheusRow[]>;
   fetchFaturamentos(): Promise<ProtheusRow[]>;
   fetchContasReceber(): Promise<ProtheusRow[]>;
+  fetchContasPagar?(customPath?: string): Promise<ProtheusRow[]>;
   fetchBaixas(): Promise<ProtheusRow[]>;
   fetchSaldosContabeis(): Promise<ProtheusRow[]>;
   fetchItensVenda?(customPath?: string): Promise<ProtheusRow[]>;

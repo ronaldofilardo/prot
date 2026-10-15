@@ -12,12 +12,16 @@ export {
   parseClienteExternalId,
   parseFaturamentoExternalId,
   parseContaReceberExternalId,
+  parseContaPagarExternalId,
   parseBaixaExternalId,
+  parseBaixaPagarExternalId,
   parseItemVendaExternalId,
 } from "./_internals/sync-parsers";
 export { syncClientes } from "./_internals/sync-clientes";
 export { syncFaturamentos } from "./_internals/sync-faturamento";
 export { syncContasReceber } from "./_internals/sync-contas-receber";
+export { syncContasPagar } from "./_internals/sync-contas-pagar";
 export { syncBaixas } from "./_internals/sync-baixas";
+export { syncBaixasPagar } from "./_internals/sync-baixas-pagar";
 export { syncSaldosContabeis } from "./_internals/sync-saldos-contabeis";
 export { syncItensVenda } from "./_internals/sync-itens-venda";

@@ -18,6 +18,7 @@ import {
 } from "./_internals/rest-entity-fetchers";
 import { fetchFiliaisUsuario } from "./_internals/rest-filiais-usuario";
 import { fetchItensVenda as fetchItensVendaInternal } from "./_internals/rest-itens-venda-fetcher";
+import { fetchContasPagar as fetchContasPagarInternal } from "./_internals/rest-contas-pagar-fetcher";
 
 export type { ProtheusRestConfig } from "./_internals/rest-types";
 
@@ -71,6 +72,10 @@ export class ProtheusRestClient implements ProtheusClient {
 
   async fetchContasReceber(customPath?: string): Promise<ProtheusRow[]> {
     return fetchContasReceber(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_CONTAS_RECEBER_PATH"));
+  }
+
+  async fetchContasPagar(customPath?: string): Promise<ProtheusRow[]> {
+    return fetchContasPagarInternal(this.config, customPath, (path) => this.get(path, "PROTHEUS_REST_CONTAS_PAGAR_PATH"));
   }
 
   async fetchBaixas(customPath?: string): Promise<ProtheusRow[]> {

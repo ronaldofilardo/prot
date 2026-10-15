@@ -22,6 +22,7 @@ export function buildProtheusRestClientFromEnv(): ProtheusRestClient {
       clientes: process.env.PROTHEUS_REST_CLIENTES_PATH,
       faturamentos: process.env.PROTHEUS_REST_FATURAMENTOS_PATH,
       contasReceber: process.env.PROTHEUS_REST_CONTAS_RECEBER_PATH,
+      contasPagar: process.env.PROTHEUS_REST_CONTAS_PAGAR_PATH,
       baixas: process.env.PROTHEUS_REST_BAIXAS_PATH,
       saldosContabeis: process.env.PROTHEUS_REST_SALDOS_CONTABEIS_PATH,
     },

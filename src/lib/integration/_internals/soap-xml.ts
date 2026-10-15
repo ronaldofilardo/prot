@@ -6,6 +6,7 @@ export const ROW_TAG: Record<string, string> = {
   SA1: "SA1",
   SF2: "SF2",
   SE1: "SE1",
+  SE2: "SE2",
   SE5: "SE5",
 };
 

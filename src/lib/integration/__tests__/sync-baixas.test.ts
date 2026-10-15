@@ -3,7 +3,7 @@ import { syncBaixas } from "../_internals/sync-baixas";
 import type { CanonicalPayment } from "../canonical";
 import type { PrismaClient } from "@prisma/client";
 
-function pagamento(): CanonicalPayment {
+function pagamento(overrides: Partial<CanonicalPayment> = {}): CanonicalPayment {
   return {
     externalId: "empresa-01-BX-01-FAT-000100-A-20260917",
     company: "empresa-01",
@@ -17,13 +17,14 @@ function pagamento(): CanonicalPayment {
     paymentDate: "2026-09-17T12:00:00.000Z",
     titleExternalId: "empresa-01-CR-01-FAT-000100-A",
     updatedAt: "2026-09-17T12:00:00.000Z",
+    ...overrides,
   };
 }
 
 function novoTx() {
   return {
     contaReceber: { findUnique: vi.fn() },
-    baixa: { findFirst: vi.fn(), create: vi.fn() },
+    baixa: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
   };
 }
 
@@ -57,7 +58,7 @@ describe("syncBaixas", () => {
     });
   });
 
-  it("ignora quando a baixa ja foi registrada", async () => {
+  it("ignora quando a baixa ja foi registrada (sem sequencia)", async () => {
     tx.contaReceber.findUnique.mockResolvedValue({ id: "cb-1" });
     tx.baixa.findFirst.mockResolvedValue({ id: "bx-1" });
 
@@ -65,6 +66,36 @@ describe("syncBaixas", () => {
 
     expect(res).toMatchObject({ criados: 0, erros: 0 });
     expect(tx.baixa.create).not.toHaveBeenCalled();
+  });
+
+  it("atualiza baixa legada sem sequência quando chega mesma data e valor com sequencia", async () => {
+    tx.contaReceber.findUnique.mockResolvedValue({ id: "cb-1" });
+    tx.baixa.findUnique.mockResolvedValue(null);
+    tx.baixa.findFirst.mockResolvedValue({ id: "bx-legada", sequencia: null, valorBaixa: 50 });
+
+    const res = await syncBaixas(prisma, "empresa-01", [pagamento({ sequence: "01" })]);
+
+    expect(res).toMatchObject({ criados: 0, atualizados: 1, erros: 0 });
+    expect(tx.baixa.update).toHaveBeenCalledWith({
+      where: { id: "bx-legada" },
+      data: { sequencia: "01" },
+    });
+  });
+
+  it("insere nova baixa com sequencia quando não existe baixa anterior", async () => {
+    tx.contaReceber.findUnique.mockResolvedValue({ id: "cb-1" });
+    tx.baixa.findUnique.mockResolvedValue(null);
+    tx.baixa.findFirst.mockResolvedValue(null);
+
+    const res = await syncBaixas(prisma, "empresa-01", [pagamento({ sequence: "02", amount: 25 })]);
+
+    expect(res).toMatchObject({ criados: 1, atualizados: 0, erros: 0 });
+    expect(tx.baixa.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        sequencia: "02",
+        valorBaixa: 25,
+      }),
+    });
   });
 
   it("conta a receber inexistente vira erro de skip", async () => {

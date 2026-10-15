@@ -12,6 +12,10 @@ export function buildFallbackContasReceberRows(): ProtheusRow[] {
   return [{ E1_PREFIXO: "1", E1_NUM: "000000001", E1_PARCELA: "1", E1_CLIENTE: "000001", E1_LOJA: "01", E1_EMISSAO: new Date().toISOString().split("T")[0].replace(/-/g, ""), E1_VENCTO: new Date().toISOString().split("T")[0].replace(/-/g, ""), E1_VALOR: "5000.00", E1_SALDO: "5000.00", D_E_L_E_T_: "" }];
 }
 
+export function buildFallbackContasPagarRows(): ProtheusRow[] {
+  return [{ E2_PREFIXO: "1", E2_NUM: "000000001", E2_PARCELA: "1", E2_TIPO: "NF", E2_FORNECE: "000001", E2_LOJA: "01", E2_NOMFOR: "FORNECEDOR TESTE", E2_EMISSAO: new Date().toISOString().split("T")[0].replace(/-/g, ""), E2_VENCTO: new Date().toISOString().split("T")[0].replace(/-/g, ""), E2_VALOR: "5000.00", E2_SALDO: "5000.00", D_E_L_E_T_: "" }];
+}
+
 export function buildFallbackFilial(empresaId: string, filial: string): ProtheusFilialInfo {
   const raw = (filial || "00101001").trim();
   const is8 = raw.length === 8;

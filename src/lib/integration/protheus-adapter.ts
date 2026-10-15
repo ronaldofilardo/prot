@@ -7,6 +7,9 @@
 import type { CanonicalParty, CanonicalInvoice, CanonicalTitle, CanonicalPayment, CanonicalSaldoContabil } from "./canonical";
 import { parseProtheusDate, trimField, trimOr, parseCompetencia } from "./_internals/adapter-fields";
 
+export { csvRowToCanonicalContaPagar } from "./_internals/adapter-contas-pagar";
+export { csvRowToCanonicalBaixaPagar, filterBaixasPagar } from "./_internals/adapter-baixas-pagar";
+
 export function csvRowToCanonicalCliente(row: Record<string, string>, empresaId: string): CanonicalParty {
   return {
     externalId: `${empresaId}-CLI-${trimField(row, "A1_COD")}-${trimField(row, "A1_LOJA")}`,
@@ -36,6 +39,10 @@ export function csvRowToCanonicalFaturamento(row: Record<string, string>, empres
 }
 
 export function csvRowToCanonicalContaReceber(row: Record<string, string>, empresaId: string): CanonicalTitle {
+  const amount = parseFloat(trimField(row, "E1_VALOR")) || 0;
+  const saldoRaw = trimField(row, "E1_SALDO");
+  const balance = saldoRaw ? parseFloat(saldoRaw) : amount;
+
   return {
     externalId: `${empresaId}-CR-${trimField(row, "E1_FILIAL")}-${trimField(row, "E1_PREFIXO")}-${trimField(row, "E1_NUM")}-${trimField(row, "E1_PARCELA")}`,
     company: empresaId,
@@ -47,7 +54,8 @@ export function csvRowToCanonicalContaReceber(row: Record<string, string>, empre
     partyExternalId: `${empresaId}-CLI-${trimField(row, "E1_CLIENTE")}-${trimField(row, "E1_LOJA")}`,
     issueDate: parseProtheusDate(trimField(row, "E1_EMISSAO")),
     dueDate: parseProtheusDate(trimField(row, "E1_VENCTO")),
-    amount: parseFloat(trimField(row, "E1_VALOR")) || 0,
+    amount,
+    balance,
     currency: "BRL",
     status: "open",
     updatedAt: new Date().toISOString(),
@@ -55,18 +63,24 @@ export function csvRowToCanonicalContaReceber(row: Record<string, string>, empre
 }
 
 export function csvRowToCanonicalBaixa(row: Record<string, string>, empresaId: string): CanonicalPayment {
+  const filial = trimOr(row, "E5_FILIAL", "01"), prefixo = trimOr(row, "E5_PREFIXO", "");
+  const num = trimOr(row, "E5_NUMERO", "") || trimOr(row, "E5_NUM", "");
+  const parcela = trimOr(row, "E5_PARCELA", ""), data = trimOr(row, "E5_DATA", "") || trimOr(row, "E5_BAIXA", "");
+  const seq = trimOr(row, "E5_SEQ", ""), seqSuffix = seq ? `-${seq}` : "";
+
   return {
-    externalId: `${empresaId}-BX-${trimField(row, "E5_FILIAL")}-${trimField(row, "E5_PREFIXO")}-${trimField(row, "E5_NUM")}-${trimField(row, "E5_PARCELA")}-${trimField(row, "E5_BAIXA")}`,
+    externalId: `${empresaId}-BX-${filial}-${prefixo}-${num}-${parcela}-${data}${seqSuffix}`,
     company: empresaId,
-    branch: trimOr(row, "E5_FILIAL", "01"),
+    branch: filial,
     paymentBranch: trimOr(row, "E5_FILBAI", "01"),
-    prefix: trimOr(row, "E5_PREFIXO", ""),
-    number: trimOr(row, "E5_NUM", ""),
-    installment: trimOr(row, "E5_PARCELA", ""),
+    prefix: prefixo,
+    number: num,
+    installment: parcela,
     type: trimOr(row, "E5_TIPO", "DUP"),
+    sequence: seq || undefined,
     amount: parseFloat(trimField(row, "E5_VALOR")) || 0,
-    paymentDate: parseProtheusDate(trimField(row, "E5_BAIXA")),
-    titleExternalId: `${empresaId}-CR-${trimField(row, "E5_FILIAL")}-${trimField(row, "E5_PREFIXO")}-${trimField(row, "E5_NUM")}-${trimField(row, "E5_PARCELA")}`,
+    paymentDate: parseProtheusDate(data),
+    titleExternalId: `${empresaId}-CR-${filial}-${prefixo}-${num}-${parcela}`,
     updatedAt: new Date().toISOString(),
   };
 }

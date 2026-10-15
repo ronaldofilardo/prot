@@ -59,7 +59,7 @@ describe("syncContasReceber", () => {
     expect(res).toMatchObject({ criados: 0, atualizados: 1, erros: 0 });
     expect(tx.contaReceber.update).toHaveBeenCalledWith({
       where: { id: "cb-1" },
-      data: { valor: 250, vencimento: new Date("2026-10-01T00:00:00.000Z") },
+      data: { valor: 250, saldo: 250, vencimento: new Date("2026-10-01T00:00:00.000Z") },
     });
   });
 

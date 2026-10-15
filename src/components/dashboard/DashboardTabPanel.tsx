@@ -6,6 +6,7 @@ import { DashboardAtualizacaoTab } from "@/components/dashboard/DashboardAtualiz
 import { EmpresaProtheusPanel } from "@/components/empresa/EmpresaProtheusPanel";
 import { Balancete } from "@/components/balancete";
 import { MargemComponent } from "@/components/margem";
+import { PrazoMedioComponent } from "@/components/prazo-medio";
 import type { TabType } from "@/components/dashboard/DashboardSidebarNav";
 import type { DashboardData } from "@/hooks/useDashboard";
 import { buildChartsData, buildKpiData } from "@/components/dashboard/dashboard-tab-data";
@@ -29,6 +30,10 @@ export function DashboardTabPanel({ activeTab, data, loading, onRefresh }: Dashb
         </>
       )}
 
+      {activeTab === "margem" && <MargemComponent />}
+
+      {activeTab === "prazo-medio" && <PrazoMedioComponent />}
+
       {activeTab === "projecao" && (
         <DashboardChartsGrid type="projecao" data={chartsData} loading={loading} />
       )}
@@ -44,8 +49,6 @@ export function DashboardTabPanel({ activeTab, data, loading, onRefresh }: Dashb
       {activeTab === "empresa" && <EmpresaProtheusPanel />}
 
       {activeTab === "balancete" && <Balancete />}
-
-      {activeTab === "margem" && <MargemComponent />}
     </main>
   );
 }

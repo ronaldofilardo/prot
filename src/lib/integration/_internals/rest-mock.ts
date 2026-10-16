@@ -1,31 +1,32 @@
 import type { ProtheusFilialInfo, ProtheusRow } from "../protheus-client";
 
 export function buildFallbackClientesRows(): ProtheusRow[] {
-  return [{ A1_COD: "000001", A1_LOJA: "01", A1_NOME: "CLIENTE TESTE LC1", A1_MUN: "SAO PAULO", A1_EST: "SP", D_E_L_E_T_: "" }];
+  return [];
 }
 
 export function buildFallbackFaturamentosRows(): ProtheusRow[] {
-  return [{ F2_DOC: "000000001", F2_SERIE: "1", F2_CLIENTE: "000001", F2_LOJA: "01", F2_EMISSAO: new Date().toISOString().split("T")[0].replace(/-/g, ""), F2_VALOR: "5000.00", D_E_L_E_T_: "" }];
+  return [];
 }
 
 export function buildFallbackContasReceberRows(): ProtheusRow[] {
-  return [{ E1_PREFIXO: "1", E1_NUM: "000000001", E1_PARCELA: "1", E1_CLIENTE: "000001", E1_LOJA: "01", E1_EMISSAO: new Date().toISOString().split("T")[0].replace(/-/g, ""), E1_VENCTO: new Date().toISOString().split("T")[0].replace(/-/g, ""), E1_VALOR: "5000.00", E1_SALDO: "5000.00", D_E_L_E_T_: "" }];
+  return [];
 }
 
 export function buildFallbackContasPagarRows(): ProtheusRow[] {
-  return [{ E2_PREFIXO: "1", E2_NUM: "000000001", E2_PARCELA: "1", E2_TIPO: "NF", E2_FORNECE: "000001", E2_LOJA: "01", E2_NOMFOR: "FORNECEDOR TESTE", E2_EMISSAO: new Date().toISOString().split("T")[0].replace(/-/g, ""), E2_VENCTO: new Date().toISOString().split("T")[0].replace(/-/g, ""), E2_VALOR: "5000.00", E2_SALDO: "5000.00", D_E_L_E_T_: "" }];
+  return [];
 }
 
 export function buildFallbackFilial(empresaId: string, filial: string): ProtheusFilialInfo {
   const raw = (filial || "00101001").trim();
   const is8 = raw.length === 8;
+  const codFilial = is8 ? raw.substring(5, 8) : raw;
   return {
     codigoEmpresa: is8 ? raw.substring(0, 3) : (empresaId || "001"),
     codigoUnidade: is8 ? raw.substring(3, 5) : "01",
-    codigoFilial: is8 ? raw.substring(5, 8) : raw,
+    codigoFilial: codFilial,
     filialCompleta: raw,
-    nome: "LC1 CONTADORES - MATRIZ",
-    tipo: "Matriz",
+    nome: `Filial ${codFilial}`,
+    tipo: "Filial",
     status: "Ativa",
   };
 }

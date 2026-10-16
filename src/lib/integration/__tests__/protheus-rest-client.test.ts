@@ -140,7 +140,7 @@ describe("Protheus REST client", () => {
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  it("does not expose Protheus HTML error bodies and returns mock on 404", async () => {
+  it("does not expose Protheus HTML error bodies and returns empty array on 404", async () => {
     vi.stubEnv("PROTHEUS_REST_BASE_URL", "https://protheus.example.test");
     vi.stubEnv("PROTHEUS_REST_AUTH_MODE", "bearer");
     vi.stubEnv("PROTHEUS_REST_ACCESS_TOKEN", "test-access-token");
@@ -154,8 +154,7 @@ describe("Protheus REST client", () => {
 
     const client = buildProtheusRestClientFromEnv();
     const rows = await client.fetchClientes();
-    // On 404 it should fallback to mock to unblock UI
-    expect(rows).toHaveLength(1);
-    expect(rows[0].A1_COD).toBe("000001");
+    // On 404 it should fallback to empty array to avoid mock data injection
+    expect(rows).toEqual([]);
   });
 });

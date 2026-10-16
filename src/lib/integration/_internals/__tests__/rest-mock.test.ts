@@ -3,50 +3,36 @@ import {
   buildFallbackClientesRows,
   buildFallbackFaturamentosRows,
   buildFallbackContasReceberRows,
+  buildFallbackContasPagarRows,
   buildFallbackFilial,
 } from "../rest-mock";
 
 describe("rest-mock.ts", () => {
   describe("buildFallbackClientesRows", () => {
-    it("retorna array com cliente de teste", () => {
+    it("retorna array vazio quando nenhum cliente é retornado", () => {
       const rows = buildFallbackClientesRows();
-      expect(rows).toHaveLength(1);
-      expect(rows[0]).toEqual({
-        A1_COD: "000001",
-        A1_LOJA: "01",
-        A1_NOME: "CLIENTE TESTE LC1",
-        A1_MUN: "SAO PAULO",
-        A1_EST: "SP",
-        D_E_L_E_T_: "",
-      });
+      expect(rows).toEqual([]);
     });
   });
 
   describe("buildFallbackFaturamentosRows", () => {
-    it("retorna array com faturamento de teste", () => {
+    it("retorna array vazio para evitar injeção de faturamento fake", () => {
       const rows = buildFallbackFaturamentosRows();
-      expect(rows).toHaveLength(1);
-      expect(rows[0].F2_DOC).toBe("000000001");
-      expect(rows[0].F2_SERIE).toBe("1");
-      expect(rows[0].F2_CLIENTE).toBe("000001");
-      expect(rows[0].F2_LOJA).toBe("01");
-      expect(rows[0].D_E_L_E_T_).toBe("");
-      expect(rows[0].F2_VALOR).toBe("5000.00");
+      expect(rows).toEqual([]);
     });
   });
 
   describe("buildFallbackContasReceberRows", () => {
-    it("retorna array com conta a receber de teste", () => {
+    it("retorna array vazio para evitar injeção de contas a receber fake", () => {
       const rows = buildFallbackContasReceberRows();
-      expect(rows).toHaveLength(1);
-      expect(rows[0].E1_PREFIXO).toBe("1");
-      expect(rows[0].E1_NUM).toBe("000000001");
-      expect(rows[0].E1_PARCELA).toBe("1");
-      expect(rows[0].E1_CLIENTE).toBe("000001");
-      expect(rows[0].E1_LOJA).toBe("01");
-      expect(rows[0].D_E_L_E_T_).toBe("");
-      expect(rows[0].E1_VALOR).toBe("5000.00");
-      expect(rows[0].E1_SALDO).toBe("5000.00");
+      expect(rows).toEqual([]);
+    });
+  });
+
+  describe("buildFallbackContasPagarRows", () => {
+    it("retorna array vazio para evitar injeção de contas a pagar fake", () => {
+      const rows = buildFallbackContasPagarRows();
+      expect(rows).toEqual([]);
     });
   });
 
@@ -58,8 +44,8 @@ describe("rest-mock.ts", () => {
         codigoUnidade: "01",
         codigoFilial: "001",
         filialCompleta: "00101001",
-        nome: "LC1 CONTADORES - MATRIZ",
-        tipo: "Matriz",
+        nome: "Filial 001",
+        tipo: "Filial",
         status: "Ativa",
       });
     });
@@ -71,8 +57,8 @@ describe("rest-mock.ts", () => {
         codigoUnidade: "01",
         codigoFilial: "02",
         filialCompleta: "02",
-        nome: "LC1 CONTADORES - MATRIZ",
-        tipo: "Matriz",
+        nome: "Filial 02",
+        tipo: "Filial",
         status: "Ativa",
       });
     });
@@ -84,8 +70,8 @@ describe("rest-mock.ts", () => {
         codigoUnidade: "01",
         codigoFilial: "001",
         filialCompleta: "00101001",
-        nome: "LC1 CONTADORES - MATRIZ",
-        tipo: "Matriz",
+        nome: "Filial 001",
+        tipo: "Filial",
         status: "Ativa",
       });
     });

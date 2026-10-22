@@ -5,6 +5,7 @@ import { parseContaReceberExternalId, parseClienteExternalId } from "./sync-pars
 import { resolveClienteByExternalId } from "./sync-resolve";
 import type { SyncResult } from "./sync-types";
 import { buildClienteMap, diffDates, diffNumbers, executeBatchCreate, executeBatchUpdate } from "./batch-upsert";
+import { clienteKey } from "./cliente-key";
 
 interface ContaReceberItem {
   filial: string;
@@ -18,6 +19,56 @@ interface ContaReceberItem {
   saldo: number;
   clienteId: string;
   empresaId: string;
+}
+
+type ContaReceberExistente = { id: string; valor: unknown; saldo: unknown; vencimento: Date | string | null };
+type ContaReceberMap = Map<string, ContaReceberExistente>;
+
+interface ClassificacaoContaReceber {
+  paraCriar: ContaReceberItem[];
+  paraAtualizar: Array<{ id: string; data: { valor: number; saldo: number; vencimento: Date } }>;
+  erros: number;
+}
+
+function montarItemContaReceber(reg: CanonicalTitle, clienteId: string, empresaId: string): ContaReceberItem {
+  const { filial, prefixo, numero, parcela, tipo: parsedTipo } = parseContaReceberExternalId(reg.externalId);
+  const tipo = reg.type || parsedTipo || "NF";
+  return { filial, prefixo, numero, parcela, tipo, dataEmissao: new Date(reg.issueDate), vencimento: new Date(reg.dueDate), valor: reg.amount, saldo: reg.balance ?? reg.amount, clienteId, empresaId };
+}
+
+function atualizacaoTituloSeNecessaria(existing: ContaReceberExistente, reg: CanonicalTitle) {
+  const saldoEsperado = reg.balance ?? reg.amount;
+  if (diffNumbers(existing.valor, reg.amount) || diffNumbers(existing.saldo, saldoEsperado) || diffDates(existing.vencimento, reg.dueDate)) {
+    return { valor: reg.amount, saldo: saldoEsperado, vencimento: new Date(reg.dueDate) };
+  }
+  return null;
+}
+
+function classificarTitulos(registros: CanonicalTitle[], crMap: ContaReceberMap, clienteMap: Map<string, string>, empresaId: string): ClassificacaoContaReceber {
+  const paraCriar: ContaReceberItem[] = [];
+  const paraAtualizar: Array<{ id: string; data: { valor: number; saldo: number; vencimento: Date } }> = [];
+  let erros = 0;
+
+  for (const reg of registros) {
+    const { filial, prefixo, numero, parcela, tipo: parsedTipo } = parseContaReceberExternalId(reg.externalId);
+    const tipo = reg.type || parsedTipo || "NF";
+    const existing = crMap.get(`${filial}|${prefixo}|${numero}|${parcela}|${tipo}`);
+    if (existing) {
+      const data = atualizacaoTituloSeNecessaria(existing, reg);
+      if (data) paraAtualizar.push({ id: existing.id, data });
+      continue;
+    }
+    const { codigo, loja } = parseClienteExternalId(reg.partyExternalId);
+    const clienteId = clienteMap.get(clienteKey(codigo, loja));
+    if (!clienteId) {
+      logSyncSkip("ContaReceber", reg.externalId, `cliente nao encontrado (party=${reg.partyExternalId}, mapa=${clienteMap.size})`);
+      erros++;
+      continue;
+    }
+    paraCriar.push(montarItemContaReceber(reg, clienteId, empresaId));
+  }
+
+  return { paraCriar, paraAtualizar, erros };
 }
 
 async function syncContasReceberFallback(tx: PrismaClient, empresaId: string, registros: CanonicalTitle[]): Promise<SyncResult> {
@@ -34,7 +85,7 @@ async function syncContasReceberFallback(tx: PrismaClient, empresaId: string, re
       }
       const cliente = await resolveClienteByExternalId(tx, reg.partyExternalId, empresaId);
       if (!cliente) {
-        logSyncSkip("ContaReceber", reg.externalId, "cliente nao encontrado");
+        logSyncSkip("ContaReceber", reg.externalId, `cliente nao encontrado (party=${reg.partyExternalId})`);
         erros++;
         continue;
       }
@@ -58,31 +109,8 @@ export async function syncContasReceber(tx: PrismaClient, empresaId: string, reg
       buildClienteMap(tx, empresaId),
       tx.contaReceber.findMany({ where: { empresaId }, select: { id: true, filial: true, prefixo: true, numero: true, parcela: true, tipo: true, valor: true, saldo: true, vencimento: true } }),
     ]);
-    const crMap = new Map(existentes.map((c) => [`${c.filial}|${c.prefixo}|${c.numero}|${c.parcela}|${c.tipo}`, c]));
-    const paraCriar: ContaReceberItem[] = [];
-    const paraAtualizar: Array<{ id: string; data: { valor: number; saldo: number; vencimento: Date } }> = [];
-    let erros = 0;
-
-    for (const reg of registros) {
-      const { filial, prefixo, numero, parcela, tipo: parsedTipo } = parseContaReceberExternalId(reg.externalId);
-      const tipo = reg.type || parsedTipo || "NF";
-      const existing = crMap.get(`${filial}|${prefixo}|${numero}|${parcela}|${tipo}`);
-      if (existing) {
-        const saldoEsperado = reg.balance ?? reg.amount;
-        if (diffNumbers(existing.valor, reg.amount) || diffNumbers(existing.saldo, saldoEsperado) || diffDates(existing.vencimento, reg.dueDate)) {
-          paraAtualizar.push({ id: existing.id, data: { valor: reg.amount, saldo: saldoEsperado, vencimento: new Date(reg.dueDate) } });
-        }
-        continue;
-      }
-      const { codigo, loja } = parseClienteExternalId(reg.partyExternalId);
-      const clienteId = clienteMap.get(`${codigo}|${loja}`);
-      if (!clienteId) {
-        logSyncSkip("ContaReceber", reg.externalId, "cliente nao encontrado");
-        erros++;
-        continue;
-      }
-      paraCriar.push({ filial, prefixo, numero, parcela, tipo, dataEmissao: new Date(reg.issueDate), vencimento: new Date(reg.dueDate), valor: reg.amount, saldo: reg.balance ?? reg.amount, clienteId, empresaId });
-    }
+    const crMap: ContaReceberMap = new Map(existentes.map((c) => [`${c.filial}|${c.prefixo}|${c.numero}|${c.parcela}|${c.tipo}`, c]));
+    const { paraCriar, paraAtualizar, erros } = classificarTitulos(registros, crMap, clienteMap, empresaId);
 
     const criados = await executeBatchCreate(tx.contaReceber, paraCriar);
     const atualizados = await executeBatchUpdate(tx, paraAtualizar.map((u) => tx.contaReceber.update({ where: { id: u.id }, data: u.data })));

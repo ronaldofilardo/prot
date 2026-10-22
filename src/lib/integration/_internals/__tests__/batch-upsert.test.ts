@@ -9,6 +9,7 @@ import {
   buildContaReceberMap,
   buildContaPagarMap,
 } from "../batch-upsert";
+import { clienteKey } from "../cliente-key";
 import type { PrismaClient } from "@prisma/client";
 
 describe("batch-upsert", () => {
@@ -62,7 +63,8 @@ describe("batch-upsert", () => {
       buildContaPagarMap(mockTx, "emp-01"),
     ]);
 
-    expect(cMap.get("001|01")).toBe("c1");
+    expect(cMap.get(clienteKey("001", "01"))).toBe("c1");
+    expect(cMap.get(clienteKey("001", "0001"))).toBe("c1");
     expect(rMap.get("01|F|10|1")).toBe("r1");
     expect(pMap.get("01|F|20|1|NF|FORN|01")).toBe("p1");
   });

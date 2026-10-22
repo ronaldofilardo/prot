@@ -1,4 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
+import { clienteKey } from "./cliente-key";
+import { logSyncError } from "../logger";
 
 export function chunkArray<T>(items: T[], size: number): T[][] {
   if (size <= 0) return [items];
@@ -85,11 +87,13 @@ export async function buildClienteMap(tx: PrismaClient, empresaId: string): Prom
         select: { id: true, codigo: true, loja: true },
       });
       for (const c of rows) {
-        map.set(`${c.codigo}|${c.loja}`, c.id);
+        map.set(clienteKey(c.codigo, c.loja), c.id);
       }
     }
-  } catch {
-    // Retorna mapa vazio se houver erro ou em mock restrito
+  } catch (err) {
+    logSyncError("Cliente", `mapa-${empresaId}`, err);
+    // Mapa vazio faz todos os titulos cairem em "cliente nao encontrado";
+    // o erro acima deixa a causa visivel no log.
   }
   return map;
 }

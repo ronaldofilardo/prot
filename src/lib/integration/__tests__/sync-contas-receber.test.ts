@@ -87,4 +87,31 @@ describe("syncContasReceber", () => {
     expect(res).toEqual({ entidade: "ContaReceber", processados: 0, criados: 0, atualizados: 0, erros: 0 });
     expect(tx.contaReceber.findUnique).not.toHaveBeenCalled();
   });
+
+  it("casa titulo com loja '0001' do Protheus contra cliente cadastrado com '01' (fluxo batch)", async () => {
+    const txBatch = {
+      contaReceber: {
+        findMany: vi.fn().mockResolvedValue([]),
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      cliente: {
+        findMany: vi.fn().mockResolvedValue([{ id: "cli-1", codigo: "000001", loja: "01" }]),
+      },
+      $transaction: vi.fn().mockResolvedValue([]),
+    };
+
+    const res = await syncContasReceber(
+      txBatch as unknown as PrismaClient,
+      "empresa-01",
+      [titulo({ partyExternalId: "empresa-01-CLI-000001-0001" })]
+    );
+
+    expect(res).toMatchObject({ processados: 1, criados: 1, atualizados: 0, erros: 0 });
+    expect(txBatch.contaReceber.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({ clienteId: "cli-1", filial: "01", numero: "000100" })],
+      skipDuplicates: true,
+    });
+  });
 });

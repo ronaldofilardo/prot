@@ -37,7 +37,7 @@ export class ProtheusRestClient implements ProtheusClient {
   constructor(private readonly config: ProtheusRestConfig) {}
 
   private async get(path: string | undefined, settingName: string): Promise<ProtheusRow[]> {
-    return fetchAllPages((page, pageSize) => this.getPage(path, settingName, page, pageSize), { pageSize: 100 });
+    return fetchAllPages((page, pageSize) => this.getPage(path, settingName, page, pageSize));
   }
 
   private async getPage(

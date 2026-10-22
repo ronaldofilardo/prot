@@ -41,7 +41,7 @@ export const ACESSO_FILIAIS_PATH =
   "/rest/api/framework/v1/genericQuery?tables=SYS_USR_FILIAL&fields=USR_ID,USR_GRUPEMP,USR_FILIAL&pageSize=500";
 
 export const CLIENTES_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_COD,A1_LOJA,A1_NOME,A1_CGC,A1_PESSOA,A1_TIPO,A1_MUN,A1_EST,A1_FILIAL",
+  "/rest/api/framework/v1/genericQuery?tables=SA1&fields=A1_COD,A1_LOJA,A1_NOME,A1_CGC,A1_PESSOA,A1_TIPO,A1_MUN,A1_EST,A1_FILIAL&pageSize=500",
   "/api/protheus/v1/comercial/clientes",
   "/api/protheus/v1/cadastros/clientes",
   "/rest/api/protheus/v1/clientes",
@@ -50,7 +50,7 @@ export const CLIENTES_FALLBACK_PATHS: string[] = [
 ];
 
 export const FATURAMENTOS_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SF2&fields=F2_DOC,F2_SERIE,F2_CLIENTE,F2_LOJA,F2_EMISSAO,F2_VALMERC,F2_VALBRUT,F2_FILIAL",
+  "/rest/api/framework/v1/genericQuery?tables=SF2&fields=F2_DOC,F2_SERIE,F2_CLIENTE,F2_LOJA,F2_EMISSAO,F2_VALMERC,F2_VALBRUT,F2_FILIAL&pageSize=500",
   "/api/protheus/v1/fiscal/notas",
   "/api/protheus/v1/faturamento/notas",
   "/rest/api/protheus/v1/faturamentos",
@@ -59,7 +59,7 @@ export const FATURAMENTOS_FALLBACK_PATHS: string[] = [
 ];
 
 export const CONTAS_RECEBER_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SE1&fields=E1_FILIAL,E1_PREFIXO,E1_NUM,E1_PARCELA,E1_TIPO,E1_CLIENTE,E1_LOJA,E1_EMISSAO,E1_VENCTO,E1_VALOR,E1_SALDO,E1_BAIXA",
+  "/rest/api/framework/v1/genericQuery?tables=SE1&fields=E1_FILIAL,E1_PREFIXO,E1_NUM,E1_PARCELA,E1_TIPO,E1_CLIENTE,E1_LOJA,E1_EMISSAO,E1_VENCTO,E1_VALOR,E1_SALDO,E1_BAIXA&pageSize=500",
   "/api/protheus/v1/financeiro/contasareceber",
   "/rest/api/protheus/v1/contas-receber",
   "/api/protheus/v1/contas-receber",
@@ -67,7 +67,7 @@ export const CONTAS_RECEBER_FALLBACK_PATHS: string[] = [
 ];
 
 export const CONTAS_PAGAR_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SE2&fields=E2_FILIAL,E2_PREFIXO,E2_NUM,E2_PARCELA,E2_TIPO,E2_FORNECE,E2_LOJA,E2_NOMFOR,E2_EMISSAO,E2_VENCTO,E2_VALOR,E2_SALDO,E2_BAIXA",
+  "/rest/api/framework/v1/genericQuery?tables=SE2&fields=E2_FILIAL,E2_PREFIXO,E2_NUM,E2_PARCELA,E2_TIPO,E2_FORNECE,E2_LOJA,E2_NOMFOR,E2_EMISSAO,E2_VENCTO,E2_VALOR,E2_SALDO,E2_BAIXA&pageSize=500",
   "/api/protheus/v1/financeiro/contasapagar",
   "/rest/api/protheus/v1/contas-pagar",
   "/api/protheus/v1/contas-pagar",
@@ -75,7 +75,7 @@ export const CONTAS_PAGAR_FALLBACK_PATHS: string[] = [
 ];
 
 export const BAIXAS_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SE5&fields=E5_FILIAL,E5_PREFIXO,E5_NUMERO,E5_PARCELA,E5_TIPO,E5_VALOR,E5_DATA,E5_RECPAG,E5_SEQ,E5_CLIFOR,E5_LOJA,E5_TIPODOC,E5_SITUACA,E5_MOTBX",
+  "/rest/api/framework/v1/genericQuery?tables=SE5&fields=E5_FILIAL,E5_PREFIXO,E5_NUMERO,E5_PARCELA,E5_TIPO,E5_VALOR,E5_DATA,E5_RECPAG,E5_SEQ,E5_CLIFOR,E5_LOJA,E5_TIPODOC,E5_SITUACA,E5_MOTBX&pageSize=500",
   "/api/protheus/v1/financeiro/baixas",
   "/api/protheus/v1/financeiro/movimentos",
   "/rest/api/protheus/v1/baixas",
@@ -95,7 +95,7 @@ export const SALDOS_CONTABEIS_FALLBACK_PATHS: string[] = [
 ];
 
 export const ITENS_VENDA_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SD2&fields=D2_FILIAL,D2_DOC,D2_SERIE,D2_CLIENTE,D2_LOJA,D2_ITEM,D2_COD,D2_EMISSAO,D2_QUANT,D2_TOTAL,D2_CUSTO1,D2_CF,D2_TES,D2_TIPO,D2_QTDEDEV,D2_VALDEV",
+  "/rest/api/framework/v1/genericQuery?tables=SD2&fields=D2_FILIAL,D2_DOC,D2_SERIE,D2_CLIENTE,D2_LOJA,D2_ITEM,D2_COD,D2_EMISSAO,D2_QUANT,D2_TOTAL,D2_CUSTO1,D2_CF,D2_TES,D2_TIPO,D2_QTDEDEV,D2_VALDEV&pageSize=500",
   "/api/protheus/v1/faturamento/itens",
   "/rest/api/protheus/v1/itens-venda",
 ];

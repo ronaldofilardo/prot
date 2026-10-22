@@ -4,6 +4,7 @@ import { logSyncError, logSyncStart } from "../logger";
 import { parseClienteExternalId } from "./sync-parsers";
 import type { SyncResult } from "./sync-types";
 import { executeBatchCreate, executeBatchUpdate } from "./batch-upsert";
+import { clienteKey } from "./cliente-key";
 
 interface ClienteItem {
   codigo: string;
@@ -13,6 +14,36 @@ interface ClienteItem {
   estado: string;
   ativo: boolean;
   empresaId: string;
+}
+
+type ClienteExistente = { id: string; nome: string; cidade: string; estado: string; ativo: boolean };
+type ClienteMap = Map<string, ClienteExistente>;
+
+interface ClassificacaoClientes {
+  paraCriar: ClienteItem[];
+  paraAtualizar: Array<{ id: string; data: { nome: string; cidade: string; estado: string; ativo: boolean } }>;
+}
+
+function clienteDiferente(existing: ClienteExistente, reg: CanonicalParty): boolean {
+  return existing.nome !== reg.name || existing.cidade !== reg.city || existing.estado !== reg.state || existing.ativo !== reg.active;
+}
+
+function classificarClientes(registros: CanonicalParty[], map: ClienteMap, empresaId: string): ClassificacaoClientes {
+  const paraCriar: ClienteItem[] = [];
+  const paraAtualizar: Array<{ id: string; data: { nome: string; cidade: string; estado: string; ativo: boolean } }> = [];
+
+  for (const reg of registros) {
+    const { codigo, loja } = parseClienteExternalId(reg.externalId);
+    const existing = map.get(clienteKey(codigo, loja));
+    if (existing) {
+      const data = { nome: reg.name, cidade: reg.city, estado: reg.state, ativo: reg.active };
+      if (clienteDiferente(existing, reg)) paraAtualizar.push({ id: existing.id, data });
+    } else {
+      paraCriar.push({ codigo, loja, nome: reg.name, cidade: reg.city, estado: reg.state, ativo: reg.active, empresaId });
+    }
+  }
+
+  return { paraCriar, paraAtualizar };
 }
 
 async function syncClientesFallback(tx: PrismaClient, empresaId: string, registros: CanonicalParty[]): Promise<SyncResult> {
@@ -46,20 +77,8 @@ export async function syncClientes(tx: PrismaClient, empresaId: string, registro
       where: { empresaId },
       select: { id: true, codigo: true, loja: true, nome: true, cidade: true, estado: true, ativo: true },
     });
-    const map = new Map(existentes.map((c) => [`${c.codigo}|${c.loja}`, c]));
-    const paraCriar: ClienteItem[] = [];
-    const paraAtualizar: Array<{ id: string; data: { nome: string; cidade: string; estado: string; ativo: boolean } }> = [];
-
-    for (const reg of registros) {
-      const { codigo, loja } = parseClienteExternalId(reg.externalId);
-      const existing = map.get(`${codigo}|${loja}`);
-      if (existing) {
-        const mudou = existing.nome !== reg.name || existing.cidade !== reg.city || existing.estado !== reg.state || existing.ativo !== reg.active;
-        if (mudou) paraAtualizar.push({ id: existing.id, data: { nome: reg.name, cidade: reg.city, estado: reg.state, ativo: reg.active } });
-      } else {
-        paraCriar.push({ codigo, loja, nome: reg.name, cidade: reg.city, estado: reg.state, ativo: reg.active, empresaId });
-      }
-    }
+    const map: ClienteMap = new Map(existentes.map((c) => [clienteKey(c.codigo, c.loja), c]));
+    const { paraCriar, paraAtualizar } = classificarClientes(registros, map, empresaId);
 
     const criados = await executeBatchCreate(tx.cliente, paraCriar);
     const atualizados = await executeBatchUpdate(tx, paraAtualizar.map((u) => tx.cliente.update({ where: { id: u.id }, data: u.data })));

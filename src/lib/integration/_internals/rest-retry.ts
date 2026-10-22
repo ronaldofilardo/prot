@@ -35,6 +35,27 @@ export function getFetchTimeoutMs(): number {
   return Number.isFinite(envVal) && envVal > 0 ? envVal : 25000;
 }
 
+async function aguardarRetry(attempt: number): Promise<void> {
+  const delay = process.env.NODE_ENV === "test" ? 0 : exponentialBackoffWithJitter(attempt, 3000);
+  if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+}
+
+async function tentarFetch(fullUrl: string, authHeader: string, timeoutMs: number): Promise<Response> {
+  const response = await fetch(fullUrl, {
+    method: "GET",
+    headers: {
+      Authorization: authHeader,
+      Accept: "application/json",
+    },
+    cache: "no-store",
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!response) {
+    throw new Error("Resposta de rede indefinida");
+  }
+  return response;
+}
+
 export async function executeFetch(
   fullUrl: string,
   authHeader: string,
@@ -45,29 +66,16 @@ export async function executeFetch(
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const response = await fetch(fullUrl, {
-        method: "GET",
-        headers: {
-          Authorization: authHeader,
-          Accept: "application/json",
-        },
-        cache: "no-store",
-        signal: AbortSignal.timeout(timeoutMs),
-      });
-      if (!response) {
-        throw new Error("Resposta de rede indefinida");
-      }
+      const response = await tentarFetch(fullUrl, authHeader, timeoutMs);
       if (response.status >= 500 && attempt < 2) {
-        const delay = process.env.NODE_ENV === "test" ? 0 : exponentialBackoffWithJitter(attempt, 3000);
-        if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+        await aguardarRetry(attempt);
         continue;
       }
       return response;
     } catch (err) {
       lastError = err;
       if (attempt < 2) {
-        const delay = process.env.NODE_ENV === "test" ? 0 : exponentialBackoffWithJitter(attempt, 3000);
-        if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+        await aguardarRetry(attempt);
         continue;
       }
     }

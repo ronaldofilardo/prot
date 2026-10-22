@@ -1,0 +1,195 @@
+import { renderHook, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { useUploadPanel } from "../useUploadPanel";
+
+const fetchMock = vi.fn();
+
+function eventDrop(arquivos: File[]): React.DragEvent {
+  return {
+    preventDefault: vi.fn(),
+    dataTransfer: { files: arquivos },
+  } as unknown as React.DragEvent;
+}
+
+describe("useUploadPanel — drop, upload e falhas", () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("handleDrop adiciona apenas arquivos .csv", () => {
+    const { result } = renderHook(() => useUploadPanel());
+    const csv = new File(["a"], "a.csv");
+    const txt = new File(["b"], "b.txt");
+
+    act(() => {
+      result.current.handleDrop(eventDrop([csv, txt]));
+    });
+
+    expect(result.current.files).toHaveLength(1);
+    expect(result.current.files[0].name).toBe("a.csv");
+  });
+
+  it("pull com erro do servidor expõe a mensagem retornada", async () => {
+    fetchMock.mockResolvedValue({ ok: false, json: async () => ({ error: "Protheus offline" }) });
+    const onSuccess = vi.fn();
+    const { result } = renderHook(() => useUploadPanel(onSuccess));
+
+    await act(async () => {
+      await result.current.handlePullFromProtheus();
+    });
+
+    // No modo sequencial, erros por entidade vão para pullResults, não pullError
+    expect(result.current.pullResults).not.toBeNull();
+    expect(result.current.pullResults?.[0].erro).toBe("Protheus offline");
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(result.current.pulling).toBe(false);
+  });
+
+  it("pull sem mensagem no json usa o texto padrão", async () => {
+    fetchMock.mockResolvedValue({ ok: false, json: async () => ({}) });
+    const { result } = renderHook(() => useUploadPanel());
+
+    await act(async () => {
+      await result.current.handlePullFromProtheus();
+    });
+
+    expect(result.current.pullResults?.[0].erro).toBe("Erro ao puxar Cliente");
+  });
+
+  it("pull com falha de rede expõe mensagem padrão", async () => {
+    fetchMock.mockRejectedValue(new Error("reset"));
+    const { result } = renderHook(() => useUploadPanel());
+
+    await act(async () => {
+      await result.current.handlePullFromProtheus();
+    });
+
+    expect(result.current.pullError).toBe("Falha ao conectar com o servidor");
+    expect(result.current.pulling).toBe(false);
+  });
+
+  it("pull com sucesso notifica o callback de onSuccess", async () => {
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body || "{}"));
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          success: true,
+          resultados: [{
+            arquivo: body.entidade,
+            entidade: body.entidade,
+            registros: 1,
+            sync: { entidade: body.entidade, processados: 1, criados: 1, atualizados: 0, erros: 0 },
+          }],
+        }),
+      });
+    });
+    const onSuccess = vi.fn();
+    const { result } = renderHook(() => useUploadPanel(onSuccess));
+
+    await act(async () => {
+      await result.current.handlePullFromProtheus();
+    });
+
+    expect(result.current.pullResults).toHaveLength(8);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("handleUpload sem arquivos não chama a API", async () => {
+    const { result } = renderHook(() => useUploadPanel());
+
+    await act(async () => {
+      await result.current.handleUpload();
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.uploading).toBe(false);
+  });
+
+  it("handleUpload com sucesso envia os arquivos e limpa o estado", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ resultados: [{ entidade: "SA1", registros: 2, sync: {} }] }),
+    });
+    const onSuccess = vi.fn();
+    const { result } = renderHook(() => useUploadPanel(onSuccess));
+    const file = new File(["x"], "base.csv");
+    act(() => {
+      result.current.handleFileInput({
+        target: { files: [file] },
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+
+    await act(async () => {
+      await result.current.handleUpload();
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/upload");
+    expect(init.method).toBe("POST");
+    expect(init.body).toBeInstanceOf(FormData);
+    expect(result.current.results).toHaveLength(1);
+    expect(result.current.files).toEqual([]);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(result.current.uploading).toBe(false);
+  });
+
+  it("handleUpload com erro do servidor expõe a mensagem do json", async () => {
+    fetchMock.mockResolvedValue({ ok: false, json: async () => ({ error: "Formato inválido" }) });
+    const { result } = renderHook(() => useUploadPanel());
+    const file = new File(["x"], "base.csv");
+    act(() => {
+      result.current.handleFileInput({
+        target: { files: [file] },
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+
+    await act(async () => {
+      await result.current.handleUpload();
+    });
+
+    expect(result.current.error).toBe("Formato inválido");
+    expect(result.current.results).toBeNull();
+    expect(result.current.uploading).toBe(false);
+  });
+
+  it("handleUpload sem mensagem no json usa o texto padrão", async () => {
+    fetchMock.mockResolvedValue({ ok: false, json: async () => ({}) });
+    const { result } = renderHook(() => useUploadPanel());
+    const file = new File(["x"], "base.csv");
+    act(() => {
+      result.current.handleFileInput({
+        target: { files: [file] },
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+
+    await act(async () => {
+      await result.current.handleUpload();
+    });
+
+    expect(result.current.error).toBe("Erro no upload");
+  });
+
+  it("handleUpload com falha de rede expõe mensagem padrão", async () => {
+    fetchMock.mockRejectedValue(new Error("reset"));
+    const { result } = renderHook(() => useUploadPanel());
+    const file = new File(["x"], "base.csv");
+    act(() => {
+      result.current.handleFileInput({
+        target: { files: [file] },
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+
+    await act(async () => {
+      await result.current.handleUpload();
+    });
+
+    expect(result.current.error).toBe("Falha ao conectar com o servidor");
+    expect(result.current.uploading).toBe(false);
+  });
+});

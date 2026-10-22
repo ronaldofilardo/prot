@@ -7,56 +7,71 @@ import { logRestPageWarning } from "../logger";
 
 const DEFAULT_DEADLINE_MS = 45_000;
 
-export async function fetchAllPages(
-  getPage: GetPageFn,
-  options: { pageSize?: number; maxPages?: number; deadlineMs?: number } = {}
-): Promise<ProtheusRow[]> {
+function resolvePageSize(pageSize?: number): number {
+  if (pageSize !== undefined) return pageSize;
   const envPageSize = Number(process.env.PROTHEUS_PAGE_SIZE);
-  const pageSize = options.pageSize ?? (Number.isFinite(envPageSize) && envPageSize > 0 ? envPageSize : 100);
-  const maxPages = options.maxPages ?? 200;
-  const deadlineMs = options.deadlineMs ?? DEFAULT_DEADLINE_MS;
-  const startedAt = Date.now();
-  let allRows: ProtheusRow[] = [];
-  let page = 1;
-  let hasNext = true;
-  let previousFirstRowFingerprint: string | null = null;
+  if (Number.isFinite(envPageSize) && envPageSize > 0) return envPageSize;
+  return 100;
+}
 
-  while (hasNext && page <= maxPages) {
-    const elapsed = Date.now() - startedAt;
-    if (elapsed >= deadlineMs) {
-      logRestPageWarning("Deadline de paginacao atingido; retornando parcial", {
-        page,
-        pagesLidas: page - 1,
-        linhas: allRows.length,
-        elapsedMs: elapsed,
-        deadlineMs,
-      });
-      break;
-    }
+function resultadoSemLinhas(result: PageResult | null | undefined): boolean {
+  return !result || !result.rows || result.rows.length === 0;
+}
 
-    const result = await getPage(page, pageSize);
-    if (!result || !result.rows || result.rows.length === 0) {
-      break;
-    }
+function primeiraLinhaDuplicada(page: number, atual: string, anterior: string | null): boolean {
+  return page > 1 && atual === anterior;
+}
 
-    const currentFirstRow = JSON.stringify(result.rows[0]);
-    if (page > 1 && currentFirstRow === previousFirstRowFingerprint) {
-      logRestPageWarning("Servidor Protheus ignorou o parametro de pagina; encerrando paginacao.", { page, pageSize });
-      break;
-    }
-    previousFirstRowFingerprint = currentFirstRow;
+function excedeuDeadline(startedAt: number, deadlineMs: number, page: number, linhas: number): boolean {
+  const elapsed = Date.now() - startedAt;
+  if (elapsed < deadlineMs) return false;
+  logRestPageWarning("Deadline de paginacao atingido; retornando parcial", {
+    page,
+    pagesLidas: page - 1,
+    linhas,
+    elapsedMs: elapsed,
+    deadlineMs,
+  });
+  return true;
+}
 
-    allRows = allRows.concat(result.rows);
-    if (!result.hasNext) {
-      break;
-    }
-    page++;
-  }
+function duplicataIgnorouPagina(page: number, atual: string, anterior: string | null, pageSize: number): boolean {
+  if (!primeiraLinhaDuplicada(page, atual, anterior)) return false;
+  logRestPageWarning("Servidor Protheus ignorou o parametro de pagina; encerrando paginacao.", { page, pageSize });
+  return true;
+}
 
+function avisarSeAtingiuMaxPages(page: number, maxPages: number, pageSize: number): void {
   if (page > maxPages) {
     logRestPageWarning("Limite maximo de paginas atingido na paginacao REST", { maxPages, pageSize });
   }
+}
 
+export async function fetchAllPages(getPage: GetPageFn, options: { pageSize?: number; maxPages?: number; deadlineMs?: number } = {}): Promise<ProtheusRow[]> {
+  const pageSize = resolvePageSize(options.pageSize);
+  const maxPages = options.maxPages ?? 200;
+  const deadlineMs = options.deadlineMs ?? DEFAULT_DEADLINE_MS;
+  const startedAt = Date.now();
+  const allRows: ProtheusRow[] = [];
+  let page = 1;
+  let previousFirstRowFingerprint: string | null = null;
+
+  while (page <= maxPages) {
+    if (excedeuDeadline(startedAt, deadlineMs, page, allRows.length)) break;
+
+    const result = await getPage(page, pageSize);
+    if (resultadoSemLinhas(result)) break;
+
+    const currentFirstRow = JSON.stringify(result.rows[0]);
+    if (duplicataIgnorouPagina(page, currentFirstRow, previousFirstRowFingerprint, pageSize)) break;
+    previousFirstRowFingerprint = currentFirstRow;
+
+    allRows.push(...result.rows);
+    if (!result.hasNext) break;
+    page++;
+  }
+
+  avisarSeAtingiuMaxPages(page, maxPages, pageSize);
   return allRows;
 }
 

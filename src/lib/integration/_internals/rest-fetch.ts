@@ -7,6 +7,17 @@ import type { ProtheusRestConfig } from "./rest-types";
 import { applyWhereToPath } from "./sync-filter-date";
 export { fetchAllPages } from "./rest-paginate";
 
+function aplicarParametrosPagina(url: URL, page: number, pageSize: number): void {
+  url.searchParams.set("page", String(page));
+  if (url.searchParams.has("pagesize") && !url.searchParams.has("pageSize")) {
+    const existingVal = url.searchParams.get("pagesize");
+    url.searchParams.delete("pagesize");
+    url.searchParams.set("pageSize", existingVal || String(pageSize));
+  } else if (!url.searchParams.has("pageSize")) {
+    url.searchParams.set("pageSize", String(pageSize));
+  }
+}
+
 export async function fetchPage(
   path: string | undefined,
   config: ProtheusRestConfig,
@@ -23,14 +34,7 @@ export async function fetchPage(
     url.searchParams.set("empresa", config.empresaId);
     url.searchParams.set("filial", config.filial);
   }
-  url.searchParams.set("page", String(page));
-  if (url.searchParams.has("pagesize") && !url.searchParams.has("pageSize")) {
-    const existingVal = url.searchParams.get("pagesize");
-    url.searchParams.delete("pagesize");
-    url.searchParams.set("pageSize", existingVal || String(pageSize));
-  } else if (!url.searchParams.has("pageSize")) {
-    url.searchParams.set("pageSize", String(pageSize));
-  }
+  aplicarParametrosPagina(url, page, pageSize);
 
   let auth = await buildAuthHeader(config);
   let response = await executeFetch(url.toString(), auth, targetPath);

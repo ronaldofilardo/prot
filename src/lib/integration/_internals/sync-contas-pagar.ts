@@ -44,6 +44,49 @@ async function syncContasPagarFallback(tx: PrismaClient, empresaId: string, regi
   return { entidade: "ContaPagar", processados: registros.length, criados, atualizados, erros };
 }
 
+type AtualizacaoContaPagar = { id: string; data: { valor: number; saldo: number; vencimento: Date; fornecedorNome: string; sincronizadoEm: Date } };
+
+type ContaPagarExistente = {
+  id: string;
+  valor: unknown;
+  saldo: unknown;
+  vencimento: Date | string | null;
+  fornecedorNome: string | null;
+};
+
+function contaPagarDiferente(existing: ContaPagarExistente, reg: CanonicalPayable, saldoEsperado: number): boolean {
+  return diffNumbers(existing.valor, reg.amount)
+    || diffNumbers(existing.saldo, saldoEsperado)
+    || diffDates(existing.vencimento, reg.dueDate)
+    || existing.fornecedorNome !== reg.supplierName;
+}
+
+interface ClassificacaoContasPagar {
+  paraCriar: ContaPagarItem[];
+  paraAtualizar: AtualizacaoContaPagar[];
+}
+
+function classificarContasPagar(registros: CanonicalPayable[], cpMap: Map<string, ContaPagarExistente>, empresaId: string): ClassificacaoContasPagar {
+  const paraCriar: ContaPagarItem[] = [];
+  const paraAtualizar: AtualizacaoContaPagar[] = [];
+
+  for (const reg of registros) {
+    const { filial, prefixo, numero, parcela, tipo, fornecedorCodigo, fornecedorLoja } = parseContaPagarExternalId(reg.externalId);
+    const key = `${filial}|${prefixo}|${numero}|${parcela}|${tipo}|${fornecedorCodigo}|${fornecedorLoja}`;
+    const existing = cpMap.get(key);
+    const saldoEsperado = reg.balance ?? reg.amount;
+    if (existing) {
+      if (contaPagarDiferente(existing, reg, saldoEsperado)) {
+        paraAtualizar.push({ id: existing.id, data: { valor: reg.amount, saldo: saldoEsperado, vencimento: new Date(reg.dueDate), fornecedorNome: reg.supplierName, sincronizadoEm: new Date() } });
+      }
+    } else {
+      paraCriar.push({ filial, prefixo, numero, parcela, tipo, fornecedorCodigo, fornecedorLoja, fornecedorNome: reg.supplierName, dataEmissao: new Date(reg.issueDate), vencimento: new Date(reg.dueDate), valor: reg.amount, saldo: saldoEsperado, empresaId });
+    }
+  }
+
+  return { paraCriar, paraAtualizar };
+}
+
 export async function syncContasPagar(tx: PrismaClient, empresaId: string, registros: CanonicalPayable[]): Promise<SyncResult> {
   logSyncStart("ContaPagar", empresaId, registros.length);
   if (registros.length === 0) return { entidade: "ContaPagar", processados: 0, criados: 0, atualizados: 0, erros: 0 };
@@ -55,23 +98,7 @@ export async function syncContasPagar(tx: PrismaClient, empresaId: string, regis
       select: { id: true, filial: true, prefixo: true, numero: true, parcela: true, tipo: true, fornecedorCodigo: true, fornecedorLoja: true, valor: true, saldo: true, vencimento: true, fornecedorNome: true },
     });
     const cpMap = new Map(existentes.map((p) => [`${p.filial}|${p.prefixo}|${p.numero}|${p.parcela}|${p.tipo}|${p.fornecedorCodigo}|${p.fornecedorLoja}`, p]));
-    const paraCriar: ContaPagarItem[] = [];
-    const paraAtualizar: Array<{ id: string; data: { valor: number; saldo: number; vencimento: Date; fornecedorNome: string; sincronizadoEm: Date } }> = [];
-
-    for (const reg of registros) {
-      const { filial, prefixo, numero, parcela, tipo, fornecedorCodigo, fornecedorLoja } = parseContaPagarExternalId(reg.externalId);
-      const key = `${filial}|${prefixo}|${numero}|${parcela}|${tipo}|${fornecedorCodigo}|${fornecedorLoja}`;
-      const existing = cpMap.get(key);
-      const saldoEsperado = reg.balance ?? reg.amount;
-      if (existing) {
-        if (diffNumbers(existing.valor, reg.amount) || diffNumbers(existing.saldo, saldoEsperado) || diffDates(existing.vencimento, reg.dueDate) || existing.fornecedorNome !== reg.supplierName) {
-          paraAtualizar.push({ id: existing.id, data: { valor: reg.amount, saldo: saldoEsperado, vencimento: new Date(reg.dueDate), fornecedorNome: reg.supplierName, sincronizadoEm: new Date() } });
-        }
-      } else {
-        paraCriar.push({ filial, prefixo, numero, parcela, tipo, fornecedorCodigo, fornecedorLoja, fornecedorNome: reg.supplierName, dataEmissao: new Date(reg.issueDate), vencimento: new Date(reg.dueDate), valor: reg.amount, saldo: saldoEsperado, empresaId });
-      }
-    }
-
+    const { paraCriar, paraAtualizar } = classificarContasPagar(registros, cpMap, empresaId);
     const criados = await executeBatchCreate(tx.contaPagar, paraCriar);
     const atualizados = await executeBatchUpdate(tx, paraAtualizar.map((u) => tx.contaPagar.update({ where: { id: u.id }, data: u.data })));
     return { entidade: "ContaPagar", processados: registros.length, criados, atualizados, erros: 0 };

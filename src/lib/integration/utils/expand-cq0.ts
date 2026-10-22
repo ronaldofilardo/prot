@@ -23,6 +23,19 @@ function parseDataMes(data: string): { mes: string; ano: string } {
   return { ano: clean.substring(0, 4), mes: clean.substring(4, 6) };
 }
 
+function montarLinhaWide(filial: string, conta: string, mes: string, ano: string, abertura: number, deb: number, cre: number, sld: number): Record<string, string> {
+  return {
+    CQ_FILIAL: filial,
+    CQ_CONTA: conta,
+    CQ_MES: mes,
+    CQ_ANO: ano,
+    CQ_SALANT: String(abertura),
+    CQ_DEB: String(deb),
+    CQ_CRED: String(cre),
+    CQ_SALDO: String(sld),
+  };
+}
+
 function expandWideRow(row: Record<string, string>, filial: string, conta: string): Record<string, string>[] {
   const ano = get(row, "CQ0_ANO", "CQ_ANO");
   if (!ano) return [];
@@ -41,16 +54,7 @@ function expandWideRow(row: Record<string, string>, filial: string, conta: strin
       continue;
     }
 
-    out.push({
-      CQ_FILIAL: filial,
-      CQ_CONTA: conta,
-      CQ_MES: mes,
-      CQ_ANO: ano,
-      CQ_SALANT: String(abertura),
-      CQ_DEB: String(deb),
-      CQ_CRED: String(cre),
-      CQ_SALDO: String(sld),
-    });
+    out.push(montarLinhaWide(filial, conta, mes, ano, abertura, deb, cre, sld));
     abertura = sld;
   }
 
@@ -90,19 +94,31 @@ function isWideRow(row: Record<string, string>): boolean {
  * Filtra moeda 01 e tipo de saldo 1 (realizado) para não duplicar na chave
  * [filial, conta, competencia, empresaId].
  */
+function ehSaldoRealizado(row: Record<string, string>): boolean {
+  const moeda = get(row, "CQ0_MOEDA", "CQ_MOEDA") || "01";
+  const tpsald = get(row, "CQ0_TPSALD", "CQ_TPSALD") || "1";
+  return moeda === "01" && tpsald === "1";
+}
+
+type FormatoCq0 = "long" | "wide" | "desconhecido";
+
+function detectarFormato(row: Record<string, string>): FormatoCq0 {
+  if (get(row, "CQ0_DATA", "CQ_DATA")) return "long";
+  if (isWideRow(row) || get(row, "CQ0_ANO", "CQ_ANO")) return "wide";
+  return "desconhecido";
+}
+
 export function expandCq0ToLong(row: Record<string, string>): Record<string, string>[] {
   if (get(row, "CQ_MES")) return [row];
 
   const filial = get(row, "CQ0_FILIAL", "CQ_FILIAL");
   const conta = get(row, "CQ0_CONTA", "CQ_CONTA");
   if (!filial && !conta) return [];
+  if (!ehSaldoRealizado(row)) return [];
 
-  const moeda = get(row, "CQ0_MOEDA", "CQ_MOEDA") || "01";
-  const tpsald = get(row, "CQ0_TPSALD", "CQ_TPSALD") || "1";
-  if (moeda !== "01" || tpsald !== "1") return [];
-
-  if (get(row, "CQ0_DATA", "CQ_DATA")) return expandLongRow(row, filial, conta);
-  if (isWideRow(row) || get(row, "CQ0_ANO", "CQ_ANO")) return expandWideRow(row, filial, conta);
+  const formato = detectarFormato(row);
+  if (formato === "long") return expandLongRow(row, filial, conta);
+  if (formato === "wide") return expandWideRow(row, filial, conta);
   return [];
 }
 

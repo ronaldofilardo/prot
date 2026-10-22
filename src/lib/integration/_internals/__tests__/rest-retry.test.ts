@@ -101,6 +101,29 @@ describe("rest-retry.ts", () => {
       expect(result).toEqual([{ id: "1" }]);
     });
 
+    it("continua para próxima path quando erro é 400 (params inválidos neste Protheus)", async () => {
+      const error400 = new Error("Protheus REST retornou 400 em /a");
+      const get = vi.fn()
+        .mockRejectedValueOnce(error400)
+        .mockResolvedValueOnce([{ id: "1" }]);
+
+      const result = await fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: "true" }]);
+
+      expect(result).toEqual([{ id: "1" }]);
+      expect(get).toHaveBeenCalledTimes(2);
+    });
+
+    it("retorna fallback quando todos os paths retornam 400", async () => {
+      const error400 = new Error("Protheus REST retornou 400 em /a");
+      const get = vi.fn()
+        .mockRejectedValueOnce(error400)
+        .mockRejectedValueOnce(error400);
+
+      const result = await fetchRowsFromFirstPath(["/a", "/b"], get, () => [{ fallback: "true" }]);
+
+      expect(result).toEqual([{ fallback: "true" }]);
+    });
+
     it("lança erro não-404 após 404", async () => {
       const error404 = new Error("404 Not Found");
       const error500 = new Error("500 Internal Server Error");

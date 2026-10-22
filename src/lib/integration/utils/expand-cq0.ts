@@ -1,43 +1,29 @@
 const MESES = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
 
-function num(v: string | undefined): number {
-  const n = parseFloat(v || "0");
+function num(v: unknown): number {
+  const n = parseFloat(String(v ?? "0"));
   return Number.isFinite(n) ? n : 0;
 }
 
-function get(row: Record<string, string>, ...keys: string[]): string {
+function money(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function get(row: Record<string, unknown>, ...keys: string[]): string {
   for (const k of keys) {
-    const v = row[k];
-    if (v !== undefined && v !== null && v !== "") return v;
+    const v = row[k] ?? row[k.toUpperCase()] ?? row[k.toLowerCase()];
+    if (v !== undefined && v !== null && v !== "") return String(v);
   }
   return "";
 }
 
-/**
- * CQ0 armazena 12 meses em colunas (CQ0_DEB01..12, CQ0_CRE01..12, CQ0_SLD01..12).
- * O sync espera 1 linha por competência (YYYY-MM). Esta função expande uma linha
- * wide da CQ0 em até 12 linhas no formato CQ_* que o adapter já entende.
- *
- * Filtra moeda 01 e tipo de saldo 1 (realizado) para não duplicar na chave
- * [filial, conta, competencia, empresaId].
- *
- * saldoAnterior do mês N = saldo atual do mês N-1 (ano anterior usa CQ0_SLDANT).
- * Retorna [] se a linha já estiver no formato longo (compatibilidade) ou se
- * moeda/tipo não correspondem.
- */
-export function expandCq0ToLong(row: Record<string, string>): Record<string, string>[] {
-  const filial = get(row, "CQ0_FILIAL", "CQ_FILIAL");
-  const conta = get(row, "CQ0_CONTA", "CQ_CONTA");
+function parseDataMes(data: string): { mes: string; ano: string } {
+  const clean = data.replace(/[^\d]/g, "");
+  if (clean.length !== 8) return { mes: "", ano: "" };
+  return { ano: clean.substring(0, 4), mes: clean.substring(4, 6) };
+}
 
-  if (!filial && !conta) return [];
-
-  const mesRef = get(row, "CQ_MES");
-  if (mesRef) return [row];
-
-  const moeda = get(row, "CQ0_MOEDA", "CQ_MOEDA") || "01";
-  const tpsald = get(row, "CQ0_TPSALD", "CQ_TPSALD") || "1";
-  if (moeda !== "01" || tpsald !== "1") return [];
-
+function expandWideRow(row: Record<string, string>, filial: string, conta: string): Record<string, string>[] {
   const ano = get(row, "CQ0_ANO", "CQ_ANO");
   if (!ano) return [];
 
@@ -71,6 +57,79 @@ export function expandCq0ToLong(row: Record<string, string>): Record<string, str
   return out;
 }
 
+/**
+ * Converte uma linha da CQ0 no formato long (1 linha por conta/mês, colunas
+ * CQ0_DATA, CQ0_DEBITO, CQ0_CREDIT) — formato real do Protheus Cloud 12.
+ * O saldo não vem na API e é preenchido por expandCq0Rows (acumulado).
+ */
+function expandLongRow(row: Record<string, string>, filial: string, conta: string): Record<string, string>[] {
+  const { mes, ano } = parseDataMes(get(row, "CQ0_DATA", "CQ_DATA"));
+  if (!mes || !ano) return [];
+  return [
+    {
+      CQ_FILIAL: filial,
+      CQ_CONTA: conta,
+      CQ_MES: mes,
+      CQ_ANO: ano,
+      CQ_DEB: String(num(get(row, "CQ0_DEBITO", "CQ_DEBITO"))),
+      CQ_CRED: String(num(get(row, "CQ0_CREDIT", "CQ_CREDIT"))),
+    },
+  ];
+}
+
+function isWideRow(row: Record<string, string>): boolean {
+  return MESES.some((m) => get(row, `CQ0_DEB${m}`) !== "" || get(row, `CQ0_SLD${m}`) !== "");
+}
+
+/**
+ * CQ0 tem dois formatos possíveis:
+ * - Long (Protheus Cloud 12): 1 linha por conta/mês com CQ0_DATA, CQ0_DEBITO, CQ0_CREDIT.
+ * - Wide (on-prem): 1 linha por conta/ano com colunas CQ0_DEB01..12, CQ0_CRE01..12, CQ0_SLD01..12.
+ * Ambos são convertidos para o formato long canônico CQ_* que o adapter entende.
+ *
+ * Filtra moeda 01 e tipo de saldo 1 (realizado) para não duplicar na chave
+ * [filial, conta, competencia, empresaId].
+ */
+export function expandCq0ToLong(row: Record<string, string>): Record<string, string>[] {
+  if (get(row, "CQ_MES")) return [row];
+
+  const filial = get(row, "CQ0_FILIAL", "CQ_FILIAL");
+  const conta = get(row, "CQ0_CONTA", "CQ_CONTA");
+  if (!filial && !conta) return [];
+
+  const moeda = get(row, "CQ0_MOEDA", "CQ_MOEDA") || "01";
+  const tpsald = get(row, "CQ0_TPSALD", "CQ_TPSALD") || "1";
+  if (moeda !== "01" || tpsald !== "1") return [];
+
+  if (get(row, "CQ0_DATA", "CQ_DATA")) return expandLongRow(row, filial, conta);
+  if (isWideRow(row) || get(row, "CQ0_ANO", "CQ_ANO")) return expandWideRow(row, filial, conta);
+  return [];
+}
+
+function computeAccumulatedBalances(rows: Record<string, string>[]): void {
+  const groups = new Map<string, Record<string, string>[]>();
+  for (const row of rows) {
+    if (get(row, "CQ_SALDO")) continue;
+    const key = `${get(row, "CQ_FILIAL")}|${get(row, "CQ_CONTA")}`;
+    const list = groups.get(key) ?? [];
+    list.push(row);
+    groups.set(key, list);
+  }
+  for (const list of groups.values()) {
+    list.sort((a, b) => `${get(a, "CQ_ANO")}${get(a, "CQ_MES")}`.localeCompare(`${get(b, "CQ_ANO")}${get(b, "CQ_MES")}`));
+    let saldo = 0;
+    for (const row of list) {
+      const deb = num(get(row, "CQ_DEB"));
+      const cred = num(get(row, "CQ_CRED"));
+      row.CQ_SALANT = String(money(saldo));
+      saldo = money(saldo + deb - cred);
+      row.CQ_SALDO = String(saldo);
+    }
+  }
+}
+
 export function expandCq0Rows(rows: Record<string, string>[]): Record<string, string>[] {
-  return rows.flatMap(expandCq0ToLong);
+  const expanded = rows.flatMap(expandCq0ToLong);
+  computeAccumulatedBalances(expanded);
+  return expanded;
 }

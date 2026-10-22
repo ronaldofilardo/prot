@@ -83,11 +83,13 @@ export const BAIXAS_FALLBACK_PATHS: string[] = [
 ];
 
 export const SALDOS_CONTABEIS_FALLBACK_PATHS: string[] = [
-  // CQ0 (Protheus 12+): saldo por conta no mês, colunas wide (CQ0_DEB01..12 etc).
-  // Sem "fields" para o Protheus devolver todas as colunas; expandCq0ToLong converte para o formato longo.
-  "/rest/api/framework/v1/genericQuery?tables=CQ0&pageSize=500",
-  // Fallback: se o sem-fields falhar, pede só os campos de identificação (o adapter expande os meses que vierem)
-  "/rest/api/framework/v1/genericQuery?tables=CQ0&fields=CQ0_FILIAL,CQ0_CONTA,CQ0_ANO,CQ0_MOEDA,CQ0_TPSALD,CQ0_SLDANT&pageSize=500",
+  // CQ0 (Protheus Cloud 12): formato long — 1 linha por conta/mês com
+  // CQ0_DATA (fim de mês), CQ0_DEBITO, CQ0_CREDIT. "fields" é obrigatório:
+  // sem ele o genericQuery retorna 400 "É necessário informar ao menos uma
+  // tabela e um campo". Campos inexistentes causam 500. Validado via REST.
+  "/rest/api/framework/v1/genericQuery?tables=CQ0&fields=CQ0_FILIAL,CQ0_CONTA,CQ0_DATA,CQ0_MOEDA,CQ0_TPSALD,CQ0_DEBITO,CQ0_CREDIT&pageSize=500",
+  // Fallback: versões wide (on-prem) com colunas mensais CQ0_DEB01..12
+  "/rest/api/framework/v1/genericQuery?tables=CQ0&fields=CQ0_FILIAL,CQ0_CONTA,CQ0_ANO,CQ0_MOEDA,CQ0_TPSALD,CQ0_SLDANT,CQ0_DEB01,CQ0_CRE01,CQ0_SLD01&pageSize=500",
   "/api/protheus/v1/contabilidade/saldos",
   "/rest/api/protheus/v1/saldos-contabeis",
 ];

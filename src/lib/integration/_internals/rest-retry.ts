@@ -79,9 +79,14 @@ export async function executeFetch(
   );
 }
 
+function isSkippablePathError(err: Error): boolean {
+  return err.message.includes("404") || err.message.includes("400");
+}
+
 /**
  * Tenta buscar linhas de múltiplas paths, retornando o primeiro resultado não-vazio
- * ou fallback. Ignora 404s (tenta próxima), propaga erros críticos após jitter+retry.
+ * ou fallback. Ignora 404s e 400s (path/params inválidos neste Protheus — tenta
+ * próxima), propaga erros críticos após jitter+retry.
  */
 export async function fetchRowsFromFirstPath(
   paths: string[],
@@ -98,12 +103,12 @@ export async function fetchRowsFromFirstPath(
       }
     } catch (err) {
       lastError = toError(err);
-      if (lastError.message.includes("404")) continue;
+      if (isSkippablePathError(lastError)) continue;
       throw lastError;
     }
   }
   if (lastError) {
-    if (lastError.message.includes("404")) return onAllNotFound();
+    if (isSkippablePathError(lastError)) return onAllNotFound();
     throw lastError;
   }
   return [];

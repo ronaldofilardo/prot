@@ -139,14 +139,30 @@ describe("UploadPanel — integração com o hook", () => {
     vi.unstubAllGlobals();
   });
 
-  it("pull pela API e adicao de arquivo refletem na tela", async () => {
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ success: true, resultados: [pullOk] }) });
+  it("pull sequencial por entidade reflete na tela e permite adicionar arquivo", async () => {
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      const { entidade } = JSON.parse(String(init?.body ?? "{}"));
+      return {
+        ok: true,
+        json: async () => ({
+          success: true,
+          resultados: [{
+            arquivo: `${entidade}.csv`,
+            entidade,
+            registros: 5,
+            sync: { entidade, processados: 5, criados: 5, atualizados: 2, erros: 0 },
+          }],
+        }),
+      };
+    });
     const { container } = render(<UploadPanel />);
 
     await act(async () => {
       fireEvent.click(screen.getByText("Buscar no Protheus"));
     });
-    expect(screen.getByText("SF2")).toBeInTheDocument();
+    expect(screen.getByText("Cliente")).toBeInTheDocument();
+    expect(screen.getAllByText("5 reg → 5 criado(s), 2 atualizado(s), 0 erro(s)")).toHaveLength(8);
+    expect(fetchMock).toHaveBeenCalledTimes(8);
 
     fireEvent.change(container.querySelector("#file-input")!, {
       target: { files: [new File(["x"], "local.csv")] },
@@ -154,8 +170,14 @@ describe("UploadPanel — integração com o hook", () => {
     expect(screen.getByText("local.csv")).toBeInTheDocument();
   });
 
-  it("pull com falha exibe a mensagem de erro", async () => {
-    fetchMock.mockResolvedValue({ ok: false, json: async () => ({ error: "Sem conexão" }) });
+  it("falha no pull de Clientes exibe o erro e ignora dependentes", async () => {
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      const { entidade } = JSON.parse(String(init?.body ?? "{}"));
+      if (entidade === "Cliente") {
+        return { ok: false, json: async () => ({ error: "Sem conexão" }) };
+      }
+      return { ok: true, json: async () => ({ success: true, resultados: [] }) };
+    });
     render(<UploadPanel />);
 
     await act(async () => {
@@ -163,5 +185,6 @@ describe("UploadPanel — integração com o hook", () => {
     });
 
     expect(screen.getByText("Sem conexão")).toBeInTheDocument();
+    expect(screen.getAllByText("Ignorado pois a sincronização de Clientes falhou")).toHaveLength(3);
   });
 });

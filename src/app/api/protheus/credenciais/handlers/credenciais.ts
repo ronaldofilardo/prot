@@ -5,6 +5,7 @@ import { setMemoryToken } from "@/lib/integration/_internals/token-env-sync";
 import { logApiError, logIntegration } from "@/lib/utils/logger";
 
 import { parseJwtExpiry } from "@/lib/integration/_internals/token-network";
+import { isForgedProtheusToken } from "@/lib/integration/_internals/token-generator";
 
 interface CredenciaisInput {
   username?: string;
@@ -112,7 +113,7 @@ async function obterOuManterToken(empresaId: string) {
     return { success: true, tokenPreview: `${novoToken.slice(0, 10)}...` };
   } catch (tokenErr) {
     const existing = process.env.PROTHEUS_REST_ACCESS_TOKEN;
-    if (existing && !existing.includes("sig_totvs_fwjwt_auto_renew")) {
+    if (existing && !isForgedProtheusToken(existing)) {
       const expiresAt = new Date(Date.now() + 86400 * 1000);
       await prisma.protheusCredencial.update({
         where: { empresaId },
@@ -169,7 +170,7 @@ async function criarCredencialPadrao(empresaId: string) {
 }
 
 function ativarTokenEmMemoria(cred: { accessToken?: string | null; expiresAt?: Date | null } | null) {
-  if (!cred?.accessToken || cred.accessToken.includes("sig_totvs_fwjwt_auto_renew")) return;
+  if (!cred?.accessToken || isForgedProtheusToken(cred.accessToken)) return;
   const exp = cred.expiresAt || new Date(Date.now() + 86400 * 1000);
   setMemoryToken(cred.accessToken, exp);
   process.env.PROTHEUS_REST_ACCESS_TOKEN = cred.accessToken;

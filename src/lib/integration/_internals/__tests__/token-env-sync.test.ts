@@ -147,6 +147,16 @@ describe("token-env-sync.ts", () => {
       expect(writeFileSync).not.toHaveBeenCalled();
     });
 
+    it("não sincroniza .env quando accessToken é JWT forjado com assinatura em base64url", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      const forgedB64 = Buffer.from("sig_totvs_fwjwt_auto_renew").toString("base64url");
+      const forgedJwt = `eyJhbGciOiJSUzI1NiJ9.e30.${forgedB64}`;
+      const expiresAt = new Date(Date.now() + 3600000);
+      setMemoryToken(forgedJwt, expiresAt);
+
+      expect(writeFileSync).not.toHaveBeenCalled();
+    });
+
     it("sincroniza .env em produção com token válido", () => {
       vi.stubEnv("NODE_ENV", "production");
 

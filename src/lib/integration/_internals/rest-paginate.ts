@@ -5,18 +5,35 @@ export type GetPageFn = (page: number, pageSize: number) => Promise<PageResult>;
 
 import { logRestPageWarning } from "../logger";
 
+const DEFAULT_DEADLINE_MS = 45_000;
+
 export async function fetchAllPages(
   getPage: GetPageFn,
-  options: { pageSize?: number; maxPages?: number } = {}
+  options: { pageSize?: number; maxPages?: number; deadlineMs?: number } = {}
 ): Promise<ProtheusRow[]> {
-  const pageSize = options.pageSize ?? 100;
+  const envPageSize = Number(process.env.PROTHEUS_PAGE_SIZE);
+  const pageSize = options.pageSize ?? (Number.isFinite(envPageSize) && envPageSize > 0 ? envPageSize : 100);
   const maxPages = options.maxPages ?? 200;
+  const deadlineMs = options.deadlineMs ?? DEFAULT_DEADLINE_MS;
+  const startedAt = Date.now();
   let allRows: ProtheusRow[] = [];
   let page = 1;
   let hasNext = true;
   let previousFirstRowFingerprint: string | null = null;
 
   while (hasNext && page <= maxPages) {
+    const elapsed = Date.now() - startedAt;
+    if (elapsed >= deadlineMs) {
+      logRestPageWarning("Deadline de paginacao atingido; retornando parcial", {
+        page,
+        pagesLidas: page - 1,
+        linhas: allRows.length,
+        elapsedMs: elapsed,
+        deadlineMs,
+      });
+      break;
+    }
+
     const result = await getPage(page, pageSize);
     if (!result || !result.rows || result.rows.length === 0) {
       break;

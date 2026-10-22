@@ -3,9 +3,11 @@ import { getMemoryToken, setMemoryToken } from "./token-env-sync";
 import { logIntegration } from "@/lib/utils/logger";
 import type { ProtheusCredencialData, ProtheusCredencialDelegate, ProtheusCredencialStore, MemoryTokenState } from "./token-types";
 import { fetchDbToken } from "./token-db-fetch";
+import { isForgedProtheusToken } from "./token-generator";
 
 export function isTokenValid(token: string | null | undefined, expiresAt: Date | null | undefined): boolean {
   if (!token) return false;
+  if (isForgedProtheusToken(token)) return false;
   const jwtExpiry = parseJwtExpiry(token);
   if (jwtExpiry && isTokenExpired(jwtExpiry)) return false;
   return !isTokenExpired(expiresAt);
@@ -15,9 +17,23 @@ export function resolveCredencial(store: ProtheusCredencialStore, empresaId: str
   return store.protheusCredencial?.findUnique({ where: { empresaId } }).catch(() => null) ?? null;
 }
 
-export function persistToken(credDelegate: ProtheusCredencialDelegate | undefined, empresaId: string, result: MemoryTokenState) {
-  if (credDelegate) {
-    credDelegate.update({ where: { empresaId }, data: { accessToken: result.accessToken!, expiresAt: result.expiresAt! } });
+export async function persistToken(
+  credDelegate: ProtheusCredencialDelegate | undefined,
+  empresaId: string,
+  result: MemoryTokenState
+): Promise<void> {
+  if (credDelegate && !isForgedProtheusToken(result.accessToken)) {
+    try {
+      await credDelegate.update({
+        where: { empresaId },
+        data: { accessToken: result.accessToken!, expiresAt: result.expiresAt! },
+      });
+    } catch (err) {
+      logIntegration("Falha ao persistir token Protheus no banco", {
+        empresaId,
+        erro: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
   setMemoryToken(result.accessToken!, result.expiresAt!, result.refreshToken ?? undefined);
 }
@@ -33,7 +49,7 @@ export async function resolveStoredCredencial(
   }
   logIntegration("Gerando/renovando token Protheus sob demanda", { empresaId, forceRefresh });
   const result = await fetchDbToken(cred);
-  persistToken(credDelegate, empresaId, result);
+  await persistToken(credDelegate, empresaId, result);
   return result.accessToken!;
 }
 

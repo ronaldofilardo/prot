@@ -48,19 +48,34 @@ describe("useUploadPanel", () => {
   });
 
   it("should perform handlePullFromProtheus successfully", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ resultados: [{ entidade: "SA1", registros: 10, sync: { criados: 10, atualizados: 0, erros: 0 } }] })
+    global.fetch = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body || "{}"));
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          resultados: [{
+            arquivo: body.entidade,
+            entidade: body.entidade,
+            registros: 10,
+            sync: { entidade: body.entidade, processados: 10, criados: 10, atualizados: 0, erros: 0 },
+          }],
+        }),
+      });
     });
 
     const { result } = renderHook(() => useUploadPanel());
-    
+
     await act(async () => {
       await result.current.handlePullFromProtheus();
     });
 
-    expect(global.fetch).toHaveBeenCalledWith("/api/protheus/pull", { method: "POST" });
-    expect(result.current.pullResults).toHaveLength(1);
+    expect(global.fetch).toHaveBeenCalledWith("/api/protheus/pull", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entidade: "Cliente" }),
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(8);
+    expect(result.current.pullResults).toHaveLength(8);
     expect(result.current.pullError).toBeNull();
   });
 });
@@ -106,8 +121,9 @@ describe("useUploadPanel — drop, upload e falhas", () => {
       await result.current.handlePullFromProtheus();
     });
 
-    expect(result.current.pullError).toBe("Protheus offline");
-    expect(result.current.pullResults).toBeNull();
+    // No modo sequencial, erros por entidade vão para pullResults, não pullError
+    expect(result.current.pullResults).not.toBeNull();
+    expect(result.current.pullResults?.[0].erro).toBe("Protheus offline");
     expect(onSuccess).not.toHaveBeenCalled();
     expect(result.current.pulling).toBe(false);
   });
@@ -120,7 +136,7 @@ describe("useUploadPanel — drop, upload e falhas", () => {
       await result.current.handlePullFromProtheus();
     });
 
-    expect(result.current.pullError).toBe("Erro ao atualizar do Protheus");
+    expect(result.current.pullResults?.[0].erro).toBe("Erro ao puxar Cliente");
   });
 
   it("pull com falha de rede expõe mensagem padrão", async () => {
@@ -136,9 +152,20 @@ describe("useUploadPanel — drop, upload e falhas", () => {
   });
 
   it("pull com sucesso notifica o callback de onSuccess", async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true, resultados: [{ entidade: "SA2", registros: 1, sync: {} }] }),
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body || "{}"));
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          success: true,
+          resultados: [{
+            arquivo: body.entidade,
+            entidade: body.entidade,
+            registros: 1,
+            sync: { entidade: body.entidade, processados: 1, criados: 1, atualizados: 0, erros: 0 },
+          }],
+        }),
+      });
     });
     const onSuccess = vi.fn();
     const { result } = renderHook(() => useUploadPanel(onSuccess));
@@ -147,7 +174,7 @@ describe("useUploadPanel — drop, upload e falhas", () => {
       await result.current.handlePullFromProtheus();
     });
 
-    expect(result.current.pullResults).toHaveLength(1);
+    expect(result.current.pullResults).toHaveLength(8);
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 

@@ -1,4 +1,4 @@
-import type { ProtheusClient } from "../protheus-client";
+import type { ProtheusClient, ProtheusRow } from "../protheus-client";
 import {
   csvRowToCanonicalCliente,
   csvRowToCanonicalFaturamento,
@@ -22,6 +22,17 @@ import {
 import { filterBaixasReceber } from "./adapter-baixas-filter";
 import { csvRowToCanonicalItemVenda } from "./adapter-itens-venda";
 import type { SyncFn, EntityJob } from "./sync-jobs";
+
+const baixasCache = new WeakMap<ProtheusClient, Promise<ProtheusRow[]>>();
+
+function fetchBaixasCompartilhada(c: ProtheusClient): Promise<ProtheusRow[]> {
+  let cached = baixasCache.get(c);
+  if (!cached) {
+    cached = c.fetchBaixas();
+    baixasCache.set(c, cached);
+  }
+  return cached;
+}
 
 export const JOBS: EntityJob<unknown>[] = [
   {
@@ -51,7 +62,7 @@ export const JOBS: EntityJob<unknown>[] = [
   {
     entidade: "Baixa",
     fetch: async (c: ProtheusClient) => {
-      const rows = await c.fetchBaixas();
+      const rows = await fetchBaixasCompartilhada(c);
       return filterBaixasReceber(rows);
     },
     toCanonical: csvRowToCanonicalBaixa,
@@ -60,7 +71,7 @@ export const JOBS: EntityJob<unknown>[] = [
   {
     entidade: "BaixaPagar",
     fetch: async (c: ProtheusClient) => {
-      const rows = await c.fetchBaixas();
+      const rows = await fetchBaixasCompartilhada(c);
       return filterBaixasPagar(rows);
     },
     toCanonical: csvRowToCanonicalBaixaPagar,

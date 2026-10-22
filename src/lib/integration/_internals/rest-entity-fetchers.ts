@@ -17,6 +17,7 @@ import {
   fetchRowsFromFirstPath,
 } from "./rest-retry";
 import type { ProtheusRestConfig } from "./rest-types";
+import { expandCq0Rows } from "../utils/expand-cq0";
 
 import { mergeAndDedupe } from "./rest-paginate";
 export { mergeAndDedupe };
@@ -148,5 +149,6 @@ export async function fetchSaldosContabeis(
     ...SALDOS_CONTABEIS_FALLBACK_PATHS,
   ]);
   const rows = await fetchRowsFromFirstPath(candidatePaths, getRows, () => []);
-  return mergeAndDedupe(rows, ["CQ_FILIAL", "CQ_CONTA", "CQ_MES", "CQ_ANO", "CQ_DATA"]);
+  const expanded = expandCq0Rows(rows);
+  return mergeAndDedupe(expanded, ["CQ_FILIAL", "CQ_CONTA", "CQ_MES", "CQ_ANO"]);
 }

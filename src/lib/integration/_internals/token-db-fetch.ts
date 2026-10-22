@@ -4,11 +4,11 @@ import { logIntegration } from "@/lib/utils/logger";
 import { executeOAuthRequest, resolveTokenUrl, parseJwtExpiry, isTokenExpired } from "./token-network";
 import { tryRefreshToken } from "./token-refresh";
 import { getMemoryToken } from "./token-env-sync";
-import { createProtheusJwt } from "./token-generator";
+import { createProtheusJwt, isForgedProtheusToken } from "./token-generator";
 import type { ProtheusCredencialData, MemoryTokenState } from "./token-types";
 
 function resolveExistingToken(token?: string | null): MemoryTokenState | null {
-  if (!token || token.includes("sig_totvs_fwjwt_auto_renew")) return null;
+  if (!token || isForgedProtheusToken(token)) return null;
   const exp = parseJwtExpiry(token);
   if (isTokenExpired(exp)) return null;
   return { accessToken: token, refreshToken: null, expiresAt: exp ?? new Date(Date.now() + 3600 * 1000) };

@@ -45,6 +45,29 @@ describe("Fase 3 — Paginação Segura, Filtro de Data, Timeout e Retry", () =>
       expect(getPage).toHaveBeenCalledTimes(5);
       expect(rows).toHaveLength(5);
     });
+
+    it("para a paginação quando o deadline é atingido e retorna parcial", async () => {
+      const getPage = vi.fn().mockImplementation(() =>
+        Promise.resolve({ rows: [{ ID: "x" }], hasNext: true })
+      );
+
+      const rows = await fetchAllPages(getPage, { pageSize: 1, deadlineMs: 0 });
+      expect(getPage).not.toHaveBeenCalled();
+      expect(rows).toEqual([]);
+    });
+
+    it("continua paginando normalmente quando deadline não estoura", async () => {
+      let counter = 0;
+      const getPage = vi.fn().mockImplementation(() => {
+        counter++;
+        if (counter > 3) return Promise.resolve({ rows: [], hasNext: false });
+        return Promise.resolve({ rows: [{ ID: `p${counter}` }], hasNext: true });
+      });
+
+      const rows = await fetchAllPages(getPage, { pageSize: 1, deadlineMs: 60_000 });
+      expect(getPage).toHaveBeenCalledTimes(4);
+      expect(rows).toHaveLength(3);
+    });
   });
 
   describe("Filtro de Data e Cláusula WHERE", () => {

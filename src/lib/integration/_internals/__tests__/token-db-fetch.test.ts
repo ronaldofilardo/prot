@@ -20,12 +20,16 @@ vi.mock("../token-network", async (importOriginal) => {
   };
 });
 
-vi.mock("../token-generator", () => ({
-  createProtheusJwt: vi.fn(() => ({
-    token: "fallback-jwt-token",
-    expiresAt: new Date(Date.now() + 3600000),
-  })),
-}));
+vi.mock("../token-generator", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../token-generator")>();
+  return {
+    ...actual,
+    createProtheusJwt: vi.fn(() => ({
+      token: "fallback-jwt-token",
+      expiresAt: new Date(Date.now() + 3600000),
+    })),
+  };
+});
 
 const mockCred: ProtheusCredencialData = {
   empresaId: "emp-01",
@@ -104,6 +108,23 @@ describe("token-db-fetch.ts", () => {
     expect(result.accessToken).not.toBe("sig_totvs_fwjwt_auto_renew_abc123");
   });
 
+  it("não usa accessToken existente quando é JWT forjado com assinatura em base64url", async () => {
+    const { executeOAuthRequest } = await import("../token-network");
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
+
+    // JWT real forjado: 3o segmento é base64url("sig_totvs_fwjwt_auto_renew")
+    const forgedB64 = Buffer.from("sig_totvs_fwjwt_auto_renew").toString("base64url");
+    const forgedJwt = `eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyIn0.${forgedB64}`;
+    const credWithForgedJwt: ProtheusCredencialData = {
+      ...mockCred,
+      accessToken: forgedJwt,
+    };
+
+    const result = await fetchDbToken(credWithForgedJwt);
+
+    expect(result.accessToken).not.toBe(forgedJwt);
+  });
+
   it("usa token de ambiente quando accessToken não disponível", async () => {
     const { executeOAuthRequest } = await import("../token-network");
     (executeOAuthRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
@@ -132,6 +153,23 @@ describe("token-db-fetch.ts", () => {
     const result = await fetchDbToken(credNoToken);
 
     expect(result.accessToken).not.toBe("sig_totvs_fwjwt_auto_renew_env");
+  });
+
+  it("não usa token de ambiente quando é JWT forjado com assinatura em base64url", async () => {
+    const { executeOAuthRequest } = await import("../token-network");
+    (executeOAuthRequest as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
+
+    const forgedB64 = Buffer.from("sig_totvs_fwjwt_auto_renew").toString("base64url");
+    const forgedEnv = `eyJhbGciOiJSUzI1NiJ9.e30.${forgedB64}`;
+    const credNoToken: ProtheusCredencialData = {
+      ...mockCred,
+      accessToken: "",
+    };
+    vi.stubEnv("PROTHEUS_REST_ACCESS_TOKEN", forgedEnv);
+
+    const result = await fetchDbToken(credNoToken);
+
+    expect(result.accessToken).not.toBe(forgedEnv);
   });
 
   it("cria JWT fallback quando tudo falha", async () => {

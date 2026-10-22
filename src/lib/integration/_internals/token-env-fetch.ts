@@ -1,7 +1,7 @@
 import { ProtheusClientError } from "../protheus-client";
 import { executeOAuthRequest, resolveTokenUrl } from "./token-network";
 import { tryRefreshToken } from "./token-refresh";
-import { createProtheusJwt } from "./token-generator";
+import { createProtheusJwt, isForgedProtheusToken } from "./token-generator";
 import { getMemoryToken } from "./token-env-sync";
 import { logIntegration } from "@/lib/utils/logger";
 import type { MemoryTokenState } from "./token-types";
@@ -45,7 +45,7 @@ export async function fetchTokenFromEnv(
 
   if (!forceRefresh) {
     const existingToken = process.env.PROTHEUS_REST_ACCESS_TOKEN;
-    if (existingToken && !existingToken.includes("sig_totvs_fwjwt_auto_renew")) {
+    if (existingToken && !isForgedProtheusToken(existingToken)) {
       logIntegration("Protheus remoto inacessivel no momento. Mantendo token configurado existente", { baseUrl });
       return { accessToken: existingToken, refreshToken: null, expiresAt: new Date(Date.now() + 86400 * 1000) };
     }

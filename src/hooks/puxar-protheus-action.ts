@@ -53,7 +53,7 @@ async function puxarEntidadeIndividual(entidade: string): Promise<PullEntityResu
 export async function puxarDoProtheus(
   s: PullSetters,
   onSuccess?: () => void,
-  modo: "sequencial" | "lote" = "lote",
+  modo: "sequencial" | "lote" = "sequencial",
 ): Promise<void> {
   s.setPulling(true);
   s.setPullError(null);

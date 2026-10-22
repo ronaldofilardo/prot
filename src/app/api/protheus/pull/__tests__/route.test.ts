@@ -44,10 +44,21 @@ describe("API /api/protheus/pull POST (route.ts)", () => {
     const res = await POST();
     const json = await res.json();
 
-    expect(pullAndSyncMock).toHaveBeenCalledWith("emp-01");
+    expect(pullAndSyncMock).toHaveBeenCalledWith("emp-01", undefined);
     expect(res.status).toBe(200);
     expect(json.success).toBe(true);
     expect(json.resultados).toEqual([RESULTADO_OK]);
+  });
+
+  it("aceita entidade específica no corpo da requisição", async () => {
+    const req = new Request("http://localhost/api/protheus/pull", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entidade: "Cliente" }),
+    });
+    const res = await POST(req);
+    expect(pullAndSyncMock).toHaveBeenCalledWith("emp-01", "Cliente");
+    expect(res.status).toBe(200);
   });
 
   it("devolve success=false quando algum resultado carrega erro", async () => {

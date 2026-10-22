@@ -18,15 +18,8 @@ import {
 } from "./rest-retry";
 import type { ProtheusRestConfig } from "./rest-types";
 
-export function mergeAndDedupe(rows: ProtheusRow[], keys: string[]): ProtheusRow[] {
-  const seen = new Set<string>();
-  return rows.filter((row) => {
-    const key = keys.map((k) => row[k] ?? "").join("|");
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
+import { mergeAndDedupe } from "./rest-paginate";
+export { mergeAndDedupe };
 
 export async function fetchEmpresa(
   config: ProtheusRestConfig,
@@ -92,7 +85,7 @@ export async function fetchFaturamentos(
     ...FATURAMENTOS_FALLBACK_PATHS,
   ]);
   const rows = await fetchRowsFromFirstPath(candidatePaths, getRows, buildFallbackFaturamentosRows);
-  return mergeAndDedupe(rows, ["F2_DOC", "F2_SERIE", "F2_CLIENTE", "F2_LOJA"]);
+  return mergeAndDedupe(rows, ["F2_FILIAL", "F2_DOC", "F2_SERIE"]);
 }
 
 export async function fetchContasReceber(
@@ -106,7 +99,7 @@ export async function fetchContasReceber(
     ...CONTAS_RECEBER_FALLBACK_PATHS,
   ]);
   const rows = await fetchRowsFromFirstPath(candidatePaths, getRows, buildFallbackContasReceberRows);
-  return mergeAndDedupe(rows, ["E1_PREFIXO", "E1_NUM", "E1_PARCELA", "E1_CLIENTE", "E1_LOJA"]);
+  return mergeAndDedupe(rows, ["E1_FILIAL", "E1_PREFIXO", "E1_NUM", "E1_PARCELA", "E1_TIPO"]);
 }
 
 function fallbackStr(a?: string, b?: string): string {

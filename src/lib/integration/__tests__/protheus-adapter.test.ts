@@ -132,7 +132,7 @@ describe("protheus-adapter — caracterização (linha Protheus → Canonical)",
       );
 
       expect(result).toEqual({
-        externalId: "empresa-01-CR-01-FAT-000100-A",
+        externalId: "empresa-01-CR-01-FAT-000100-A-NCC",
         company: "empresa-01",
         branch: "01",
         prefix: "FAT",
@@ -177,7 +177,7 @@ describe("protheus-adapter — caracterização (linha Protheus → Canonical)",
       );
 
       expect(result).toEqual({
-        externalId: "empresa-01-BX-01-FAT-000100-A-20260120",
+        externalId: "empresa-01-BX-01-FAT-000100-A-DUP-20260120",
         company: "empresa-01",
         branch: "01",
         paymentBranch: "02",
@@ -187,7 +187,7 @@ describe("protheus-adapter — caracterização (linha Protheus → Canonical)",
         type: "DUP",
         amount: 350.5,
         paymentDate: "2026-01-20T00:00:00.000Z",
-        titleExternalId: "empresa-01-CR-01-FAT-000100-A",
+        titleExternalId: "empresa-01-CR-01-FAT-000100-A-DUP",
         updatedAt: AGORA,
       });
     });

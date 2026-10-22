@@ -26,3 +26,11 @@ export function logSyncSkip(entidade: string, idempotencyKey: string, reason: st
 export function logReconciliation(empresaId: string, resultado: Record<string, unknown>) {
   console.info(formatIntegrationLog("info", `Reconciliacao concluida`, { empresaId, ...resultado }));
 }
+
+export function logRestPathResponse(path: string, rowsCount: number) {
+  console.info(formatIntegrationLog("info", `Path REST respondeu`, { path, rowsCount }));
+}
+
+export function logRestPageWarning(message: string, context?: Record<string, unknown>) {
+  console.warn(formatIntegrationLog("warn", message, context));
+}

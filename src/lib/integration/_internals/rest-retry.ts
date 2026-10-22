@@ -28,37 +28,60 @@ function exponentialBackoffWithJitter(attempt: number, capMs: number): number {
   return Math.min(capMs, exponentialDelay + jitter);
 }
 
+import { logRestPathResponse } from "../logger";
+
+export function getFetchTimeoutMs(): number {
+  const envVal = Number(process.env.PROTHEUS_FETCH_TIMEOUT_MS);
+  return Number.isFinite(envVal) && envVal > 0 ? envVal : 25000;
+}
+
 export async function executeFetch(
   fullUrl: string,
   authHeader: string,
   path: string,
 ): Promise<Response> {
-  try {
-    const response = await fetch(fullUrl, {
-      method: "GET",
-      headers: {
-        Authorization: authHeader,
-        Accept: "application/json",
-      },
-      cache: "no-store",
-      signal: AbortSignal.timeout(PROTHEUS_FETCH_TIMEOUT_MS),
-    });
-    if (!response) {
-      throw new Error("Resposta de rede indefinida");
+  const timeoutMs = getFetchTimeoutMs();
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(fullUrl, {
+        method: "GET",
+        headers: {
+          Authorization: authHeader,
+          Accept: "application/json",
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!response) {
+        throw new Error("Resposta de rede indefinida");
+      }
+      if (response.status >= 500 && attempt < 2) {
+        const delay = process.env.NODE_ENV === "test" ? 0 : exponentialBackoffWithJitter(attempt, 3000);
+        if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+      return response;
+    } catch (err) {
+      lastError = err;
+      if (attempt < 2) {
+        const delay = process.env.NODE_ENV === "test" ? 0 : exponentialBackoffWithJitter(attempt, 3000);
+        if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
     }
-    return response;
-  } catch (err) {
-    throw new ProtheusClientError(
-      `Falha de rede ao consultar Protheus REST (${path})`,
-      err,
-    );
   }
+
+  throw new ProtheusClientError(
+    `Falha de rede ao consultar Protheus REST (${path})`,
+    lastError,
+  );
 }
 
 /**
  * Tenta buscar linhas de múltiplas paths, retornando o primeiro resultado não-vazio
  * ou fallback. Ignora 404s (tenta próxima), propaga erros críticos após jitter+retry.
- * Opcional: incorporar backoff exponencial em retry crítico (v2 — §10 mitigation).
  */
 export async function fetchRowsFromFirstPath(
   paths: string[],
@@ -69,7 +92,10 @@ export async function fetchRowsFromFirstPath(
   for (const path of paths) {
     try {
       const rows = await get(path);
-      if (rows) return rows;
+      if (rows) {
+        logRestPathResponse(path, rows.length);
+        return rows;
+      }
     } catch (err) {
       lastError = toError(err);
       if (lastError.message.includes("404")) continue;

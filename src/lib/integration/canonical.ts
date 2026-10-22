@@ -26,6 +26,7 @@ export interface CanonicalInvoice {
   company: string;
   branch: string;
   documentNumber: string;
+  series?: string;
   partyExternalId: string;
   issueDate: string;
   amount: number;

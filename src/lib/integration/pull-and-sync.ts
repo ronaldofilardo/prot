@@ -18,11 +18,15 @@ export type { PullEntityResult } from "./_internals/sync-jobs";
 
 export async function pullAndSyncFromProtheus(
   empresaId: string,
+  entidade?: string,
 ): Promise<PullEntityResult[]> {
   const client = await getProtheusClient(empresaId);
   const resultados: PullEntityResult[] = [];
+  const targetJobs = entidade
+    ? JOBS.filter((j) => j.entidade.toLowerCase() === entidade.toLowerCase())
+    : JOBS;
 
-  for (const job of JOBS) {
+  for (const job of targetJobs) {
     try {
       resultados.push(await executarJob(job, empresaId, client));
     } catch (error) {

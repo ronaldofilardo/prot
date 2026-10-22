@@ -3,23 +3,41 @@ import type { PageResult } from "./rest-parse";
 
 export type GetPageFn = (page: number, pageSize: number) => Promise<PageResult>;
 
+import { logRestPageWarning } from "../logger";
+
 export async function fetchAllPages(
   getPage: GetPageFn,
-  options: { pageSize?: number } = {}
+  options: { pageSize?: number; maxPages?: number } = {}
 ): Promise<ProtheusRow[]> {
   const pageSize = options.pageSize ?? 100;
+  const maxPages = options.maxPages ?? 200;
   let allRows: ProtheusRow[] = [];
   let page = 1;
   let hasNext = true;
+  let previousFirstRowFingerprint: string | null = null;
 
-  while (hasNext) {
+  while (hasNext && page <= maxPages) {
     const result = await getPage(page, pageSize);
-    allRows = allRows.concat(result.rows);
-    if (!result.hasNext || result.rows.length === 0) {
-      hasNext = false;
-    } else {
-      page++;
+    if (!result || !result.rows || result.rows.length === 0) {
+      break;
     }
+
+    const currentFirstRow = JSON.stringify(result.rows[0]);
+    if (page > 1 && currentFirstRow === previousFirstRowFingerprint) {
+      logRestPageWarning("Servidor Protheus ignorou o parametro de pagina; encerrando paginacao.", { page, pageSize });
+      break;
+    }
+    previousFirstRowFingerprint = currentFirstRow;
+
+    allRows = allRows.concat(result.rows);
+    if (!result.hasNext) {
+      break;
+    }
+    page++;
+  }
+
+  if (page > maxPages) {
+    logRestPageWarning("Limite maximo de paginas atingido na paginacao REST", { maxPages, pageSize });
   }
 
   return allRows;

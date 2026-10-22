@@ -15,7 +15,9 @@ import { authOptions } from "@/lib/auth";
 import { pullAndSyncFromProtheus } from "@/lib/integration/pull-and-sync";
 import { logApiError } from "@/lib/utils/logger";
 
-export async function POST() {
+export const maxDuration = 60;
+
+export async function POST(req?: Request) {
   try {
     const session = await getServerSession(authOptions);
     const empresaId = (session?.user as { empresaId?: string } | undefined)?.empresaId;
@@ -23,7 +25,19 @@ export async function POST() {
       return NextResponse.json({ error: "Nao autenticado" }, { status: 401 });
     }
 
-    const resultados = await pullAndSyncFromProtheus(empresaId);
+    let entidade: string | undefined;
+    if (req) {
+      try {
+        const body = await req.json();
+        if (body && typeof body.entidade === "string") {
+          entidade = body.entidade;
+        }
+      } catch {
+        // Sem body JSON válido, processa todas as entidades
+      }
+    }
+
+    const resultados = await pullAndSyncFromProtheus(empresaId, entidade);
     const teveErro = resultados.some((r) => r.erro);
 
     return NextResponse.json({ success: !teveErro, resultados });

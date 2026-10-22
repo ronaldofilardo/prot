@@ -128,9 +128,10 @@ async function main() {
 
     await prisma.faturamento.upsert({
       where: {
-        filial_numeroNota_empresaId: {
+        filial_numeroNota_serie_empresaId: {
           filial: row.F2_FILIAL.trim(),
           numeroNota: row.F2_DOC.trim(),
+          serie: row.F2_SERIE ? row.F2_SERIE.trim() : "",
           empresaId: empresa.id,
         },
       },
@@ -166,11 +167,12 @@ async function main() {
 
     await prisma.contaReceber.upsert({
       where: {
-        filial_prefixo_numero_parcela_empresaId: {
+        filial_prefixo_numero_parcela_tipo_empresaId: {
           filial: row.E1_FILIAL.trim(),
           prefixo: row.E1_PREFIXO.trim(),
           numero: row.E1_NUM.trim(),
           parcela: row.E1_PARCELA.trim(),
+          tipo: row.E1_TIPO.trim(),
           empresaId: empresa.id,
         },
       },
@@ -197,11 +199,12 @@ async function main() {
 
     const contaReceber = await prisma.contaReceber.findUnique({
       where: {
-        filial_prefixo_numero_parcela_empresaId: {
+        filial_prefixo_numero_parcela_tipo_empresaId: {
           filial: row.E5_FILIAL.trim(),
           prefixo: row.E5_PREFIXO.trim(),
           numero: row.E5_NUM.trim(),
           parcela: row.E5_PARCELA.trim(),
+          tipo: row.E5_TIPO ? row.E5_TIPO.trim() : "NF",
           empresaId: empresa.id,
         },
       },

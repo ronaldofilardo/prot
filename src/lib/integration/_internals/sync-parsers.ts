@@ -9,15 +9,18 @@ export function parseClienteExternalId(externalId: string): { codigo: string; lo
   return { codigo: codigo || "", loja: loja || "01" };
 }
 
-export function parseFaturamentoExternalId(externalId: string): { filial: string; numeroNota: string } {
+export function parseFaturamentoExternalId(externalId: string): { filial: string; numeroNota: string; serie?: string } {
   const idx = externalId.indexOf("-NF-");
-  if (idx === -1) {
-    const parts = externalId.split("-");
-    return { filial: parts[0] || "01", numeroNota: parts[1] || "" };
+  const suffix = idx === -1 ? externalId : externalId.substring(idx + 4);
+  const parts = suffix.split("-");
+  const res: { filial: string; numeroNota: string; serie?: string } = {
+    filial: parts[0] || "01",
+    numeroNota: parts[1] || "",
+  };
+  if (parts[2] !== undefined && parts[2] !== "") {
+    res.serie = parts[2];
   }
-  const suffix = externalId.substring(idx + 4);
-  const [filial, numeroNota] = suffix.split("-");
-  return { filial: filial || "01", numeroNota: numeroNota || "" };
+  return res;
 }
 
 export function parseContaReceberExternalId(externalId: string): {
@@ -25,15 +28,21 @@ export function parseContaReceberExternalId(externalId: string): {
   prefixo: string;
   numero: string;
   parcela: string;
+  tipo?: string;
 } {
   const idx = externalId.indexOf("-CR-");
-  if (idx === -1) {
-    const parts = externalId.split("-");
-    return { filial: parts[0] || "01", prefixo: parts[1] || "", numero: parts[2] || "", parcela: parts[3] || "" };
+  const suffix = idx === -1 ? externalId : externalId.substring(idx + 4);
+  const parts = suffix.split("-");
+  const res: { filial: string; prefixo: string; numero: string; parcela: string; tipo?: string } = {
+    filial: parts[0] || "01",
+    prefixo: parts[1] || "",
+    numero: parts[2] || "",
+    parcela: parts[3] || "",
+  };
+  if (parts[4] !== undefined && parts[4] !== "") {
+    res.tipo = parts[4];
   }
-  const suffix = externalId.substring(idx + 4);
-  const [filial, prefixo, numero, parcela] = suffix.split("-");
-  return { filial: filial || "01", prefixo: prefixo || "", numero: numero || "", parcela: parcela || "" };
+  return res;
 }
 
 export function parseBaixaExternalId(externalId: string): {
@@ -41,15 +50,21 @@ export function parseBaixaExternalId(externalId: string): {
   prefixo: string;
   numero: string;
   parcela: string;
+  tipo?: string;
 } {
   const idx = externalId.indexOf("-BX-");
-  if (idx === -1) {
-    const parts = externalId.split("-");
-    return { filial: parts[0] || "01", prefixo: parts[1] || "", numero: parts[2] || "", parcela: parts[3] || "" };
+  const suffix = idx === -1 ? externalId : externalId.substring(idx + 4);
+  const parts = suffix.split("-");
+  const res: { filial: string; prefixo: string; numero: string; parcela: string; tipo?: string } = {
+    filial: parts[0] || "01",
+    prefixo: parts[1] || "",
+    numero: parts[2] || "",
+    parcela: parts[3] || "",
+  };
+  if (parts.length >= 6 && parts[4]) {
+    res.tipo = parts[4];
   }
-  const suffix = externalId.substring(idx + 4);
-  const [filial, prefixo, numero, parcela] = suffix.split("-");
-  return { filial: filial || "01", prefixo: prefixo || "", numero: numero || "", parcela: parcela || "" };
+  return res;
 }
 
 export function parseSaldoContabilExternalId(externalId: string): { filial: string; conta: string; competencia: string } {

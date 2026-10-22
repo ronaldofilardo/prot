@@ -59,7 +59,7 @@ export const FATURAMENTOS_FALLBACK_PATHS: string[] = [
 ];
 
 export const CONTAS_RECEBER_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SE1&fields=E1_FILIAL,E1_PREFIXO,E1_NUM,E1_PARCELA,E1_TIPO,E1_CLIENTE,E1_LOJA,E1_EMISSAO,E1_VENCTO,E1_VALOR",
+  "/rest/api/framework/v1/genericQuery?tables=SE1&fields=E1_FILIAL,E1_PREFIXO,E1_NUM,E1_PARCELA,E1_TIPO,E1_CLIENTE,E1_LOJA,E1_EMISSAO,E1_VENCTO,E1_VALOR,E1_SALDO,E1_BAIXA",
   "/api/protheus/v1/financeiro/contasareceber",
   "/rest/api/protheus/v1/contas-receber",
   "/api/protheus/v1/contas-receber",
@@ -67,7 +67,7 @@ export const CONTAS_RECEBER_FALLBACK_PATHS: string[] = [
 ];
 
 export const CONTAS_PAGAR_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SE2&fields=E2_FILIAL,E2_PREFIXO,E2_NUM,E2_PARCELA,E2_TIPO,E2_FORNECE,E2_LOJA,E2_NOMFOR,E2_EMISSAO,E2_VENCTO,E2_VALOR",
+  "/rest/api/framework/v1/genericQuery?tables=SE2&fields=E2_FILIAL,E2_PREFIXO,E2_NUM,E2_PARCELA,E2_TIPO,E2_FORNECE,E2_LOJA,E2_NOMFOR,E2_EMISSAO,E2_VENCTO,E2_VALOR,E2_SALDO,E2_BAIXA",
   "/api/protheus/v1/financeiro/contasapagar",
   "/rest/api/protheus/v1/contas-pagar",
   "/api/protheus/v1/contas-pagar",
@@ -75,7 +75,7 @@ export const CONTAS_PAGAR_FALLBACK_PATHS: string[] = [
 ];
 
 export const BAIXAS_FALLBACK_PATHS: string[] = [
-  "/rest/api/framework/v1/genericQuery?tables=SE5&fields=E5_FILIAL,E5_PREFIXO,E5_NUMERO,E5_PARCELA,E5_TIPO,E5_VALOR,E5_DATA,E5_RECPAG,E5_SEQ,E5_CLIFOR",
+  "/rest/api/framework/v1/genericQuery?tables=SE5&fields=E5_FILIAL,E5_PREFIXO,E5_NUMERO,E5_PARCELA,E5_TIPO,E5_VALOR,E5_DATA,E5_RECPAG,E5_SEQ,E5_CLIFOR,E5_LOJA,E5_TIPODOC,E5_SITUACA,E5_MOTBX",
   "/api/protheus/v1/financeiro/baixas",
   "/api/protheus/v1/financeiro/movimentos",
   "/rest/api/protheus/v1/baixas",
@@ -83,6 +83,7 @@ export const BAIXAS_FALLBACK_PATHS: string[] = [
 ];
 
 export const SALDOS_CONTABEIS_FALLBACK_PATHS: string[] = [
+  "/rest/api/framework/v1/genericQuery?tables=CQ0&fields=CQ0_FILIAL,CQ0_CONTA,CQ0_DATA,CQ0_DEBITO,CQ0_CREDIT",
   "/rest/api/framework/v1/genericQuery?tables=CQ0&fields=CQ_FILIAL,CQ_CONTA,CQ_SALANT,CQ_DEB,CQ_CRED,CQ_SALDO,CQ_ANO,CQ_MES",
   "/api/protheus/v1/contabilidade/saldos",
   "/rest/api/protheus/v1/saldos-contabeis",

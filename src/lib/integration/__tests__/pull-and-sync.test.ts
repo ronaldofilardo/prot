@@ -204,14 +204,13 @@ describe("pullAndSyncFromProtheus (pull-and-sync.ts)", () => {
     expect(resultados[1].erro).toBeUndefined();
   });
 
-  it("sincroniza dentro da transação, com o mesmo tx usado pelo SyncLog", async () => {
+  it("sincroniza sem transação interativa e registra o SyncLog após a execução", async () => {
     getProtheusClientMock.mockResolvedValue(clientCom({ Clientes: [{ A1_COD: "000001", A1_LOJA: "01", A1_NOME: "A" }] }));
 
     await pullAndSyncFromProtheus("emp-01");
 
-    const tx = syncClientesMock.mock.calls[0][0] as { syncLog?: { create: unknown } };
-    expect(typeof transactionMock.mock.calls[0][0]).toBe("function");
-    expect(tx.syncLog?.create).toBe(syncLogCreateMock);
+    expect(syncClientesMock).toHaveBeenCalled();
+    expect(syncLogCreateMock).toHaveBeenCalled();
   });
 
   it("propaga o erro quando o próprio client não pode ser obtido (fora do try por entidade)", async () => {

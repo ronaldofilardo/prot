@@ -15,5 +15,5 @@ export async function fetchItensVenda(
     ...ITENS_VENDA_FALLBACK_PATHS,
   ]);
   const rows = await fetchRowsFromFirstPath(candidatePaths, getRows, () => []);
-  return mergeAndDedupe(rows, ["D2_DOC", "D2_SERIE", "D2_CLIENTE", "D2_LOJA", "D2_ITEM"]);
+  return mergeAndDedupe(rows, ["D2_FILIAL", "D2_DOC", "D2_SERIE", "D2_ITEM"]);
 }

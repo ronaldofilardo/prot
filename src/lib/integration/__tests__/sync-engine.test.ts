@@ -117,6 +117,7 @@ describe("Sync Operations (syncClientes & syncFaturamentos)", () => {
       data: {
         filial: "01",
         numeroNota: "000100",
+        serie: "",
         dataEmissao: new Date("2026-09-17T00:00:00.000Z"),
         valorTotal: 1500,
         clienteId: "cli-123",

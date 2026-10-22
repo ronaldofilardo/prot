@@ -118,6 +118,7 @@ model Faturamento {
   id          String   @id @default(cuid())
   filial      String
   numeroNota  String
+  serie       String   @default("")
   dataEmissao DateTime
   valorTotal  Decimal  @db.Decimal(15, 2)
   clienteId   String
@@ -126,7 +127,7 @@ model Faturamento {
   empresa     Empresa  @relation(fields: [empresaId], references: [id])
   sincronizadoEm DateTime @default(now())
 
-  @@unique([filial, numeroNota, empresaId])
+  @@unique([filial, numeroNota, serie, empresaId])
 }
 
 model ContaReceber {
@@ -147,7 +148,7 @@ model ContaReceber {
   baixas      Baixa[]
   sincronizadoEm DateTime @default(now())
 
-  @@unique([filial, prefixo, numero, parcela, empresaId])
+  @@unique([filial, prefixo, numero, parcela, tipo, empresaId])
 }
 
 model Baixa {

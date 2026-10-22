@@ -9,9 +9,9 @@ export async function runSyncInTransaction(
   empresaId: string,
   canonical: unknown[],
 ): Promise<SyncResult> {
-  return prisma.$transaction(async (tx) => {
-    const res = await syncFn(tx as PrismaClient, empresaId, canonical);
-    await tx.syncLog.create({
+  const res = await syncFn(prisma as PrismaClient, empresaId, canonical);
+  await prisma.syncLog
+    .create({
       data: {
         empresaId,
         entidade,
@@ -21,9 +21,9 @@ export async function runSyncInTransaction(
         mensagem: `Atualizacao manual: ${res.processados} processados, ${res.criados} criados, ${res.atualizados} atualizados, ${res.erros} erros`,
         tentativas: 1,
       },
-    });
-    return res;
-  });
+    })
+    .catch(() => undefined);
+  return res;
 }
 
 export async function logAndCreateSyncLog(
